@@ -1,0 +1,16 @@
+{
+  "name": "@trekker/shared",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./schema": "./schema.ts",
+    "./types": "./types.ts",
+    "./constants": "./constants.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.4"
+  }
+}

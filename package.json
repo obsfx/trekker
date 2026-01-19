@@ -1,33 +1,11 @@
 {
-  "name": "trekker",
-  "version": "0.1.0",
-  "description": "CLI-based issue tracker for coding agents",
-  "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "trekker": "./bin/trekker"
-  },
+  "name": "trekker-monorepo",
+  "private": true,
+  "workspaces": ["packages/*"],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "dev": "bun run src/index.ts",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
-  },
-  "keywords": [
-    "cli",
-    "issue-tracker",
-    "task-management",
-    "coding-agents"
-  ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "commander": "^13.1.0",
-    "drizzle-orm": "^0.38.4"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.2.2",
-    "drizzle-kit": "^0.30.4",
-    "typescript": "^5.7.3"
+    "dev:cli": "bun run --cwd packages/cli dev",
+    "dev:webapp": "bun run --cwd packages/webapp dev",
+    "build:cli": "bun run --cwd packages/cli build",
+    "build:webapp": "bun run --cwd packages/webapp build"
   }
 }

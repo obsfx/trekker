@@ -102,6 +102,16 @@ trekker dep remove <task-id> <depends-on-id>
 trekker dep list <task-id>
 ```
 
+### Web Interface
+
+```bash
+trekker serve              # Start production server on port 3000
+trekker serve -p 8080      # Start on custom port
+trekker serve --dev        # Start development server
+```
+
+The web interface shows a kanban board with tasks grouped by status. It reads from the same database as the CLI and auto-refreshes every 5 seconds. The first run builds the webapp, subsequent runs start instantly.
+
 ## JSON Output
 
 Add the `--json` flag to any command for structured output:

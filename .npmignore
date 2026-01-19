@@ -1,5 +1,10 @@
-# Source files (we publish dist/)
-src/
+# Source files (we publish dist/ but keep src/ for webapp compatibility)
+# src/
+
+# Webapp build artifacts
+webapp/.next/
+webapp/out/
+webapp/node_modules/
 
 # Config files
 tsconfig.json
