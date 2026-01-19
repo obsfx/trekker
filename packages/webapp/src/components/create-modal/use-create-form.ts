@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -17,7 +16,6 @@ import type { CreateType } from "@/types";
 interface UseCreateFormOptions {
   type: CreateType;
   defaultStatus?: string;
-  open: boolean;
   onClose: () => void;
   onCreated: () => void;
 }
@@ -55,7 +53,6 @@ const getDefaultValues = (type: CreateType, defaultStatus?: string) => {
 export function useCreateForm({
   type,
   defaultStatus,
-  open,
   onClose,
   onCreated,
 }: UseCreateFormOptions) {
@@ -65,16 +62,8 @@ export function useCreateForm({
   });
 
   const {
-    reset,
     formState: { isSubmitting },
   } = form;
-
-  // Reset form when modal opens or type changes
-  useEffect(() => {
-    if (open) {
-      reset(getDefaultValues(type, defaultStatus));
-    }
-  }, [open, type, defaultStatus, reset]);
 
   const createEpic = async (data: EpicFormData) => {
     const response = await fetch("/api/epics", {
@@ -142,30 +131,39 @@ export function useCreateForm({
     return response.json();
   };
 
-  const handleSubmit = form.handleSubmit(async (data) => {
-    try {
-      let created;
+  const handleSubmit = form.handleSubmit(
+    async (data) => {
+      try {
+        let created;
 
-      switch (type) {
-        case "epic":
-          created = await createEpic(data as EpicFormData);
-          toast.success(`Epic ${created.id} created`);
-          break;
-        case "subtask":
-          created = await createSubtask(data as SubtaskFormData);
-          toast.success(`Subtask ${created.id} created`);
-          break;
-        default:
-          created = await createTask(data as TaskFormData);
-          toast.success(`Task ${created.id} created`);
+        switch (type) {
+          case "epic":
+            created = await createEpic(data as EpicFormData);
+            toast.success(`Epic ${created.id} created`);
+            break;
+          case "subtask":
+            created = await createSubtask(data as SubtaskFormData);
+            toast.success(`Subtask ${created.id} created`);
+            break;
+          default:
+            created = await createTask(data as TaskFormData);
+            toast.success(`Task ${created.id} created`);
+        }
+
+        onClose();
+        onCreated();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to create");
       }
-
-      onClose();
-      onCreated();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create");
+    },
+    (errors) => {
+      // Show first validation error as toast
+      const firstError = Object.values(errors)[0];
+      if (firstError?.message) {
+        toast.error(firstError.message as string);
+      }
     }
-  });
+  );
 
   return {
     form,

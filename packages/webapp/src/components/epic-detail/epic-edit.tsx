@@ -63,7 +63,7 @@ export function EpicEdit({
           <Breadcrumb items={breadcrumbItems} />
         </div>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 p-4">
+        <form id="epic-edit-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 p-4">
 
           {/* Title */}
           <div className="space-y-2">
@@ -147,6 +147,7 @@ export function EpicEdit({
             </Button>
             <Button
               type="submit"
+              form="epic-edit-form"
               size="sm"
               disabled={isSubmitting}
             >

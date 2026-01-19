@@ -1,6 +1,7 @@
 "use client";
 
 import { Square, SquareCheck as CheckSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -111,10 +112,10 @@ export function EpicSidebar({
                     {task.id}
                   </span>
                   <span
-                    className={`text-sm flex-1 text-left truncate ${task.status === "completed"
-                      ? "line-through text-muted-foreground"
-                      : ""
-                      }`}
+                    className={cn(
+                      "text-sm flex-1 text-left truncate",
+                      task.status === "completed" && "line-through text-muted-foreground"
+                    )}
                   >
                     {task.title}
                   </span>

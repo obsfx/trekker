@@ -37,6 +37,50 @@ const TYPE_ICONS = {
   subtask: GitBranch,
 };
 
+interface CreateFormWrapperProps {
+  type: CreateType;
+  defaultStatus?: string;
+  onClose: () => void;
+  onCreated: () => void;
+  epics: Epic[];
+  parentTasks: Task[];
+}
+
+function CreateFormWrapper({
+  type,
+  defaultStatus,
+  onClose,
+  onCreated,
+  epics,
+  parentTasks,
+}: CreateFormWrapperProps) {
+  const { form, isSubmitting, handleSubmit } = useCreateForm({
+    type,
+    defaultStatus,
+    onClose,
+    onCreated,
+  });
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <CreateForm
+        form={form}
+        type={type}
+        epics={epics}
+        parentTasks={parentTasks}
+      />
+
+      <div className="flex justify-end gap-2 mt-4">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Creating..." : "Create"}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 export function CreateModal({
   open,
@@ -56,14 +100,6 @@ export function CreateModal({
     }
   }, [open, defaultType]);
 
-  const { form, isSubmitting, handleSubmit } = useCreateForm({
-    type,
-    defaultStatus,
-    open,
-    onClose,
-    onCreated,
-  });
-
   const parentTasks = tasks.filter((t) => !t.parentTaskId);
   const Icon = TYPE_ICONS[type];
 
@@ -77,54 +113,46 @@ export function CreateModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-4">
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select value={type} onValueChange={(v) => setType(v as CreateType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="epic">
-                    <div className="flex items-center gap-2">
-                      <Layers className="h-4 w-4" />
-                      Epic
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="task">
-                    <div className="flex items-center gap-2">
-                      <SquareCheck className="h-4 w-4" />
-                      Task
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="subtask">
-                    <div className="flex items-center gap-2">
-                      <GitBranch className="h-4 w-4" />
-                      Subtask
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <CreateForm
-              form={form}
-              type={type}
-              epics={epics}
-              parentTasks={parentTasks}
-            />
-
-            <div className="flex justify-end gap-2 mt-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create"}
-              </Button>
-            </div>
+        <div className="flex flex-col gap-4">
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <Select value={type} onValueChange={(v) => setType(v as CreateType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="epic">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    Epic
+                  </div>
+                </SelectItem>
+                <SelectItem value="task">
+                  <div className="flex items-center gap-2">
+                    <SquareCheck className="h-4 w-4" />
+                    Task
+                  </div>
+                </SelectItem>
+                <SelectItem value="subtask">
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="h-4 w-4" />
+                    Subtask
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </form>
+
+          <CreateFormWrapper
+            key={type}
+            type={type}
+            defaultStatus={defaultStatus}
+            onClose={onClose}
+            onCreated={onCreated}
+            epics={epics}
+            parentTasks={parentTasks}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

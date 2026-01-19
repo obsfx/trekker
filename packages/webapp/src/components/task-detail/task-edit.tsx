@@ -68,7 +68,7 @@ export function TaskEdit({
           <Breadcrumb items={breadcrumbItems} />
         </div>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 p-4">
+        <form id="task-edit-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 p-4">
           {/* Title */}
           <div className="space-y-2">
             <Label>Title</Label>
@@ -182,6 +182,7 @@ export function TaskEdit({
             </Button>
             <Button
               type="submit"
+              form="task-edit-form"
               size="sm"
               disabled={isSubmitting}
             >

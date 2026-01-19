@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import type { ConnectionStatus } from "@/types";
 
 const STATUS_CONFIG = {
@@ -26,7 +27,7 @@ export function ConnectionIndicator({ status }: ConnectionIndicatorProps) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <div className={`h-2 w-2 rounded-full ${config.color}`} />
+      <div className={cn("h-2 w-2 rounded-full", config.color)} />
       <span className="text-xs text-muted-foreground">{config.label}</span>
     </div>
   );

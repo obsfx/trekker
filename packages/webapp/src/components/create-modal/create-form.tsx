@@ -1,6 +1,6 @@
 "use client";
 
-import { UseFormReturn } from "react-hook-form";
+import { UseFormReturn, Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -30,14 +30,11 @@ interface CreateFormProps {
 export function CreateForm({ form, type, epics, parentTasks }: CreateFormProps) {
   const {
     register,
-    watch,
-    setValue,
+    control,
     formState: { errors },
   } = form;
 
   const statusOptions = type === "epic" ? EPIC_STATUSES : TASK_STATUSES;
-  const status = watch("status");
-  const priority = watch("priority");
 
   return (
     <div className="flex flex-col gap-4">
@@ -66,37 +63,49 @@ export function CreateForm({ form, type, epics, parentTasks }: CreateFormProps) 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Status</Label>
-          <Select value={status} onValueChange={(v) => setValue("status", v)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {statusOptions.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_LABELS[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="status"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {STATUS_LABELS[s]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         <div className="space-y-2">
           <Label>Priority</Label>
-          <Select
-            value={String(priority)}
-            onValueChange={(v) => setValue("priority", parseInt(v, 10))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  P{value} - {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="priority"
+            render={({ field }) => (
+              <Select
+                value={String(field.value)}
+                onValueChange={(v) => field.onChange(parseInt(v, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      P{value} - {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       </div>
 
@@ -118,8 +127,7 @@ interface TaskFieldsProps {
 }
 
 function TaskFields({ form, epics }: TaskFieldsProps) {
-  const { register, watch, setValue } = form;
-  const epicId = watch("epicId");
+  const { register, control } = form;
 
   return (
     <>
@@ -133,22 +141,28 @@ function TaskFields({ form, epics }: TaskFieldsProps) {
 
       <div className="space-y-2">
         <Label>Epic</Label>
-        <Select
-          value={epicId || "none"}
-          onValueChange={(v) => setValue("epicId", v === "none" ? null : v)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No Epic</SelectItem>
-            {epics.map((epic) => (
-              <SelectItem key={epic.id} value={epic.id}>
-                {epic.id}: {epic.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Controller
+          control={control}
+          name="epicId"
+          render={({ field }) => (
+            <Select
+              value={field.value || "none"}
+              onValueChange={(v) => field.onChange(v === "none" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Epic</SelectItem>
+                {epics.map((epic) => (
+                  <SelectItem key={epic.id} value={epic.id}>
+                    {epic.id}: {epic.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
     </>
   );
@@ -163,11 +177,9 @@ interface SubtaskFieldsProps {
 function SubtaskFields({ form, parentTasks }: SubtaskFieldsProps) {
   const {
     register,
-    watch,
-    setValue,
+    control,
     formState: { errors },
   } = form;
-  const parentTaskId = watch("parentTaskId");
 
   return (
     <>
@@ -183,22 +195,28 @@ function SubtaskFields({ form, parentTasks }: SubtaskFieldsProps) {
         <Label>
           Parent Task <span className="text-destructive">*</span>
         </Label>
-        <Select
-          value={parentTaskId || "none"}
-          onValueChange={(v) => setValue("parentTaskId", v === "none" ? "" : v)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Select a task...</SelectItem>
-            {parentTasks.map((task) => (
-              <SelectItem key={task.id} value={task.id}>
-                {task.id}: {task.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Controller
+          control={control}
+          name="parentTaskId"
+          render={({ field }) => (
+            <Select
+              value={field.value || "none"}
+              onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Select a task...</SelectItem>
+                {parentTasks.map((task) => (
+                  <SelectItem key={task.id} value={task.id}>
+                    {task.id}: {task.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
         {errors.parentTaskId && (
           <p className="text-sm text-destructive">{errors.parentTaskId.message as string}</p>
         )}

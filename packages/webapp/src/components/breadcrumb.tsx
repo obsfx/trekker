@@ -1,6 +1,7 @@
 "use client";
 
 import { Layers, SquareCheck, GitBranch, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface BreadcrumbItem {
   id: string;
@@ -30,8 +31,10 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
         return (
           <div key={item.id} className="flex items-center gap-1.5">
             <div
-              className={`flex items-center gap-1 ${isClickable ? "cursor-pointer hover:text-foreground" : ""
-                }`}
+              className={cn(
+                "flex items-center gap-1",
+                isClickable && "cursor-pointer hover:text-foreground"
+              )}
               onClick={isClickable ? item.onClick : undefined}
               title={item.title}
             >
