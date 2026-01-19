@@ -6,6 +6,7 @@ import type { Task } from "@/types";
 import { getCardType } from "@/lib/constants";
 import { PriorityBadge } from "@/components/priority-badge";
 import { SubtaskProgress } from "@/components/subtask-progress";
+import { SquareCheck } from "lucide-react";
 
 interface TaskCardProps {
   task: Task;
@@ -29,9 +30,12 @@ export function TaskCard({ task, epicName, subtasks, onClick }: TaskCardProps) {
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="font-mono text-xs font-medium">
-          {task.id}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <SquareCheck width={16} />
+          <span className="font-mono text-xs font-medium text-foreground">
+            {task.id}
+          </span>
+        </div>
         <PriorityBadge priority={task.priority} />
       </div>
 

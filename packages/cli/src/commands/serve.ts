@@ -5,18 +5,35 @@ import { existsSync } from "fs";
 import { getDbPath, isTrekkerInitialized } from "../db/client";
 import { error, success } from "../utils/output";
 
-function findWebappDir(): string | null {
+interface WebappLocation {
+  path: string;
+  isBundled: boolean;
+}
+
+function findWebappDir(): WebappLocation | null {
   // Get the directory of this script
   const scriptPath = import.meta.url.replace("file://", "");
+  const scriptDir = dirname(scriptPath);
 
-  // Navigate from packages/cli/src/commands/serve.ts to packages/webapp
-  // serve.ts -> commands -> src -> cli -> packages -> webapp
-  const cliDir = dirname(dirname(dirname(scriptPath)));
-  const packagesDir = dirname(cliDir);
+  // Check 1: Bundled webapp (npm package mode)
+  // When published, webapp-dist is at packages/cli/webapp-dist
+  // scriptPath could be in src/commands or dist/
+  const cliRoot = scriptDir.includes("/src/")
+    ? dirname(dirname(dirname(scriptPath))) // src/commands/serve.ts -> cli
+    : dirname(dirname(scriptPath)); // dist/index.js -> cli
+  const bundledWebapp = resolve(cliRoot, "webapp-dist");
+
+  if (existsSync(bundledWebapp)) {
+    return { path: bundledWebapp, isBundled: true };
+  }
+
+  // Check 2: Monorepo development mode
+  // Navigate from packages/cli to packages/webapp
+  const packagesDir = dirname(cliRoot);
   const webappDir = resolve(packagesDir, "webapp");
 
   if (existsSync(webappDir)) {
-    return webappDir;
+    return { path: webappDir, isBundled: false };
   }
 
   return null;
@@ -37,12 +54,38 @@ export const serveCommand = new Command("serve")
       const port = options.port;
 
       // Find the webapp directory
-      const webappDir = findWebappDir();
+      const webapp = findWebappDir();
 
-      if (!webappDir) {
+      if (!webapp) {
         error("Webapp not found. Please reinstall Trekker.");
         process.exit(1);
       }
+
+      const { path: webappDir, isBundled } = webapp;
+
+      const env = {
+        ...process.env,
+        TREKKER_DB_PATH: dbPath,
+        PORT: port,
+      };
+
+      // Bundled mode (npm package) - webapp is pre-built
+      if (isBundled) {
+        success(`Starting Trekker web interface on http://localhost:${port}`);
+        console.log("Press Ctrl+C to stop\n");
+
+        // Run the standalone server directly
+        const server = spawn("bun", ["run", "server.js"], {
+          cwd: webappDir,
+          stdio: "inherit",
+          env,
+        });
+
+        setupSignalHandlers(server);
+        return;
+      }
+
+      // Monorepo development mode - may need to install deps and build
 
       // Check if node_modules exists
       const nodeModulesPath = resolve(webappDir, "node_modules");
@@ -57,12 +100,6 @@ export const serveCommand = new Command("serve")
           process.exit(1);
         }
       }
-
-      const env = {
-        ...process.env,
-        TREKKER_DB_PATH: dbPath,
-        PORT: port,
-      };
 
       // Development mode
       if (options.dev) {

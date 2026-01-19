@@ -7,6 +7,11 @@
   "bin": {
     "trekker": "./bin/trekker"
   },
+  "files": [
+    "dist",
+    "bin",
+    "webapp-dist"
+  ],
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target bun",
     "dev": "bun run src/index.ts",

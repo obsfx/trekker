@@ -6,6 +6,7 @@
     "dev:cli": "bun run --cwd packages/cli dev",
     "dev:webapp": "bun run --cwd packages/webapp dev",
     "build:cli": "bun run --cwd packages/cli build",
-    "build:webapp": "bun run --cwd packages/webapp build"
+    "build:webapp": "bun run --cwd packages/webapp build",
+    "build:release": "./scripts/build-release.sh"
   }
 }

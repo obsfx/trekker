@@ -12,7 +12,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ projectName, onNewClick }: AppHeaderProps) {
   return (
-    <header className="flex items-center justify-between border-b px-4 py-2">
+    <header className="flex items-center justify-between border-b px-4 py-2 bg-accent/50">
       <div className="flex items-center gap-2">
         <GitBranchPlus />
         <h1 className="text-lg font-bold">trekker</h1>
