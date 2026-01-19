@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { Bell, BellOff, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   isNotificationSupported,
   getNotificationPermission,
   requestNotificationPermission,
@@ -52,27 +57,33 @@ export function NotificationToggle() {
     }
   };
 
-  const getTitle = () => {
+  const getTooltipText = () => {
     switch (permission) {
       case "granted":
-        return "Notifications enabled";
+        return "Browser notifications enabled. You'll be notified of task and epic changes.";
       case "denied":
-        return "Notifications blocked";
+        return "Notifications blocked. Enable in browser settings.";
       default:
-        return "Enable notifications";
+        return "Click to enable browser notifications";
     }
   };
 
   return (
-    <Button
-      variant="outline"
-      size="icon"
-      onClick={handleClick}
-      disabled={permission === "denied"}
-      title={getTitle()}
-    >
-      {getIcon()}
-      <span className="sr-only">{getTitle()}</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleClick}
+          disabled={permission === "denied"}
+        >
+          {getIcon()}
+          <span className="sr-only">{getTooltipText()}</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent sideOffset={8}>
+        <p>{getTooltipText()}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
