@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getDb, tasks } from "@/lib/db";
+import { getDb, tasks, epics } from "@/lib/db";
 
 interface TaskState {
   id: string;
@@ -8,32 +8,103 @@ interface TaskState {
   updatedAt: Date;
 }
 
-let lastKnownState: Map<string, TaskState> = new Map();
+interface EpicState {
+  id: string;
+  status: string;
+  title: string;
+  updatedAt: Date;
+}
 
-async function getTaskChanges(): Promise<Array<{ task: TaskState; previousStatus: string }>> {
+type SSEEvent =
+  | { type: "task_created"; taskId: string; taskTitle: string; status: string }
+  | { type: "task_updated"; taskId: string; taskTitle: string; status: string }
+  | { type: "task_deleted"; taskId: string; taskTitle: string }
+  | { type: "epic_created"; epicId: string; epicTitle: string; status: string }
+  | { type: "epic_updated"; epicId: string; epicTitle: string; status: string }
+  | { type: "epic_deleted"; epicId: string; epicTitle: string };
+
+let lastTaskState: Map<string, TaskState> = new Map();
+let lastEpicState: Map<string, EpicState> = new Map();
+
+async function getChanges(): Promise<SSEEvent[]> {
   const db = getDb();
-  const currentTasks = await db.select().from(tasks);
-  const changes: Array<{ task: TaskState; previousStatus: string }> = [];
+  const [currentTasks, currentEpics] = await Promise.all([
+    db.select().from(tasks),
+    db.select().from(epics),
+  ]);
 
+  const events: SSEEvent[] = [];
+
+  // Track task changes
+  const currentTaskIds = new Set<string>();
   for (const task of currentTasks) {
-    const previous = lastKnownState.get(task.id);
-    if (previous && previous.status !== task.status) {
-      changes.push({
-        task: {
-          id: task.id,
-          status: task.status,
-          title: task.title,
-          updatedAt: task.updatedAt,
-        },
-        previousStatus: previous.status,
+    currentTaskIds.add(task.id);
+    const previous = lastTaskState.get(task.id);
+
+    if (!previous) {
+      events.push({
+        type: "task_created",
+        taskId: task.id,
+        taskTitle: task.title,
+        status: task.status,
+      });
+    } else if (previous.updatedAt.getTime() !== task.updatedAt.getTime()) {
+      events.push({
+        type: "task_updated",
+        taskId: task.id,
+        taskTitle: task.title,
+        status: task.status,
+      });
+    }
+  }
+
+  for (const [id, task] of lastTaskState) {
+    if (!currentTaskIds.has(id)) {
+      events.push({
+        type: "task_deleted",
+        taskId: id,
+        taskTitle: task.title,
+      });
+    }
+  }
+
+  // Track epic changes
+  const currentEpicIds = new Set<string>();
+  for (const epic of currentEpics) {
+    currentEpicIds.add(epic.id);
+    const previous = lastEpicState.get(epic.id);
+
+    if (!previous) {
+      events.push({
+        type: "epic_created",
+        epicId: epic.id,
+        epicTitle: epic.title,
+        status: epic.status,
+      });
+    } else if (previous.updatedAt.getTime() !== epic.updatedAt.getTime()) {
+      events.push({
+        type: "epic_updated",
+        epicId: epic.id,
+        epicTitle: epic.title,
+        status: epic.status,
+      });
+    }
+  }
+
+  for (const [id, epic] of lastEpicState) {
+    if (!currentEpicIds.has(id)) {
+      events.push({
+        type: "epic_deleted",
+        epicId: id,
+        epicTitle: epic.title,
       });
     }
   }
 
   // Update state
-  lastKnownState.clear();
+  lastTaskState.clear();
   for (const task of currentTasks) {
-    lastKnownState.set(task.id, {
+    lastTaskState.set(task.id, {
       id: task.id,
       status: task.status,
       title: task.title,
@@ -41,21 +112,44 @@ async function getTaskChanges(): Promise<Array<{ task: TaskState; previousStatus
     });
   }
 
-  return changes;
+  lastEpicState.clear();
+  for (const epic of currentEpics) {
+    lastEpicState.set(epic.id, {
+      id: epic.id,
+      status: epic.status,
+      title: epic.title,
+      updatedAt: epic.updatedAt,
+    });
+  }
+
+  return events;
 }
 
 // Initialize state on first load
 async function initializeState() {
-  if (lastKnownState.size === 0) {
+  if (lastTaskState.size === 0 && lastEpicState.size === 0) {
     try {
       const db = getDb();
-      const currentTasks = await db.select().from(tasks);
+      const [currentTasks, currentEpics] = await Promise.all([
+        db.select().from(tasks),
+        db.select().from(epics),
+      ]);
+
       for (const task of currentTasks) {
-        lastKnownState.set(task.id, {
+        lastTaskState.set(task.id, {
           id: task.id,
           status: task.status,
           title: task.title,
           updatedAt: task.updatedAt,
+        });
+      }
+
+      for (const epic of currentEpics) {
+        lastEpicState.set(epic.id, {
+          id: epic.id,
+          status: epic.status,
+          title: epic.title,
+          updatedAt: epic.updatedAt,
         });
       }
     } catch {
@@ -78,18 +172,14 @@ export async function GET(request: NextRequest) {
       // Poll for changes every 2 seconds
       const interval = setInterval(async () => {
         try {
-          const changes = await getTaskChanges();
-          for (const change of changes) {
-            const event = {
-              type: "task_status_changed",
-              taskId: change.task.id,
-              taskTitle: change.task.title,
-              previousStatus: change.previousStatus,
-              newStatus: change.task.status,
+          const events = await getChanges();
+          for (const event of events) {
+            const sseData = {
+              ...event,
               timestamp: new Date().toISOString(),
             };
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+              encoder.encode(`data: ${JSON.stringify(sseData)}\n\n`)
             );
           }
         } catch {

@@ -3,6 +3,7 @@
 import { Plus, Package, GitBranchPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationToggle } from "@/components/notification-toggle";
 
 interface AppHeaderProps {
   projectName?: string;
@@ -31,6 +32,7 @@ export function AppHeader({ projectName, onNewClick }: AppHeaderProps) {
               New
             </Button>
           )}
+          <NotificationToggle />
           <ThemeToggle />
         </div>
       </div>
