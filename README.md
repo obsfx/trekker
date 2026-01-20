@@ -124,13 +124,14 @@ trekker dep list <task-id>
 
 ### Web Interface
 
+For a visual kanban board, install the separate dashboard package:
+
 ```bash
-trekker serve              # Start production server on port 3000
-trekker serve -p 8080      # Start on custom port
-trekker serve --dev        # Start development server
+npm install -g @obsfx/trekker-dashboard
+trekker-dashboard -p 3000  # Start dashboard on port 3000
 ```
 
-The web interface shows a kanban board with tasks grouped by status. It reads from the same database as the CLI and updates in real time. The first run builds the webapp. Subsequent runs start instantly.
+The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
 
 ## JSON Output
 
