@@ -3,10 +3,7 @@ name: Deploy Site to GitHub Pages
 on:
   push:
     branches:
-      - main
-    paths:
-      - 'site/**'
-      - '.github/workflows/deploy-site.yml'
+      - gh-pages-site
   workflow_dispatch:
 
 permissions:
