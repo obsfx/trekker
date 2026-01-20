@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trekker - Issue Tracker for AI Coding Agents</title>
+  <meta name="description" content="A CLI issue tracker built for AI coding agents. Local SQLite, no server required.">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+      color: #111;
+      line-height: 1.7;
+      font-size: 16px;
+      padding: 60px 24px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    a {
+      color: #111;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .links {
+      margin-bottom: 8px;
+    }
+
+    .links a {
+      margin-right: 4px;
+    }
+
+    .links span {
+      color: #888;
+      margin-right: 4px;
+    }
+
+    .tagline {
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-top: 40px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    code {
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+
+    pre {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .prefix {
+      color: #888;
+      user-select: none;
+    }
+
+    .output {
+      color: #666;
+    }
+
+    .screenshot {
+      background: #f5f5f5;
+      border-radius: 6px;
+      aspect-ratio: 16/9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+
+    .screenshot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    ul {
+      margin-left: 20px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    footer {
+      margin-top: 60px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 3v12" />
+        <path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+        <path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+        <path d="M15 6a9 9 0 0 0-9 9" />
+        <path d="M18 15v6" />
+        <path d="M21 18h-6" />
+      </svg>
+      trekker
+    </h1>
+    <div class="links">
+      <a href="https://github.com/obsfx/trekker">github</a> <span>|</span>
+      <a href="https://www.npmjs.com/package/@obsfx/trekker">npm</a> <span>|</span>
+      <a href="https://github.com/obsfx/trekker-dashboard">dashboard</a> <span>|</span>
+      <a href="https://github.com/obsfx/trekker-claude-code">claude code</a>
+    </div>
+    <p class="tagline">issue tracking for ai coding agents</p>
+
+    <h2>why i built this</h2>
+    <p>I built this after using <a href="https://github.com/beads-ai/beads-cli">beads</a> for a while. beads does the job, but its codebase has grown quickly without enough care for what is happening inside. a task tracker is a simple application. it should not need thousands of lines of code.</p>
+    <p>I noticed AI coding agents kept losing track of what they were doing. They'd start a task, hit a bug, go down a rabbit hole, and forget the original goal entirely. They needed a way to write down their own work and come back to it.</p>
+    <p>Trekker is a simple CLI that agents can use to manage their own tasks. Create tasks, update status, add comments. The agent controls the todo list, so it stays focused even across sessions. Local SQLite database. No server, no accounts, no sync. Just a <code>.trekker</code> folder in your project.</p>
+
+    <h2>install</h2>
+    <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker
+<span class="prefix">$ </span>trekker init
+<span class="output">✓ Project initialized: my-project</span></code></pre>
+
+    <h2>features</h2>
+    <p><strong>task management</strong> - create, update, and track tasks with priorities (0-5) and descriptions. uses JIRA-style IDs (TREK-1, TREK-2) that agents can easily reference.</p>
+    <p><strong>epics & dependencies</strong> - group tasks into epics. set dependencies between tasks to define execution order. prevents circular dependencies.</p>
+    <p><strong>local sqlite</strong> - data stays in your project. no accounts, no configuration, no sync needed.</p>
+    <p><strong>toon output</strong> - every command supports <code>--toon</code> for structured, machine-readable output.</p>
+
+    <h2>usage</h2>
+    <pre><code><span class="prefix">$ </span>trekker task create -t "Build user authentication" -p 1
+<span class="output">✓ Task created: TREK-1</span>
+
+<span class="prefix">$ </span>trekker task update TREK-1 -s in_progress
+<span class="output">✓ Task updated: TREK-1</span>
+
+<span class="prefix">$ </span>trekker task update TREK-1 -s completed
+<span class="output">✓ Task updated: TREK-1</span>
+
+<span class="prefix">$ </span>trekker task list
+<span class="output">TREK-1 | completed   | P1 | Build user authentication</span></code></pre>
+
+    <h2>dashboard</h2>
+    <p>visual kanban board that reads from the same SQLite database. drag tasks between columns, see what's in progress, track your agent's work visually.</p>
+    <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker-dashboard
+<span class="prefix">$ </span>trekker-dashboard -p 3000
+<span class="output">Dashboard running at http://localhost:3000</span></code></pre>
+    <div class="screenshot" id="screenshot-1">screenshot placeholder</div>
+
+    <h2>setup for ai agents</h2>
+    <p>add to your agent's context (system prompt, CLAUDE.md, or similar):</p>
+    <ul>
+      <li>use trekker to track your work. run <code>trekker quickstart</code> to learn the commands.</li>
+      <li>before starting: check <code>trekker task list</code> and mark your task <code>in_progress</code></li>
+      <li>after finishing: mark the task <code>completed</code> and add a comment with <code>trekker comment add</code></li>
+    </ul>
+    <p>now the agent has persistent memory. it can start a session, check its task list, and continue exactly where it left off.</p>
+
+    <footer>
+      made by <a href="https://github.com/obsfx">obsfx</a>
+    </footer>
+  </div>
+
+  <script>
+    var imgEl = document.createElement('img');
+    imgEl.src = 'images/dashboard-1.png';
+    imgEl.alt = 'Dashboard screenshot';
+    imgEl.onload = function() {
+      var container = document.getElementById('screenshot-1');
+      container.textContent = '';
+      container.appendChild(imgEl);
+    };
+  </script>
+</body>
+</html>
