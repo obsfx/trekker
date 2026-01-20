@@ -9,7 +9,7 @@ import { commentCommand } from "./commands/comment";
 import { depCommand } from "./commands/dep";
 import { quickstartCommand } from "./commands/quickstart";
 import { seedCommand } from "./commands/seed";
-import { setJsonMode } from "./utils/output";
+import { setToonMode } from "./utils/output";
 import pkg from "../package.json";
 
 const program = new Command();
@@ -18,11 +18,11 @@ program
   .name("trekker")
   .description("CLI-based issue tracker for coding agents")
   .version(pkg.version)
-  .option("--json", "Output in JSON format")
+  .option("--toon", "Output in TOON format")
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
-    if (opts.json) {
-      setJsonMode(true);
+    if (opts.toon) {
+      setToonMode(true);
     }
   });
 

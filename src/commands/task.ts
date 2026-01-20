@@ -13,7 +13,7 @@ import {
   output,
   formatTask,
   formatTaskList,
-  isJsonMode,
+  isToonMode,
 } from "../utils/output";
 import type { TaskStatus } from "../types";
 
@@ -41,7 +41,7 @@ taskCommand
         epicId: options.epic,
       });
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(task);
       } else {
         success(`Task created: ${task.id}`);
@@ -67,7 +67,7 @@ taskCommand
         parentTaskId: null, // Only list top-level tasks by default
       });
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(tasks);
       } else {
         console.log(formatTaskList(tasks));
@@ -90,7 +90,7 @@ taskCommand
         process.exit(1);
       }
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(task);
       } else {
         console.log(formatTask(task));
@@ -130,7 +130,7 @@ taskCommand
 
       const task = updateTask(taskId, updateInput);
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(task);
       } else {
         success(`Task updated: ${task.id}`);

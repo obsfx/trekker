@@ -9,7 +9,7 @@ import {
   error,
   output,
   formatDependencyList,
-  isJsonMode,
+  isToonMode,
 } from "../utils/output";
 
 export const depCommand = new Command("dep").description(
@@ -23,7 +23,7 @@ depCommand
     try {
       const dependency = addDependency(taskId, dependsOnId);
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(dependency);
       } else {
         success(`Dependency added: ${taskId} → depends on ${dependsOnId}`);
@@ -54,7 +54,7 @@ depCommand
     try {
       const { dependsOn, blocks } = getDependencies(taskId);
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output({ taskId, dependsOn, blocks });
       } else {
         console.log(`Dependencies for ${taskId}:`);

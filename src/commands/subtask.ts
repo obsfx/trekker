@@ -13,7 +13,7 @@ import {
   output,
   formatTask,
   formatTaskList,
-  isJsonMode,
+  isToonMode,
 } from "../utils/output";
 import type { TaskStatus } from "../types";
 
@@ -48,7 +48,7 @@ subtaskCommand
         epicId: parent.epicId ?? undefined, // Inherit epic from parent
       });
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(subtask);
       } else {
         success(`Subtask created: ${subtask.id}`);
@@ -74,7 +74,7 @@ subtaskCommand
 
       const subtasks = listSubtasks(parentTaskId);
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(subtasks);
       } else {
         if (subtasks.length === 0) {
@@ -121,7 +121,7 @@ subtaskCommand
 
       const updated = updateTask(subtaskId, updateInput);
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(updated);
       } else {
         success(`Subtask updated: ${updated.id}`);

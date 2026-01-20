@@ -13,7 +13,7 @@ import {
   output,
   formatComment,
   formatCommentList,
-  isJsonMode,
+  isToonMode,
 } from "../utils/output";
 
 export const commentCommand = new Command("comment").description(
@@ -36,7 +36,7 @@ commentCommand
         content: options.content,
       });
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(comment);
       } else {
         success(`Comment added: ${comment.id}`);
@@ -55,7 +55,7 @@ commentCommand
     try {
       const comments = listComments(taskId);
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(comments);
       } else {
         if (comments.length === 0) {
@@ -83,7 +83,7 @@ commentCommand
         content: options.content,
       });
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(comment);
       } else {
         success(`Comment updated: ${comment.id}`);

@@ -13,7 +13,7 @@ import {
   output,
   formatEpic,
   formatEpicList,
-  isJsonMode,
+  isToonMode,
 } from "../utils/output";
 import type { EpicStatus } from "../types";
 
@@ -39,7 +39,7 @@ epicCommand
         status: parseStatus(options.status, "epic") as EpicStatus | undefined,
       });
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(epic);
       } else {
         success(`Epic created: ${epic.id}`);
@@ -60,7 +60,7 @@ epicCommand
       const status = parseStatus(options.status, "epic") as EpicStatus | undefined;
       const epics = listEpics(status);
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(epics);
       } else {
         console.log(formatEpicList(epics));
@@ -83,7 +83,7 @@ epicCommand
         process.exit(1);
       }
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(epic);
       } else {
         console.log(formatEpic(epic));
@@ -110,7 +110,7 @@ epicCommand
         status: parseStatus(options.status, "epic") as EpicStatus | undefined,
       });
 
-      if (isJsonMode()) {
+      if (isToonMode()) {
         output(epic);
       } else {
         success(`Epic updated: ${epic.id}`);

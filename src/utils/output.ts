@@ -1,18 +1,19 @@
+import { encode } from "@toon-format/toon";
 import type { Epic, Task, Comment, Dependency, Project } from "../types";
 
-let jsonMode = false;
+let toonMode = false;
 
-export function setJsonMode(enabled: boolean): void {
-  jsonMode = enabled;
+export function setToonMode(enabled: boolean): void {
+  toonMode = enabled;
 }
 
-export function isJsonMode(): boolean {
-  return jsonMode;
+export function isToonMode(): boolean {
+  return toonMode;
 }
 
 export function output(data: unknown): void {
-  if (jsonMode) {
-    console.log(JSON.stringify(data, null, 2));
+  if (toonMode) {
+    console.log(encode(data));
   } else if (typeof data === "string") {
     console.log(data);
   } else {
@@ -21,8 +22,8 @@ export function output(data: unknown): void {
 }
 
 export function success(message: string, data?: unknown): void {
-  if (jsonMode) {
-    console.log(JSON.stringify({ success: true, message, data }, null, 2));
+  if (toonMode) {
+    console.log(encode({ success: true, message, data }));
   } else {
     console.log(`✓ ${message}`);
     if (data) {
@@ -32,8 +33,8 @@ export function success(message: string, data?: unknown): void {
 }
 
 export function error(message: string, details?: unknown): void {
-  if (jsonMode) {
-    console.error(JSON.stringify({ success: false, error: message, details }, null, 2));
+  if (toonMode) {
+    console.error(encode({ success: false, error: message, details }));
   } else {
     console.error(`✗ Error: ${message}`);
     if (details) {
@@ -43,7 +44,7 @@ export function error(message: string, details?: unknown): void {
 }
 
 export function info(message: string): void {
-  if (!jsonMode) {
+  if (!toonMode) {
     console.log(message);
   }
 }
