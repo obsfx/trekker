@@ -11,13 +11,14 @@ import { quickstartCommand } from "./commands/quickstart";
 import { serveCommand } from "./commands/serve";
 import { seedCommand } from "./commands/seed";
 import { setJsonMode } from "./utils/output";
+import pkg from "../package.json";
 
 const program = new Command();
 
 program
   .name("trekker")
   .description("CLI-based issue tracker for coding agents")
-  .version("0.1.0")
+  .version(pkg.version)
   .option("--json", "Output in JSON format")
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();

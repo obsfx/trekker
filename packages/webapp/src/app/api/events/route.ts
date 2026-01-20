@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { getDb, tasks, epics } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 interface TaskState {
   id: string;
   status: string;

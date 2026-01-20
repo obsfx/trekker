@@ -1,11 +1,11 @@
 {
   "name": "@obsfx/trekker",
-  "version": "0.1.0",
+  "version": "0.1.21",
   "description": "A CLI-based issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database with a built-in kanban board UI.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "trekker": "./bin/trekker"
+    "trekker": "./bin/trekker.js"
   },
   "files": [
     "dist",
@@ -16,11 +16,7 @@
     "build": "bun build src/index.ts --outdir dist --target bun --external commander --external drizzle-orm",
     "dev": "bun run src/index.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "prepublishOnly": "cd ../.. && ./scripts/build-release.sh",
-    "release:patch": "npm version patch && npm publish --access public",
-    "release:minor": "npm version minor && npm publish --access public",
-    "release:major": "npm version major && npm publish --access public"
+    "db:migrate": "drizzle-kit migrate"
   },
   "keywords": [
     "cli",

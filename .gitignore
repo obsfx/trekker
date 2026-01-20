@@ -6,6 +6,7 @@ dist/
 packages/webapp/.next/
 packages/webapp/out/
 packages/cli/dist/
+packages/cli/webapp-dist/
 
 # Trekker database (created by CLI)
 .trekker/

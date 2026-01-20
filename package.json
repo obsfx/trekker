@@ -7,6 +7,12 @@
     "dev:webapp": "bun run --cwd packages/webapp dev",
     "build:cli": "bun run --cwd packages/cli build",
     "build:webapp": "bun run --cwd packages/webapp build",
-    "build:release": "./scripts/build-release.sh"
+    "build:release": "bun run scripts/build-release.ts",
+    "release:patch": "bun run scripts/build-release.ts patch",
+    "release:minor": "bun run scripts/build-release.ts minor",
+    "release:major": "bun run scripts/build-release.ts major"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.2"
   }
 }
