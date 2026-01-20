@@ -1,14 +1,34 @@
 # Trekker
 
-A command line issue tracker built for AI coding agents.
-
-Trekker stores tasks, epics, and dependencies in a local SQLite database. You run it from your project directory. No server required.
+A CLI issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database with a built-in kanban board. No server required.
 
 ## Install
 
 ```bash
-bun install -g trekker
+bun install -g @obsfx/trekker
 ```
+
+Or with npm:
+
+```bash
+npm install -g @obsfx/trekker
+```
+
+## Why Trekker
+
+AI coding agents work better when they can track their own progress. A simple CLI-based task manager keeps them on the right path across sessions.
+
+I built this after using beads for a while. Beads does the job, but its codebase has grown quickly without enough care for what is happening inside. A task tracker is a simple application. It should not need thousands of lines of code.
+
+My concerns about the future and security of that project led me here. Trekker is my simplified alternative.
+
+What you get:
+- Task and epic tracking with dependencies
+- Built-in kanban board UI with real-time updates
+- No special directory required. The .trekker folder stays local to your project.
+- No hook integrations. Just task management.
+
+I built this with AI assistance, but I did it for myself. That means I put enough care into it to make it reliable for my own work.
 
 ## Quick Start
 
@@ -110,7 +130,7 @@ trekker serve -p 8080      # Start on custom port
 trekker serve --dev        # Start development server
 ```
 
-The web interface shows a kanban board with tasks grouped by status. It reads from the same database as the CLI and auto-refreshes every 5 seconds. The first run builds the webapp, subsequent runs start instantly.
+The web interface shows a kanban board with tasks grouped by status. It reads from the same database as the CLI and updates in real time. The first run builds the webapp. Subsequent runs start instantly.
 
 ## JSON Output
 

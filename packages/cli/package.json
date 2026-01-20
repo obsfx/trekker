@@ -1,7 +1,7 @@
 {
-  "name": "trekker",
+  "name": "@obsfx/trekker",
   "version": "0.1.0",
-  "description": "CLI-based issue tracker for coding agents",
+  "description": "A CLI-based issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database with a built-in kanban board UI.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -13,21 +13,43 @@
     "webapp-dist"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "bun build src/index.ts --outdir dist --target bun --external commander --external drizzle-orm",
     "dev": "bun run src/index.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "prepublishOnly": "cd ../.. && ./scripts/build-release.sh",
+    "release:patch": "npm version patch && npm publish --access public",
+    "release:minor": "npm version minor && npm publish --access public",
+    "release:major": "npm version major && npm publish --access public"
   },
   "keywords": [
     "cli",
     "issue-tracker",
     "task-management",
-    "coding-agents"
+    "kanban",
+    "sqlite",
+    "ai-agents",
+    "coding-agents",
+    "project-management",
+    "todo",
+    "epic",
+    "bun"
   ],
-  "author": "",
+  "author": "Omercan Balandi <balandiomer@gmail.com>",
   "license": "MIT",
+  "homepage": "https://github.com/obsfx/trekker",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/obsfx/trekker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/obsfx/trekker/issues"
+  },
+  "engines": {
+    "node": ">=18",
+    "bun": ">=1.0.0"
+  },
   "dependencies": {
-    "@trekker/shared": "workspace:*",
     "commander": "^13.1.0",
     "drizzle-orm": "^0.38.4"
   },
