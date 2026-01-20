@@ -246,6 +246,48 @@
         gap: 32px;
       }
     }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 16px;
+      }
+
+      header {
+        padding: 24px 0;
+      }
+
+      .header-right {
+        flex-wrap: wrap;
+        gap: 12px 16px;
+      }
+
+      section {
+        padding: 40px 0;
+      }
+
+      .install-box,
+      .usage-example {
+        padding: 16px;
+      }
+
+      .install-box pre,
+      .usage-example pre {
+        overflow-x: auto;
+      }
+
+      pre {
+        font-size: 0.8rem;
+      }
+
+      .agent-tips li {
+        padding: 10px 0;
+        font-size: 0.95rem;
+      }
+
+      .agent-tips code {
+        font-size: 0.8rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -339,8 +381,9 @@
       <h3>Visual kanban board</h3>
       <p>Install the separate dashboard package to get a visual kanban board that reads from the same SQLite database. See what's in progress and track your agent's work visually.</p>
       <div class="install-box">
-        <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker-dashboard
-<span class="prefix">$ </span>trekker-dashboard -p 3000
+        <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker-dashboard</code></pre>
+        <p style="margin: 16px 0 16px 0; color: #999; font-size: 0.85rem;">then run</p>
+        <pre><code><span class="prefix">$ </span>trekker-dashboard -p 3000
 <span class="output">Dashboard running at http://localhost:3000</span></code></pre>
       </div>
       <div class="screenshot" id="screenshot-1">
