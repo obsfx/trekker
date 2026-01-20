@@ -133,6 +133,19 @@ trekker-dashboard -p 3000  # Start dashboard on port 3000
 
 The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
 
+## Claude Code Integration
+
+For seamless integration with [Claude Code](https://claude.ai/code), install the Trekker plugin:
+
+```bash
+claude /plugin marketplace add obsfx/trekker-claude-code
+claude /plugin install trekker
+```
+
+This gives Claude Code native access to Trekker commands through MCP. The agent can create tasks, update status, and manage dependencies without running CLI commands directly.
+
+See [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) for more details.
+
 ## JSON Output
 
 Add the `--json` flag to any command for structured output:
@@ -174,6 +187,8 @@ Run `trekker quickstart` to see the full guide with best practices for creating 
 ## How I Use It
 
 This is my personal workflow for getting the most out of Trekker with AI agents:
+
+- **Install the Claude Code plugin.** I use [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) to give Claude Code direct access to Trekker through MCP. This way, the agent manages tasks natively without running CLI commands.
 
 - **Always mention Trekker in prompts.** I include "use trekker" in my instructions so the agent knows to track its work.
 
