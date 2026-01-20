@@ -11,7 +11,8 @@ As an AI agent, you should use Trekker to:
 - **Break down complex tasks** into manageable, atomic pieces
 - **Document decisions** and progress for future reference
 - **Manage dependencies** between tasks to ensure correct execution order
-- **Maintain context** that persists beyond your conversation memory
+- **Offload context** - store your reasoning, findings, and state externally so you can recover after context resets
+- **Persist memory** - comments survive context window limits and session boundaries
 
 ## Best Practices for AI Agents
 
@@ -44,11 +45,47 @@ As an AI agent, you should use Trekker to:
 - A task should not start until its dependencies are complete
 - Use \`trekker dep list <task-id>\` to check what's blocking a task
 
-### Adding Comments
-- Log important decisions and their rationale
-- Document blockers or issues encountered
-- Record solutions to problems for future reference
-- Example: \`trekker comment add TREK-1 -a "agent" -c "Chose bcrypt over argon2 for password hashing due to better library support"\`
+### Adding Comments (Critical for Context Management)
+
+Comments are your **external memory**. Use them extensively to:
+
+**Save Your Thought Process:**
+- Document your reasoning and analysis as you work
+- Record hypotheses before investigating them
+- Note alternatives you considered and why you chose/rejected them
+
+**Offload Context:**
+- When your context window is filling up, dump your current state into comments
+- Record what you've tried, what worked, what didn't
+- Save partial progress so you can resume after a context reset
+
+**Preserve Investigation Results:**
+- Store findings from code exploration
+- Document file locations and relevant code snippets
+- Record error messages and stack traces you're debugging
+
+**Track Decision History:**
+- Log architectural decisions with rationale
+- Document trade-offs you evaluated
+- Record blockers and how you resolved them
+
+**Examples:**
+\`\`\`bash
+# Starting a task - record your initial analysis
+trekker comment add TREK-1 -a "agent" -c "Initial analysis: Need to modify auth.ts (line 45-80) and add new endpoint in routes/api.ts. Dependencies: bcrypt, jsonwebtoken already installed."
+
+# During investigation - save what you found
+trekker comment add TREK-1 -a "agent" -c "Found existing validation in utils/validate.ts:23. Can reuse validateEmail() and validatePassword(). Token generation should follow pattern in auth/jwt.ts."
+
+# Recording a decision
+trekker comment add TREK-1 -a "agent" -c "Decision: Using bcrypt over argon2 for password hashing. Rationale: better library support, existing team familiarity, sufficient security for this use case."
+
+# Saving progress before context reset
+trekker comment add TREK-1 -a "agent" -c "Progress checkpoint: Implemented login endpoint (auth.ts:45-120). TODO: Add rate limiting, write tests. Blocked by: Need to clarify password reset flow with user."
+
+# After hitting an issue
+trekker comment add TREK-1 -a "agent" -c "Issue: JWT verification failing. Tried: 1) Checked secret key - correct, 2) Verified token format - valid, 3) Found issue - clock skew on server. Solution: Added 30s leeway to verification."
+\`\`\`
 
 ---
 
@@ -230,7 +267,14 @@ trekker subtask delete <subtask-id>
 
 ## Comments
 
-> Notes and updates on tasks
+> Your external memory - use extensively to preserve context and reasoning
+
+Comments are **critical for AI agents**. They persist beyond your context window and session boundaries. Use them to:
+- Store your analysis and reasoning
+- Save investigation results
+- Record decisions with rationale
+- Checkpoint progress before context resets
+- Document blockers and solutions
 
 ### Add Comment
 
@@ -240,19 +284,29 @@ trekker comment add <task-id> -a <author> -c <content>
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| \`-a, --author\` | Yes | Comment author name |
-| \`-c, --content\` | Yes | Comment text |
+| \`-a, --author\` | Yes | Comment author name (use "agent" for AI) |
+| \`-c, --content\` | Yes | Comment text (can be multi-line) |
 
-**Example:**
+**Examples:**
 \`\`\`bash
-trekker comment add TREK-1 -a "agent" -c "Started implementation, found edge case in auth flow"
+# Record analysis
+trekker comment add TREK-1 -a "agent" -c "Analyzed codebase: auth logic in src/auth/, uses JWT stored in httpOnly cookies"
+
+# Save progress checkpoint
+trekker comment add TREK-1 -a "agent" -c "Checkpoint: Completed steps 1-3. Next: implement validation. Files modified: auth.ts, routes.ts"
+
+# Document a blocker
+trekker comment add TREK-1 -a "agent" -c "BLOCKED: Need clarification on password requirements. Asked user, waiting for response."
 \`\`\`
 
 ### List Comments
 
 \`\`\`bash
 trekker comment list <task-id>
+trekker --json comment list <task-id>    # Get as JSON for parsing
 \`\`\`
+
+**Pro tip:** Always read comments when resuming work on a task - they contain your previous context!
 
 ### Update Comment
 
@@ -376,41 +430,110 @@ IDs are auto-generated and sequential within each type.
    trekker init
    \`\`\`
 
-2. **Create epic** for the feature you're working on:
+2. **Check existing state** (every session start):
+   \`\`\`bash
+   trekker --json task list --status in_progress   # See what's active
+   trekker --json comment list TREK-1              # Read your previous context
+   \`\`\`
+
+3. **Create epic** for the feature you're working on:
    \`\`\`bash
    trekker epic create -t "Feature Name" -d "Description"
    \`\`\`
 
-3. **Create tasks** for each piece of work:
+4. **Create tasks** for each piece of work:
    \`\`\`bash
    trekker task create -t "Task name" -e EPIC-1
    \`\`\`
 
-4. **Add dependencies** if tasks have ordering requirements:
+5. **Add dependencies** if tasks have ordering requirements:
    \`\`\`bash
    trekker dep add TREK-2 TREK-1
    \`\`\`
 
-5. **Update status** as you work:
+6. **Document your initial analysis** before starting work:
+   \`\`\`bash
+   trekker comment add TREK-1 -a "agent" -c "Analysis: Need to modify X, Y, Z. Approach: ..."
+   \`\`\`
+
+7. **Update status** as you work:
    \`\`\`bash
    trekker task update TREK-1 -s in_progress
    \`\`\`
 
-6. **Add comments** for progress notes or decisions:
+8. **Add comments frequently** - this is your external memory:
    \`\`\`bash
-   trekker comment add TREK-1 -a "agent" -c "Found issue with X, solving with Y"
+   # After investigating
+   trekker comment add TREK-1 -a "agent" -c "Found: auth logic in src/auth.ts:45-80"
+
+   # After making a decision
+   trekker comment add TREK-1 -a "agent" -c "Decision: Using approach X because Y"
+
+   # Before context might reset
+   trekker comment add TREK-1 -a "agent" -c "Checkpoint: Completed A, B. Next: C, D"
    \`\`\`
 
-7. **Mark complete** when done:
+9. **Mark complete** when done:
    \`\`\`bash
    trekker task update TREK-1 -s completed
+   trekker comment add TREK-1 -a "agent" -c "Completed. Summary: Implemented X in files A, B, C."
    \`\`\`
 
-8. **Use JSON output** for parsing:
-   \`\`\`bash
-   trekker --json task list
-   trekker --json task show TREK-1
-   \`\`\`
+10. **Use JSON output** for parsing:
+    \`\`\`bash
+    trekker --json task list
+    trekker --json task show TREK-1
+    \`\`\`
+
+---
+
+## Context Management Strategies
+
+AI agents have limited context windows. Use Trekker to extend your effective memory:
+
+### Starting a New Session
+
+Always begin by reading your previous state:
+\`\`\`bash
+# What was I working on?
+trekker --json task list --status in_progress
+
+# What did I learn/decide?
+trekker --json comment list TREK-1
+\`\`\`
+
+### During Long Tasks
+
+Periodically checkpoint your progress:
+\`\`\`bash
+trekker comment add TREK-1 -a "agent" -c "Progress: Steps 1-3 done. Current state: X. Next: Y. Blockers: Z."
+\`\`\`
+
+### Before Context Window Fills Up
+
+When you notice context getting large, dump your current mental state:
+\`\`\`bash
+trekker comment add TREK-1 -a "agent" -c "Context dump:
+- Working on: implementing login validation
+- Files involved: auth.ts (modified lines 45-80), routes.ts (new endpoint at line 120)
+- Current approach: using existing validateEmail() from utils
+- Remaining work: add rate limiting, write tests
+- Open questions: unclear if we need refresh tokens"
+\`\`\`
+
+### After Solving a Problem
+
+Document the solution so future-you doesn't repeat the investigation:
+\`\`\`bash
+trekker comment add TREK-1 -a "agent" -c "Solved: JWT verification failing. Root cause: clock skew. Fix: added 30s leeway in verify(). See auth.ts:67."
+\`\`\`
+
+### When Blocked
+
+Record what you're waiting for:
+\`\`\`bash
+trekker comment add TREK-1 -a "agent" -c "BLOCKED: Need user input on password complexity requirements. Asked in conversation. Current assumption: min 8 chars, 1 number."
+\`\`\`
 
 ---
 
@@ -453,6 +576,33 @@ trekker task update TREK-1 -s completed
 trekker subtask create TREK-2 -t "Set up Redis connection"
 trekker subtask create TREK-2 -t "Implement increment logic"
 trekker subtask create TREK-2 -t "Add TTL handling"
+\`\`\`
+
+### Resume work after context reset
+
+\`\`\`bash
+# 1. Find what you were working on
+trekker --json task list --status in_progress
+
+# 2. Read your previous comments to restore context
+trekker --json comment list TREK-1
+
+# 3. Read task details for full picture
+trekker --json task show TREK-1
+
+# 4. Continue work with restored context
+\`\`\`
+
+### Save context before stopping
+
+\`\`\`bash
+# Dump everything you know before session ends
+trekker comment add TREK-1 -a "agent" -c "Session end checkpoint:
+- Completed: login endpoint, validation
+- In progress: rate limiting (50% done, see middleware.ts:30)
+- Files modified: auth.ts, routes.ts, middleware.ts
+- Next steps: finish rate limiter, add tests
+- Notes: user prefers 100 req/min limit"
 \`\`\`
 `;
 

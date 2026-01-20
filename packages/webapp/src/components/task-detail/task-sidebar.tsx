@@ -3,6 +3,7 @@
 import { DetailsSection, LinksSection, SubtasksSection } from "./sidebar";
 import { Metadata } from "@/components/shared";
 import type { Task, Epic } from "@/types";
+import { CommentSection } from "../comment-section";
 
 interface TaskSidebarProps {
   task: Task;
@@ -26,7 +27,7 @@ export function TaskSidebar({
   getTaskById,
 }: TaskSidebarProps) {
   return (
-    <div className="bg-muted/30 rounded-b-md">
+    <div className="bg-muted/50 rounded-b-md">
       <div className="p-4 space-y-6">
         <DetailsSection
           task={task}
@@ -44,9 +45,11 @@ export function TaskSidebar({
         />
 
         <SubtasksSection subtasks={subtasks} onTaskClick={onTaskClick} />
+        <Metadata createdAt={task.createdAt} updatedAt={task.updatedAt} />
       </div>
 
-      <Metadata createdAt={task.createdAt} updatedAt={task.updatedAt} />
+
+      <CommentSection taskId={task.id} />
     </div>
   );
 }

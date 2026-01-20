@@ -76,11 +76,6 @@ export function TaskView({
               )}
             </div>
 
-            {/* Comments section */}
-            <div className="px-4 pb-4">
-              <CommentSection taskId={task.id} />
-            </div>
-
             {/* Sidebar - now at bottom for better scrolling */}
             <TaskSidebar
               task={{ ...task, status, priority }}

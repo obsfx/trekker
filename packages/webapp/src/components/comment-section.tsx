@@ -116,7 +116,7 @@ export function CommentSection({ taskId }: CommentSectionProps) {
   };
 
   return (
-    <div className="pt-4 mt-4 border-t">
+    <div className="p-4 mt-4 border-t">
       <h4 className="text-sm font-medium mb-3">
         Comments {comments.length > 0 && `(${comments.length})`}
       </h4>

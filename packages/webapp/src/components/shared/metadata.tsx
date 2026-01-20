@@ -9,7 +9,7 @@ interface MetadataProps {
 
 export function Metadata({ createdAt, updatedAt }: MetadataProps) {
   return (
-    <div className="p-4 border-t flex gap-3 justify-end">
+    <div className="flex gap-3 justify-end">
       <p className="text-xs text-muted-foreground">
         Created {formatRelative(createdAt)}
       </p>
