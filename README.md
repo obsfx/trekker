@@ -1,6 +1,6 @@
 # Trekker
 
-A CLI issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database with a built-in kanban board. No server required.
+A CLI issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database. No server required.
 
 ## Install
 
@@ -24,7 +24,7 @@ My concerns about the future and security of that project led me here. Trekker i
 
 What you get:
 - Task and epic tracking with dependencies
-- Built-in kanban board UI with real-time updates
+- Optional kanban board UI available as a [separate package](https://github.com/obsfx/trekker-dashboard)
 - No special directory required. The .trekker folder stays local to your project.
 - No hook integrations. Just task management.
 
@@ -146,13 +146,13 @@ This gives Claude Code native access to Trekker commands through MCP. The agent 
 
 See [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) for more details.
 
-## JSON Output
+## TOON Output
 
-Add the `--json` flag to any command for structured output:
+Add the `--toon` flag to any command for structured output in [TOON format](https://github.com/tooners/toon). TOON is a token-efficient serialization format designed for AI agents, using fewer tokens than JSON while remaining machine-readable:
 
 ```bash
-trekker --json task list
-trekker --json task show TREK-1
+trekker --toon task list
+trekker --toon task show TREK-1
 ```
 
 ## Status Values
