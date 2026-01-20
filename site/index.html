@@ -15,173 +15,314 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #fff;
-      color: #111;
-      line-height: 1.7;
+      color: #1a1a1a;
+      line-height: 1.6;
       font-size: 16px;
-      padding: 60px 24px;
     }
 
     .container {
-      max-width: 600px;
+      max-width: 1000px;
       margin: 0 auto;
+      padding: 0 40px;
     }
 
     a {
-      color: #111;
+      color: #22c55e;
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
 
-    h1 {
-      font-size: 2rem;
-      font-weight: 500;
-      margin-bottom: 12px;
+    a:hover {
+      color: #16a34a;
+    }
+
+    /* Header */
+    header {
+      padding: 40px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 40px;
+    }
+
+    .header-left h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
-    h1 svg {
-      width: 32px;
-      height: 32px;
+    .header-left h1 svg {
+      width: 24px;
+      height: 24px;
+      color: #22c55e;
     }
 
-    .links {
-      margin-bottom: 8px;
-    }
-
-    .links a {
-      margin-right: 4px;
-    }
-
-    .links span {
-      color: #888;
-      margin-right: 4px;
-    }
-
-    .tagline {
+    .header-left p {
       color: #666;
-      margin-bottom: 40px;
+      font-size: 0.95rem;
+      max-width: 400px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 20px;
+      font-size: 0.9rem;
+    }
+
+    .header-right a {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .header-right svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* Sections */
+    section {
+      padding: 60px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    section:last-of-type {
+      border-bottom: none;
     }
 
     h2 {
-      font-size: 1rem;
+      font-size: 0.8rem;
       font-weight: 500;
-      margin-top: 40px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #999;
+      margin-bottom: 20px;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
       margin-bottom: 16px;
     }
 
     p {
+      color: #444;
       margin-bottom: 16px;
-      color: #333;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Install */
+    .install-box {
+      background: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+
+    pre {
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.8;
     }
 
     code {
       font-family: 'SF Mono', Menlo, Consolas, monospace;
       background: #f5f5f5;
       padding: 2px 6px;
-      border-radius: 3px;
+      border-radius: 4px;
       font-size: 0.9em;
     }
 
-    pre {
-      background: #f5f5f5;
-      padding: 16px;
-      border-radius: 6px;
-      overflow-x: auto;
-      font-family: 'SF Mono', Menlo, Consolas, monospace;
-      font-size: 0.9rem;
-      line-height: 1.6;
-      margin-bottom: 16px;
-    }
-
-    pre code {
-      background: none;
-      padding: 0;
-    }
-
     .prefix {
-      color: #888;
+      color: #999;
       user-select: none;
     }
 
     .output {
+      color: #22c55e;
+    }
+
+    /* Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      margin-top: 24px;
+    }
+
+    .feature h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature p {
+      font-size: 0.95rem;
       color: #666;
     }
 
+    /* Screenshot */
     .screenshot {
-      background: #f5f5f5;
-      border-radius: 6px;
-      aspect-ratio: 16/9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #888;
-      font-size: 0.9rem;
-      margin-bottom: 16px;
+      margin-top: 32px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #eee;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
     .screenshot img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 6px;
+      display: block;
     }
 
-    ul {
-      margin-left: 20px;
-      margin-bottom: 16px;
-      color: #333;
+    /* Usage */
+    .usage-example {
+      background: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 24px;
+      margin-top: 24px;
     }
 
-    li {
-      margin-bottom: 4px;
+    /* Agent Setup */
+    .agent-tips {
+      margin-top: 24px;
     }
 
+    .agent-tips ul {
+      list-style: none;
+      margin: 0;
+    }
+
+    .agent-tips li {
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      color: #444;
+    }
+
+    .agent-tips li:last-child {
+      border-bottom: none;
+    }
+
+    /* Footer */
     footer {
-      margin-top: 60px;
-      color: #888;
+      padding: 40px 0;
+      text-align: center;
+      color: #999;
       font-size: 0.9rem;
+    }
+
+    footer a {
+      color: #999;
+    }
+
+    footer a:hover {
+      color: #22c55e;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 20px;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 3v12" />
-        <path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-        <path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-        <path d="M15 6a9 9 0 0 0-9 9" />
-        <path d="M18 15v6" />
-        <path d="M21 18h-6" />
-      </svg>
-      trekker
-    </h1>
-    <div class="links">
-      <a href="https://github.com/obsfx/trekker">github</a> <span>|</span>
-      <a href="https://www.npmjs.com/package/@obsfx/trekker">npm</a> <span>|</span>
-      <a href="https://github.com/obsfx/trekker-dashboard">dashboard</a> <span>|</span>
-      <a href="https://github.com/obsfx/trekker-claude-code">claude code</a>
-    </div>
-    <p class="tagline">issue tracking for ai coding agents</p>
+    <header>
+      <div class="header-content">
+        <div class="header-left">
+          <h1>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3v12" />
+              <path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+              <path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+              <path d="M15 6a9 9 0 0 0-9 9" />
+              <path d="M18 15v6" />
+              <path d="M21 18h-6" />
+            </svg>
+            trekker
+          </h1>
+          <p>Issue tracking for AI coding agents. Local SQLite database. No server, no accounts, no sync.</p>
+        </div>
+        <div class="header-right">
+          <a href="https://github.com/obsfx/trekker">GitHub</a>
+          <a href="https://www.npmjs.com/package/@obsfx/trekker">npm</a>
+          <a href="https://github.com/obsfx/trekker-dashboard">Dashboard</a>
+          <a href="https://github.com/obsfx/trekker-claude-code">Claude Code</a>
+        </div>
+      </div>
+    </header>
 
-    <h2>why i built this</h2>
-    <p>I built this after using <a href="https://github.com/beads-ai/beads-cli">beads</a> for a while. beads does the job, but its codebase has grown quickly without enough care for what is happening inside. a task tracker is a simple application. it should not need thousands of lines of code.</p>
-    <p>I noticed AI coding agents kept losing track of what they were doing. They'd start a task, hit a bug, go down a rabbit hole, and forget the original goal entirely. They needed a way to write down their own work and come back to it.</p>
-    <p>Trekker is a simple CLI that agents can use to manage their own tasks. Create tasks, update status, add comments. The agent controls the todo list, so it stays focused even across sessions. Local SQLite database. No server, no accounts, no sync. Just a <code>.trekker</code> folder in your project.</p>
+    <section>
+      <h2>Background</h2>
+      <h3>Why I built this</h3>
+      <p>I built this after using <a href="https://github.com/beads-ai/beads-cli">beads</a> for a while. It does the job, but its codebase has grown quickly without enough care for what's happening inside. A task tracker is a simple application. It should not need thousands of lines of code.</p>
+      <p>I noticed AI coding agents kept losing track of what they were doing. They'd start a task, hit a bug, go down a rabbit hole, and forget the original goal entirely. They needed a way to write down their own work and come back to it.</p>
+      <p>Trekker is a simple CLI that agents can use to manage their own tasks. Create tasks, update status, add comments. The agent controls the todo list, so it stays focused even across sessions.</p>
+    </section>
 
-    <h2>install</h2>
-    <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker
+    <section>
+      <h2>Install</h2>
+      <h3>Get started in seconds</h3>
+      <p>Install globally via npm, then initialize in your project directory.</p>
+      <div class="install-box">
+        <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker
 <span class="prefix">$ </span>trekker init
 <span class="output">✓ Project initialized: my-project</span></code></pre>
+      </div>
+    </section>
 
-    <h2>features</h2>
-    <p><strong>task management</strong> - create, update, and track tasks with priorities (0-5) and descriptions. uses JIRA-style IDs (TREK-1, TREK-2) that agents can easily reference.</p>
-    <p><strong>epics & dependencies</strong> - group tasks into epics. set dependencies between tasks to define execution order. prevents circular dependencies.</p>
-    <p><strong>local sqlite</strong> - data stays in your project. no accounts, no configuration, no sync needed.</p>
-    <p><strong>toon output</strong> - every command supports <code>--toon</code> for structured, machine-readable output.</p>
+    <section>
+      <h2>Features</h2>
+      <h3>Everything an agent needs</h3>
+      <div class="features-grid">
+        <div class="feature">
+          <h4>Task Management</h4>
+          <p>Create, update, and track tasks with priorities (0-5) and descriptions. Uses JIRA-style IDs (TREK-1, TREK-2) that agents can easily reference.</p>
+        </div>
+        <div class="feature">
+          <h4>Epics & Dependencies</h4>
+          <p>Group tasks into epics. Set dependencies between tasks to define execution order. Prevents circular dependencies automatically.</p>
+        </div>
+        <div class="feature">
+          <h4>Local SQLite</h4>
+          <p>Data stays in your project. No accounts, no configuration, no sync needed. Just a <code>.trekker</code> folder in your project root.</p>
+        </div>
+        <div class="feature">
+          <h4>TOON Output</h4>
+          <p>Every command supports <code>--toon</code> for structured, machine-readable output that AI agents can parse reliably.</p>
+        </div>
+      </div>
+    </section>
 
-    <h2>usage</h2>
-    <pre><code><span class="prefix">$ </span>trekker task create -t "Build user authentication" -p 1
+    <section>
+      <h2>Usage</h2>
+      <h3>Simple commands</h3>
+      <p>The CLI is designed to be intuitive for both humans and AI agents.</p>
+      <div class="usage-example">
+        <pre><code><span class="prefix">$ </span>trekker task create -t "Build user authentication" -p 1
 <span class="output">✓ Task created: TREK-1</span>
 
 <span class="prefix">$ </span>trekker task update TREK-1 -s in_progress
@@ -192,37 +333,40 @@
 
 <span class="prefix">$ </span>trekker task list
 <span class="output">TREK-1 | completed   | P1 | Build user authentication</span></code></pre>
+      </div>
+    </section>
 
-    <h2>dashboard</h2>
-    <p>visual kanban board that reads from the same SQLite database. drag tasks between columns, see what's in progress, track your agent's work visually.</p>
-    <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker-dashboard
+    <section>
+      <h2>Dashboard</h2>
+      <h3>Visual kanban board</h3>
+      <p>Install the separate dashboard package to get a visual kanban board that reads from the same SQLite database. Drag tasks between columns, see what's in progress, track your agent's work visually.</p>
+      <div class="install-box">
+        <pre><code><span class="prefix">$ </span>npm install -g @obsfx/trekker-dashboard
 <span class="prefix">$ </span>trekker-dashboard -p 3000
 <span class="output">Dashboard running at http://localhost:3000</span></code></pre>
-    <div class="screenshot" id="screenshot-1">screenshot placeholder</div>
+      </div>
+      <div class="screenshot" id="screenshot-1">
+        <img src="images/dashboard-1.png" alt="Trekker Dashboard - Kanban board view">
+      </div>
+    </section>
 
-    <h2>setup for ai agents</h2>
-    <p>add to your agent's context (system prompt, CLAUDE.md, or similar):</p>
-    <ul>
-      <li>use trekker to track your work. run <code>trekker quickstart</code> to learn the commands.</li>
-      <li>before starting: check <code>trekker task list</code> and mark your task <code>in_progress</code></li>
-      <li>after finishing: mark the task <code>completed</code> and add a comment with <code>trekker comment add</code></li>
-    </ul>
-    <p>now the agent has persistent memory. it can start a session, check its task list, and continue exactly where it left off.</p>
+    <section>
+      <h2>Setup for AI Agents</h2>
+      <h3>Give your agent persistent memory</h3>
+      <p>Add these instructions to your agent's context (system prompt, CLAUDE.md, or similar):</p>
+      <div class="agent-tips">
+        <ul>
+          <li>Use trekker to track your work. Run <code>trekker quickstart</code> to learn the commands.</li>
+          <li>Before starting: check <code>trekker task list</code> and mark your task <code>in_progress</code></li>
+          <li>After finishing: mark the task <code>completed</code> and add a comment with <code>trekker comment add</code></li>
+        </ul>
+      </div>
+      <p style="margin-top: 24px;">Now the agent has persistent memory. It can start a session, check its task list, and continue exactly where it left off.</p>
+    </section>
 
     <footer>
       made by <a href="https://github.com/obsfx">obsfx</a>
     </footer>
   </div>
-
-  <script>
-    var imgEl = document.createElement('img');
-    imgEl.src = 'images/dashboard-1.png';
-    imgEl.alt = 'Dashboard screenshot';
-    imgEl.onload = function() {
-      var container = document.getElementById('screenshot-1');
-      container.textContent = '';
-      container.appendChild(imgEl);
-    };
-  </script>
 </body>
 </html>
