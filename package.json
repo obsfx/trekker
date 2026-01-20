@@ -15,7 +15,10 @@
     "build": "bun build src/index.ts --outdir dist --target bun --external commander --external drizzle-orm",
     "dev": "bun run src/index.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "release:patch": "npm version patch && npm run build && npm publish --access public",
+    "release:minor": "npm version minor && npm run build && npm publish --access public",
+    "release:major": "npm version major && npm run build && npm publish --access public"
   },
   "keywords": [
     "cli",
