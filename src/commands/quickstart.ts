@@ -14,6 +14,123 @@ As an AI agent, you should use Trekker to:
 - **Offload context** - store your reasoning, findings, and state externally so you can recover after context resets
 - **Persist memory** - comments survive context window limits and session boundaries
 
+---
+
+## Critical Rules for AI Agents
+
+These rules are **non-negotiable**. Following them ensures continuity across sessions and prevents lost context.
+
+### 1. ALWAYS Update Task Status
+
+**Never leave a task in the wrong status.** Status reflects reality and helps you (and future sessions) understand what's happening.
+
+- Set to \`in_progress\` **immediately** when you start working on a task
+- Set to \`completed\` **only after** you've verified the work is done
+- Set to \`wont_fix\` or \`archived\` if the task is no longer relevant
+- **Before ending any session**: ensure all task statuses are accurate
+
+\`\`\`bash
+# Starting work
+trekker task update TREK-1 -s in_progress
+
+# Finishing work
+trekker task update TREK-1 -s completed
+\`\`\`
+
+**Why this matters:** If you forget to update status, the next session (or another agent) won't know what's actually done. They'll either duplicate work or miss incomplete tasks.
+
+### 2. ALWAYS Add a Summary Comment Before Moving On
+
+**Before moving to a new task, document what you did on the current one.** This is your handoff to your future self.
+
+Every task completion should include a comment with:
+- **What was implemented** (files changed, functions added)
+- **Key decisions made** and why
+- **Any gotchas or important notes** for future reference
+- **Testing done** or verification steps taken
+
+\`\`\`bash
+# Before marking complete, add a summary
+trekker comment add TREK-1 -a "agent" -c "Completed: Implemented JWT auth endpoint.
+- Added POST /api/auth/login in routes/auth.ts (lines 45-80)
+- Created validateCredentials() in services/auth.ts
+- Chose bcrypt for hashing (better library support than argon2)
+- Tested: valid login returns token, invalid returns 401
+- Note: Token expires in 24h, configurable via JWT_EXPIRY env var"
+
+# Then mark complete
+trekker task update TREK-1 -s completed
+\`\`\`
+
+**Why this matters:** Comments are your external memory. Without a summary, you lose all the context and reasoning from your work session.
+
+### 3. Use Epic Descriptions for Implementation Plans
+
+**Epic descriptions are your design documents.** Don't put brief one-liners—use them to capture the full implementation plan.
+
+An epic description should include:
+- **Goal and scope** - what problem are we solving?
+- **Architecture overview** - how will components fit together?
+- **Implementation phases** - what order should tasks follow?
+- **Technical decisions** - chosen approaches and rationale
+- **API contracts** - endpoints, request/response formats
+- **Data models** - schema changes, new entities
+- **Edge cases and constraints** - what to watch out for
+
+\`\`\`bash
+trekker epic create -t "User Authentication System" -d "## Goal
+Implement secure user authentication with JWT tokens.
+
+## Architecture
+- Auth service handles token generation/validation
+- Middleware intercepts requests and verifies tokens
+- Redis stores refresh tokens for revocation support
+
+## Implementation Phases
+1. Basic JWT auth (login, token generation)
+2. Refresh token mechanism
+3. Password reset flow
+4. Rate limiting on auth endpoints
+
+## API Endpoints
+- POST /api/auth/login - {email, password} -> {accessToken, refreshToken}
+- POST /api/auth/refresh - {refreshToken} -> {accessToken}
+- POST /api/auth/logout - invalidates refresh token
+- POST /api/auth/forgot-password - sends reset email
+
+## Data Model
+- users table: id, email, passwordHash, createdAt, updatedAt
+- refresh_tokens table: id, userId, token, expiresAt, revokedAt
+
+## Security Considerations
+- Passwords hashed with bcrypt (cost factor 12)
+- Access tokens expire in 15 minutes
+- Refresh tokens expire in 7 days
+- Rate limit: 5 login attempts per minute per IP"
+\`\`\`
+
+**Why this matters:** When you start a new session, the epic description tells you the full plan. You won't have to re-derive the architecture or remember why certain decisions were made.
+
+### 4. Archive Completed Work
+
+**When a feature is fully done, move everything to \`archived\` status.** This keeps the active task list clean and signals that work is truly finished.
+
+- Archive tasks after they've been completed and verified
+- Archive the epic once all its tasks are done
+- Archived items stay in the database for reference but don't clutter active views
+
+\`\`\`bash
+# After all tasks in an epic are completed
+trekker task update TREK-1 -s archived
+trekker task update TREK-2 -s archived
+trekker task update TREK-3 -s archived
+trekker epic update EPIC-1 -s archived
+\`\`\`
+
+**Why this matters:** A clean task list helps you focus on what's actually in progress. Archived items preserve history without noise.
+
+---
+
 ## Best Practices for AI Agents
 
 ### Creating Epics

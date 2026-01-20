@@ -171,6 +171,21 @@ Trekker creates a `.trekker` directory in your project root containing `trekker.
 
 Run `trekker quickstart` to see the full guide with best practices for creating atomic tasks, writing good descriptions, and managing dependencies.
 
+## How I Use It
+
+This is my personal workflow for getting the most out of Trekker with AI agents:
+
+- **Always mention Trekker in prompts.** I include "use trekker" in my instructions so the agent knows to track its work.
+
+- **Point agents to the quickstart.** I tell the agent it can run `trekker quickstart` to learn how to use Trekker properly. This gives it all the context it needs without me having to explain everything.
+
+- **Use the dashboard for visibility.** I run [trekker-dashboard](https://github.com/obsfx/trekker-dashboard) to visually track what the agent is doing. It shows tasks on a kanban board and auto-refreshes, so I can monitor progress in real-time.
+
+Example prompt snippet:
+```
+Use trekker to track your work. Run `trekker quickstart` if you need to learn how it works.
+```
+
 ## License
 
 MIT
