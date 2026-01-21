@@ -1,0 +1,24 @@
+---
+import '../styles/global.css';
+import { Page } from '../components/Page';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>trekker - CLI Task Tracker for AI Agents</title>
+    <meta name="description" content="Track tasks, epics, and dependencies from your terminal. Local SQLite database. No server required." />
+    <link rel="icon" type="image/svg+xml" href="/trekker/favicon.svg" />
+    <script is:inline>
+      (function() {
+        const theme = localStorage.getItem('theme') ||
+          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <Page client:load />
+  </body>
+</html>
