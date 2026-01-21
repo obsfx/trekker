@@ -3,15 +3,29 @@
 import { existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { spawnSync } from "child_process";
 
 // Check if running in Bun runtime
-const isBun = typeof globalThis.Bun !== "undefined";
+const isBun = typeof Bun !== "undefined";
 
 if (!isBun) {
+  // Not running in Bun - check if Bun is available and re-execute with it
+  const bunCheck = spawnSync("bun", ["--version"], { stdio: "ignore" });
+
+  if (bunCheck.status === 0) {
+    // Bun is available, re-execute this script with Bun
+    const scriptPath = fileURLToPath(import.meta.url);
+    const result = spawnSync("bun", [scriptPath, ...process.argv.slice(2)], {
+      stdio: "inherit",
+    });
+    process.exit(result.status ?? 1);
+  }
+
+  // Bun is not installed
   console.error(`
 Trekker requires Bun runtime.
 
-Bun is not installed or you're running this with Node.js.
+Bun is not installed on your system.
 Trekker uses bun:sqlite for database operations. This is a deliberate choice:
 bun:sqlite is significantly faster than Node.js SQLite drivers, making CLI
 operations feel instant.
