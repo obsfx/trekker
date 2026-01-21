@@ -24,6 +24,8 @@ My concerns about the future and security of that project led me here. Trekker i
 
 What you get:
 - Task and epic tracking with dependencies
+- Full-text search across tasks, epics, subtasks, and comments
+- Unified list view with filtering by type, status, priority, and custom sorting
 - Optional kanban board UI available as a [separate package](https://github.com/obsfx/trekker-dashboard)
 - No special directory required. The .trekker folder stays local to your project.
 - No hook integrations. Just task management.
@@ -196,7 +198,7 @@ See [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) for more
 
 ## TOON Output
 
-Add the `--toon` flag to any command for structured output in [TOON format](https://github.com/tooners/toon). TOON is a token-efficient serialization format designed for AI agents, using fewer tokens than JSON while remaining machine-readable:
+Add the `--toon` flag to any command for structured output in [TOON format](https://github.com/toon-format/toon). TOON is a token-efficient serialization format designed for AI agents, using fewer tokens than JSON while remaining machine-readable:
 
 ```bash
 trekker --toon task list
