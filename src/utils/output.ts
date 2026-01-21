@@ -1,5 +1,5 @@
 import { encode } from "@toon-format/toon";
-import type { Epic, Task, Comment, Dependency, Project } from "../types";
+import type { Epic, Task, Comment } from "../types";
 
 let toonMode = false;
 
@@ -40,6 +40,42 @@ export function error(message: string, details?: unknown): void {
     if (details) {
       console.error(details);
     }
+  }
+}
+
+/**
+ * Handles command errors with consistent formatting and exits with code 1.
+ * Use in catch blocks to replace duplicate error handling patterns.
+ */
+export function handleCommandError(err: unknown): never {
+  error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
+}
+
+/**
+ * Handles entity not found with error message and exits with code 1.
+ */
+export function handleNotFound(entityType: string, id: string): never {
+  error(`${entityType} not found: ${id}`);
+  process.exit(1);
+}
+
+/**
+ * Outputs result in appropriate format (toon or standard).
+ * Reduces duplicate if/else branching in commands.
+ */
+export function outputResult<T>(
+  data: T,
+  formatter: (data: T) => string,
+  successMessage?: string
+): void {
+  if (isToonMode()) {
+    output(data);
+  } else {
+    if (successMessage) {
+      success(successMessage);
+    }
+    console.log(formatter(data));
   }
 }
 

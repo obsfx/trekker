@@ -9,11 +9,11 @@ import {
 import { parseStatus, parsePriority, validateRequired } from "../utils/validator";
 import {
   success,
-  error,
-  output,
   formatTask,
   formatTaskList,
-  isToonMode,
+  handleCommandError,
+  handleNotFound,
+  outputResult,
 } from "../utils/output";
 import type { TaskStatus } from "../types";
 
@@ -41,15 +41,9 @@ taskCommand
         epicId: options.epic,
       });
 
-      if (isToonMode()) {
-        output(task);
-      } else {
-        success(`Task created: ${task.id}`);
-        console.log(formatTask(task));
-      }
+      outputResult(task, formatTask, `Task created: ${task.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -64,17 +58,12 @@ taskCommand
       const tasks = listTasks({
         status,
         epicId: options.epic,
-        parentTaskId: null, // Only list top-level tasks by default
+        parentTaskId: null,
       });
 
-      if (isToonMode()) {
-        output(tasks);
-      } else {
-        console.log(formatTaskList(tasks));
-      }
+      outputResult(tasks, formatTaskList);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -84,20 +73,11 @@ taskCommand
   .action((taskId) => {
     try {
       const task = getTask(taskId);
+      if (!task) return handleNotFound("Task", taskId);
 
-      if (!task) {
-        error(`Task not found: ${taskId}`);
-        process.exit(1);
-      }
-
-      if (isToonMode()) {
-        output(task);
-      } else {
-        console.log(formatTask(task));
-      }
+      outputResult(task, formatTask);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -118,9 +98,7 @@ taskCommand
       if (options.title !== undefined) updateInput.title = options.title;
       if (options.description !== undefined) updateInput.description = options.description;
       if (options.priority !== undefined) updateInput.priority = parsePriority(options.priority);
-      if (options.status !== undefined) {
-        updateInput.status = parseStatus(options.status, "task");
-      }
+      if (options.status !== undefined) updateInput.status = parseStatus(options.status, "task");
       if (options.tags !== undefined) updateInput.tags = options.tags;
       if (options.epic === false) {
         updateInput.epicId = null;
@@ -129,16 +107,9 @@ taskCommand
       }
 
       const task = updateTask(taskId, updateInput);
-
-      if (isToonMode()) {
-        output(task);
-      } else {
-        success(`Task updated: ${task.id}`);
-        console.log(formatTask(task));
-      }
+      outputResult(task, formatTask, `Task updated: ${task.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -150,7 +121,6 @@ taskCommand
       deleteTask(taskId);
       success(`Task deleted: ${taskId}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });

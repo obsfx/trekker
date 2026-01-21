@@ -8,6 +8,10 @@ import type {
   UpdateEpicInput,
   EpicStatus,
 } from "../types";
+import {
+  DEFAULT_PRIORITY,
+  DEFAULT_EPIC_STATUS,
+} from "../types";
 
 export function createEpic(input: CreateEpicInput): Epic {
   const db = getDb();
@@ -25,8 +29,8 @@ export function createEpic(input: CreateEpicInput): Epic {
     projectId: project.id,
     title: input.title,
     description: input.description ?? null,
-    status: (input.status ?? "todo") as EpicStatus,
-    priority: input.priority ?? 2,
+    status: input.status ?? DEFAULT_EPIC_STATUS,
+    priority: input.priority ?? DEFAULT_PRIORITY,
     createdAt: now,
     updatedAt: now,
   };

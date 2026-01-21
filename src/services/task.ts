@@ -8,6 +8,10 @@ import type {
   UpdateTaskInput,
   TaskStatus,
 } from "../types";
+import {
+  DEFAULT_PRIORITY,
+  DEFAULT_TASK_STATUS,
+} from "../types";
 
 export function createTask(input: CreateTaskInput): Task {
   const db = getDb();
@@ -47,8 +51,8 @@ export function createTask(input: CreateTaskInput): Task {
     parentTaskId: input.parentTaskId ?? null,
     title: input.title,
     description: input.description ?? null,
-    priority: input.priority ?? 2,
-    status: (input.status ?? "todo") as TaskStatus,
+    priority: input.priority ?? DEFAULT_PRIORITY,
+    status: input.status ?? DEFAULT_TASK_STATUS,
     tags: input.tags ?? null,
     createdAt: now,
     updatedAt: now,

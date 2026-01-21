@@ -6,15 +6,13 @@ import {
 } from "../services/dependency";
 import {
   success,
-  error,
-  output,
   formatDependencyList,
+  handleCommandError,
   isToonMode,
+  output,
 } from "../utils/output";
 
-export const depCommand = new Command("dep").description(
-  "Manage task dependencies"
-);
+export const depCommand = new Command("dep").description("Manage task dependencies");
 
 depCommand
   .command("add <task-id> <depends-on-id>")
@@ -29,8 +27,7 @@ depCommand
         success(`Dependency added: ${taskId} → depends on ${dependsOnId}`);
       }
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -42,8 +39,7 @@ depCommand
       removeDependency(taskId, dependsOnId);
       success(`Dependency removed: ${taskId} → ${dependsOnId}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -64,7 +60,6 @@ depCommand
         console.log(formatDependencyList(blocks, "blocks"));
       }
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });

@@ -4,21 +4,19 @@ import {
   listComments,
   updateComment,
   deleteComment,
-  getComment,
 } from "../services/comment";
 import { validateRequired } from "../utils/validator";
 import {
   success,
-  error,
-  output,
   formatComment,
   formatCommentList,
+  handleCommandError,
+  outputResult,
   isToonMode,
+  output,
 } from "../utils/output";
 
-export const commentCommand = new Command("comment").description(
-  "Manage comments"
-);
+export const commentCommand = new Command("comment").description("Manage comments");
 
 commentCommand
   .command("add <task-id>")
@@ -36,15 +34,9 @@ commentCommand
         content: options.content,
       });
 
-      if (isToonMode()) {
-        output(comment);
-      } else {
-        success(`Comment added: ${comment.id}`);
-        console.log(formatComment(comment));
-      }
+      outputResult(comment, formatComment, `Comment added: ${comment.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -66,8 +58,7 @@ commentCommand
         }
       }
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -83,15 +74,9 @@ commentCommand
         content: options.content,
       });
 
-      if (isToonMode()) {
-        output(comment);
-      } else {
-        success(`Comment updated: ${comment.id}`);
-        console.log(formatComment(comment));
-      }
+      outputResult(comment, formatComment, `Comment updated: ${comment.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -103,7 +88,6 @@ commentCommand
       deleteComment(commentId);
       success(`Comment deleted: ${commentId}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });

@@ -14,6 +14,8 @@
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target bun --external commander --external drizzle-orm",
     "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "release:patch": "npm version patch && npm run build && npm publish --access public",

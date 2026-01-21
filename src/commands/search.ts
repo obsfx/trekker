@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import { search, rebuildSearchIndex } from "../services/search";
 import type { SearchEntityType, SearchResponse } from "../services/search";
-import { error, output, isToonMode } from "../utils/output";
+import { handleCommandError, outputResult } from "../utils/output";
+import { validatePagination, validateSearchEntityTypes } from "../utils/validator";
 
 export const searchCommand = new Command("search")
   .description("Search across epics, tasks, subtasks, and comments")
@@ -17,45 +18,26 @@ export const searchCommand = new Command("search")
         rebuildSearchIndex();
       }
 
-      const types = options.type
-        ? (options.type.split(",").map((t: string) => t.trim()) as SearchEntityType[])
-        : undefined;
-
       const limit = parseInt(options.limit, 10);
       const page = parseInt(options.page, 10);
+      validatePagination(limit, page);
 
-      if (isNaN(limit) || limit < 1) {
-        throw new Error("Invalid limit value");
-      }
-      if (isNaN(page) || page < 1) {
-        throw new Error("Invalid page value");
-      }
+      const types = options.type
+        ? options.type.split(",").map((t: string) => t.trim())
+        : undefined;
 
-      // Validate types
-      const validTypes = ["epic", "task", "subtask", "comment"];
-      if (types) {
-        for (const t of types) {
-          if (!validTypes.includes(t)) {
-            throw new Error(`Invalid type: ${t}. Valid types: ${validTypes.join(", ")}`);
-          }
-        }
-      }
+      if (types) validateSearchEntityTypes(types);
 
       const result = search(query, {
-        types,
+        types: types as SearchEntityType[] | undefined,
         status: options.status,
         limit,
         page,
       });
 
-      if (isToonMode()) {
-        output(result);
-      } else {
-        console.log(formatSearchResults(result));
-      }
+      outputResult(result, formatSearchResults);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -84,7 +66,6 @@ function formatSearchResults(result: SearchResponse): string {
     lines.push("");
   }
 
-  // Pagination info
   const totalPages = Math.ceil(result.total / result.limit);
   if (totalPages > 1) {
     lines.push(`Page ${result.page} of ${totalPages}`);

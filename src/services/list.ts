@@ -1,6 +1,11 @@
-import { getDb, getSqliteInstance } from "../db/client";
+import { requireSqliteInstance } from "../db/client";
+import {
+  VALID_SORT_FIELDS,
+  PAGINATION_DEFAULTS,
+  type ListEntityType,
+} from "../types";
 
-export type ListEntityType = "epic" | "task" | "subtask";
+export type { ListEntityType };
 
 export interface ListOptions {
   types?: ListEntityType[];
@@ -31,18 +36,11 @@ export interface ListResponse {
   items: ListItem[];
 }
 
-const VALID_SORT_FIELDS = ["created", "updated", "title", "priority", "status"];
-
 export function listAll(options?: ListOptions): ListResponse {
-  // Ensure database is initialized
-  getDb();
-  const sqlite = getSqliteInstance();
-  if (!sqlite) {
-    throw new Error("Database not initialized");
-  }
+  const sqlite = requireSqliteInstance();
 
-  const limit = options?.limit ?? 50;
-  const page = options?.page ?? 1;
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.LIST_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
   const offset = (page - 1) * limit;
 
   // Build filter conditions
@@ -146,7 +144,7 @@ export function parseSort(sortStr: string): { field: string; direction: "asc" | 
   for (const part of parts) {
     const [field, dir] = part.split(":").map((s) => s.trim().toLowerCase());
 
-    if (!VALID_SORT_FIELDS.includes(field)) {
+    if (!(VALID_SORT_FIELDS as readonly string[]).includes(field)) {
       throw new Error(`Invalid sort field: ${field}. Valid fields: ${VALID_SORT_FIELDS.join(", ")}`);
     }
 
@@ -156,5 +154,3 @@ export function parseSort(sortStr: string): { field: string; direction: "asc" | 
 
   return result;
 }
-
-export { VALID_SORT_FIELDS };

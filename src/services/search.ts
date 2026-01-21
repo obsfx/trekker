@@ -1,6 +1,7 @@
-import { getDb, getSqliteInstance, rebuildSearchIndex } from "../db/client";
+import { requireSqliteInstance, rebuildSearchIndex } from "../db/client";
+import { PAGINATION_DEFAULTS, type SearchEntityType } from "../types";
 
-export type SearchEntityType = "epic" | "task" | "subtask" | "comment";
+export type { SearchEntityType };
 
 export interface SearchOptions {
   types?: SearchEntityType[];
@@ -28,18 +29,12 @@ export interface SearchResponse {
 }
 
 export function search(query: string, options?: SearchOptions): SearchResponse {
-  // Ensure database is initialized
-  getDb();
-  const sqlite = getSqliteInstance();
-  if (!sqlite) {
-    throw new Error("Database not initialized");
-  }
+  const sqlite = requireSqliteInstance();
 
-  const limit = options?.limit ?? 20;
-  const page = options?.page ?? 1;
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.SEARCH_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
   const offset = (page - 1) * limit;
 
-  // Build WHERE conditions
   const conditions: string[] = ["search_index MATCH ?"];
   const params: (string | number)[] = [query];
 
@@ -56,7 +51,6 @@ export function search(query: string, options?: SearchOptions): SearchResponse {
 
   const whereClause = conditions.join(" AND ");
 
-  // Count total results
   const countQuery = `
     SELECT COUNT(*) as total
     FROM search_index
@@ -65,7 +59,6 @@ export function search(query: string, options?: SearchOptions): SearchResponse {
   const countResult = sqlite.query(countQuery).get(...params) as { total: number };
   const total = countResult?.total ?? 0;
 
-  // Get paginated results with relevance scoring and snippets
   const searchQuery = `
     SELECT
       entity_id,
@@ -101,7 +94,7 @@ export function search(query: string, options?: SearchOptions): SearchResponse {
       id: row.entity_id,
       title: row.title,
       snippet: row.snippet,
-      score: Math.abs(row.score), // Convert negative bm25 score to positive for readability
+      score: Math.abs(row.score),
       status: row.status || null,
       parentId: row.parent_id || null,
     })),

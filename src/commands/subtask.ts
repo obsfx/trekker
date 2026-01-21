@@ -10,16 +10,17 @@ import { parseStatus, parsePriority, validateRequired } from "../utils/validator
 import {
   success,
   error,
-  output,
   formatTask,
   formatTaskList,
+  handleCommandError,
+  handleNotFound,
+  outputResult,
   isToonMode,
+  output,
 } from "../utils/output";
 import type { TaskStatus } from "../types";
 
-export const subtaskCommand = new Command("subtask").description(
-  "Manage subtasks"
-);
+export const subtaskCommand = new Command("subtask").description("Manage subtasks");
 
 subtaskCommand
   .command("create <parent-task-id>")
@@ -32,12 +33,8 @@ subtaskCommand
     try {
       validateRequired(options.title, "Title");
 
-      // Validate parent task exists
       const parent = getTask(parentTaskId);
-      if (!parent) {
-        error(`Parent task not found: ${parentTaskId}`);
-        process.exit(1);
-      }
+      if (!parent) return handleNotFound("Parent task", parentTaskId);
 
       const subtask = createTask({
         title: options.title,
@@ -45,18 +42,12 @@ subtaskCommand
         priority: parsePriority(options.priority),
         status: parseStatus(options.status, "task") as TaskStatus | undefined,
         parentTaskId,
-        epicId: parent.epicId ?? undefined, // Inherit epic from parent
+        epicId: parent.epicId ?? undefined,
       });
 
-      if (isToonMode()) {
-        output(subtask);
-      } else {
-        success(`Subtask created: ${subtask.id}`);
-        console.log(formatTask(subtask));
-      }
+      outputResult(subtask, formatTask, `Subtask created: ${subtask.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -65,12 +56,8 @@ subtaskCommand
   .description("List all subtasks of a task")
   .action((parentTaskId) => {
     try {
-      // Validate parent task exists
       const parent = getTask(parentTaskId);
-      if (!parent) {
-        error(`Parent task not found: ${parentTaskId}`);
-        process.exit(1);
-      }
+      if (!parent) return handleNotFound("Parent task", parentTaskId);
 
       const subtasks = listSubtasks(parentTaskId);
 
@@ -85,8 +72,7 @@ subtaskCommand
         }
       }
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -100,10 +86,7 @@ subtaskCommand
   .action((subtaskId, options) => {
     try {
       const subtask = getTask(subtaskId);
-      if (!subtask) {
-        error(`Subtask not found: ${subtaskId}`);
-        process.exit(1);
-      }
+      if (!subtask) return handleNotFound("Subtask", subtaskId);
 
       if (!subtask.parentTaskId) {
         error(`${subtaskId} is not a subtask. Use 'trekker task update' instead.`);
@@ -111,25 +94,15 @@ subtaskCommand
       }
 
       const updateInput: Record<string, unknown> = {};
-
       if (options.title !== undefined) updateInput.title = options.title;
       if (options.description !== undefined) updateInput.description = options.description;
       if (options.priority !== undefined) updateInput.priority = parsePriority(options.priority);
-      if (options.status !== undefined) {
-        updateInput.status = parseStatus(options.status, "task");
-      }
+      if (options.status !== undefined) updateInput.status = parseStatus(options.status, "task");
 
       const updated = updateTask(subtaskId, updateInput);
-
-      if (isToonMode()) {
-        output(updated);
-      } else {
-        success(`Subtask updated: ${updated.id}`);
-        console.log(formatTask(updated));
-      }
+      outputResult(updated, formatTask, `Subtask updated: ${updated.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -139,10 +112,7 @@ subtaskCommand
   .action((subtaskId) => {
     try {
       const subtask = getTask(subtaskId);
-      if (!subtask) {
-        error(`Subtask not found: ${subtaskId}`);
-        process.exit(1);
-      }
+      if (!subtask) return handleNotFound("Subtask", subtaskId);
 
       if (!subtask.parentTaskId) {
         error(`${subtaskId} is not a subtask. Use 'trekker task delete' instead.`);
@@ -152,7 +122,6 @@ subtaskCommand
       deleteTask(subtaskId);
       success(`Subtask deleted: ${subtaskId}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });

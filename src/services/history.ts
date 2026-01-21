@@ -1,4 +1,5 @@
-import { getDb, getSqliteInstance } from "../db/client";
+import { requireSqliteInstance } from "../db/client";
+import { PAGINATION_DEFAULTS } from "../types";
 
 export type HistoryEntityType = "epic" | "task" | "subtask" | "comment" | "dependency";
 export type HistoryAction = "create" | "update" | "delete";
@@ -31,15 +32,10 @@ export interface HistoryResponse {
 }
 
 export function getHistory(options?: HistoryOptions): HistoryResponse {
-  // Ensure database is initialized
-  getDb();
-  const sqlite = getSqliteInstance();
-  if (!sqlite) {
-    throw new Error("Database not initialized");
-  }
+  const sqlite = requireSqliteInstance();
 
-  const limit = options?.limit ?? 50;
-  const page = options?.page ?? 1;
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.HISTORY_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
   const offset = (page - 1) * limit;
 
   // Build WHERE conditions

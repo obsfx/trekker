@@ -445,6 +445,8 @@ function migrateHistoryTable(sqlite: Database): void {
 }
 
 export function rebuildSearchIndex(): void {
+  // Ensure database is initialized first
+  getDb();
   const sqlite = getSqliteInstance();
   if (!sqlite) {
     throw new Error("Database not initialized");
@@ -456,6 +458,14 @@ export function rebuildSearchIndex(): void {
 }
 
 export function getSqliteInstance(): Database | null {
+  return sqliteInstance;
+}
+
+export function requireSqliteInstance(): Database {
+  getDb();
+  if (!sqliteInstance) {
+    throw new Error("Database not initialized");
+  }
   return sqliteInstance;
 }
 

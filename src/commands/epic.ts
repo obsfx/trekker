@@ -10,17 +10,17 @@ import {
 import { parseStatus, parsePriority, validateRequired } from "../utils/validator";
 import {
   success,
-  error,
-  output,
   formatEpic,
   formatEpicList,
+  handleCommandError,
+  handleNotFound,
+  outputResult,
   isToonMode,
+  output,
 } from "../utils/output";
 import type { EpicStatus } from "../types";
 
-export const epicCommand = new Command("epic").description(
-  "Manage epics"
-);
+export const epicCommand = new Command("epic").description("Manage epics");
 
 epicCommand
   .command("create")
@@ -40,15 +40,9 @@ epicCommand
         status: parseStatus(options.status, "epic") as EpicStatus | undefined,
       });
 
-      if (isToonMode()) {
-        output(epic);
-      } else {
-        success(`Epic created: ${epic.id}`);
-        console.log(formatEpic(epic));
-      }
+      outputResult(epic, formatEpic, `Epic created: ${epic.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -61,14 +55,9 @@ epicCommand
       const status = parseStatus(options.status, "epic") as EpicStatus | undefined;
       const epics = listEpics(status);
 
-      if (isToonMode()) {
-        output(epics);
-      } else {
-        console.log(formatEpicList(epics));
-      }
+      outputResult(epics, formatEpicList);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -78,20 +67,11 @@ epicCommand
   .action((epicId) => {
     try {
       const epic = getEpic(epicId);
+      if (!epic) return handleNotFound("Epic", epicId);
 
-      if (!epic) {
-        error(`Epic not found: ${epicId}`);
-        process.exit(1);
-      }
-
-      if (isToonMode()) {
-        output(epic);
-      } else {
-        console.log(formatEpic(epic));
-      }
+      outputResult(epic, formatEpic);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -111,15 +91,9 @@ epicCommand
         status: parseStatus(options.status, "epic") as EpicStatus | undefined,
       });
 
-      if (isToonMode()) {
-        output(epic);
-      } else {
-        success(`Epic updated: ${epic.id}`);
-        console.log(formatEpic(epic));
-      }
+      outputResult(epic, formatEpic, `Epic updated: ${epic.id}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -131,8 +105,7 @@ epicCommand
       deleteEpic(epicId);
       success(`Epic deleted: ${epicId}`);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -150,7 +123,6 @@ epicCommand
         console.log(`Archived ${result.archived.tasks} task(s) and ${result.archived.subtasks} subtask(s)`);
       }
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });

@@ -1,9 +1,13 @@
 import {
   TASK_STATUSES,
   EPIC_STATUSES,
+  LIST_ENTITY_TYPES,
+  SEARCH_ENTITY_TYPES,
   type TaskStatus,
   type EpicStatus,
   type Priority,
+  type ListEntityType,
+  type SearchEntityType,
 } from "../types";
 
 export function isValidTaskStatus(status: string): status is TaskStatus {
@@ -59,5 +63,38 @@ export function validateRequired(
 ): asserts value is string {
   if (value === undefined || value === null || value === "") {
     throw new Error(`${fieldName} is required`);
+  }
+}
+
+export function validatePagination(limit: number, page: number): void {
+  if (isNaN(limit) || limit < 1) {
+    throw new Error("Invalid limit value");
+  }
+  if (isNaN(page) || page < 1) {
+    throw new Error("Invalid page value");
+  }
+}
+
+export function validateListEntityTypes(types: string[]): asserts types is ListEntityType[] {
+  for (const t of types) {
+    if (!LIST_ENTITY_TYPES.includes(t as ListEntityType)) {
+      throw new Error(`Invalid type: ${t}. Valid types: ${LIST_ENTITY_TYPES.join(", ")}`);
+    }
+  }
+}
+
+export function validateSearchEntityTypes(types: string[]): asserts types is SearchEntityType[] {
+  for (const t of types) {
+    if (!SEARCH_ENTITY_TYPES.includes(t as SearchEntityType)) {
+      throw new Error(`Invalid type: ${t}. Valid types: ${SEARCH_ENTITY_TYPES.join(", ")}`);
+    }
+  }
+}
+
+export function validatePriorities(priorities: number[]): void {
+  for (const p of priorities) {
+    if (isNaN(p) || p < 0 || p > 5) {
+      throw new Error(`Invalid priority: ${p}. Valid priorities: 0-5`);
+    }
   }
 }

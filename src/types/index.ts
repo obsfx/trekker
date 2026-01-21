@@ -21,6 +21,37 @@ export type EpicStatus = (typeof EPIC_STATUSES)[number];
 // Priority type (0-5, where 0 is highest priority)
 export type Priority = 0 | 1 | 2 | 3 | 4 | 5;
 
+// Default values
+export const DEFAULT_PRIORITY: Priority = 2;
+export const DEFAULT_TASK_STATUS: TaskStatus = "todo";
+export const DEFAULT_EPIC_STATUS: EpicStatus = "todo";
+
+// Pagination defaults
+export const PAGINATION_DEFAULTS = {
+  LIST_PAGE_SIZE: 50,
+  SEARCH_PAGE_SIZE: 20,
+  HISTORY_PAGE_SIZE: 50,
+  DEFAULT_PAGE: 1,
+} as const;
+
+// Valid sort fields for list operations
+export const VALID_SORT_FIELDS = [
+  "created",
+  "updated",
+  "title",
+  "priority",
+  "status",
+] as const;
+
+export type SortField = (typeof VALID_SORT_FIELDS)[number];
+
+// Valid entity types for list/search operations
+export const LIST_ENTITY_TYPES = ["epic", "task", "subtask"] as const;
+export const SEARCH_ENTITY_TYPES = ["epic", "task", "subtask", "comment"] as const;
+
+export type ListEntityType = (typeof LIST_ENTITY_TYPES)[number];
+export type SearchEntityType = (typeof SEARCH_ENTITY_TYPES)[number];
+
 // Entity types
 export interface Project {
   id: string;

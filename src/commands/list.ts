@@ -1,11 +1,16 @@
 import { Command } from "commander";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { listAll, parseSort, VALID_SORT_FIELDS } from "../services/list";
+import { listAll, parseSort } from "../services/list";
+import type { ListEntityType, ListResponse, ListItem } from "../services/list";
+import { handleCommandError, outputResult } from "../utils/output";
+import {
+  validatePagination,
+  validateListEntityTypes,
+  validatePriorities,
+} from "../utils/validator";
 
 dayjs.extend(customParseFormat);
-import type { ListEntityType, ListResponse, ListItem } from "../services/list";
-import { error, output, isToonMode } from "../utils/output";
 
 export const listCommand = new Command("list")
   .description("List all epics, tasks, and subtasks")
@@ -19,9 +24,15 @@ export const listCommand = new Command("list")
   .option("--page <n>", "Page number (default: 1)", "1")
   .action((options) => {
     try {
+      const limit = parseInt(options.limit, 10);
+      const page = parseInt(options.page, 10);
+      validatePagination(limit, page);
+
       const types = options.type
-        ? (options.type.split(",").map((t: string) => t.trim()) as ListEntityType[])
+        ? options.type.split(",").map((t: string) => t.trim())
         : undefined;
+
+      if (types) validateListEntityTypes(types);
 
       const statuses = options.status
         ? options.status.split(",").map((s: string) => s.trim())
@@ -31,36 +42,8 @@ export const listCommand = new Command("list")
         ? options.priority.split(",").map((p: string) => parseInt(p.trim(), 10))
         : undefined;
 
-      const limit = parseInt(options.limit, 10);
-      const page = parseInt(options.page, 10);
+      if (priorities) validatePriorities(priorities);
 
-      if (isNaN(limit) || limit < 1) {
-        throw new Error("Invalid limit value");
-      }
-      if (isNaN(page) || page < 1) {
-        throw new Error("Invalid page value");
-      }
-
-      // Validate types
-      const validTypes = ["epic", "task", "subtask"];
-      if (types) {
-        for (const t of types) {
-          if (!validTypes.includes(t)) {
-            throw new Error(`Invalid type: ${t}. Valid types: ${validTypes.join(", ")}`);
-          }
-        }
-      }
-
-      // Validate priorities
-      if (priorities) {
-        for (const p of priorities) {
-          if (isNaN(p) || p < 0 || p > 5) {
-            throw new Error(`Invalid priority: ${p}. Valid priorities: 0-5`);
-          }
-        }
-      }
-
-      // Parse sort
       let sort;
       try {
         sort = parseSort(options.sort);
@@ -68,28 +51,18 @@ export const listCommand = new Command("list")
         throw new Error(`Invalid sort: ${err instanceof Error ? err.message : String(err)}`);
       }
 
-      // Parse dates
-      let since: Date | undefined;
-      let until: Date | undefined;
-
-      if (options.since) {
-        since = parseDate(options.since);
-        if (!since) {
-          throw new Error("Invalid since date. Use YYYY-MM-DD format.");
-        }
+      const since = parseDate(options.since);
+      if (options.since && !since) {
+        throw new Error("Invalid since date. Use YYYY-MM-DD format.");
       }
 
-      if (options.until) {
-        const parsedUntil = dayjs(options.until, "YYYY-MM-DD", true);
-        if (!parsedUntil.isValid()) {
-          throw new Error("Invalid until date. Use YYYY-MM-DD format.");
-        }
-        // Set to end of day
-        until = parsedUntil.endOf("day").toDate();
+      const until = parseUntilDate(options.until);
+      if (options.until && !until) {
+        throw new Error("Invalid until date. Use YYYY-MM-DD format.");
       }
 
       const result = listAll({
-        types,
+        types: types as ListEntityType[] | undefined,
         statuses,
         priorities,
         since,
@@ -99,23 +72,22 @@ export const listCommand = new Command("list")
         page,
       });
 
-      if (isToonMode()) {
-        output(result);
-      } else {
-        console.log(formatListResults(result));
-      }
+      outputResult(result, formatListResults);
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
-function parseDate(dateStr: string): Date | undefined {
+function parseDate(dateStr: string | undefined): Date | undefined {
+  if (!dateStr) return undefined;
   const parsed = dayjs(dateStr, "YYYY-MM-DD", true);
-  if (!parsed.isValid()) {
-    return undefined;
-  }
-  return parsed.toDate();
+  return parsed.isValid() ? parsed.toDate() : undefined;
+}
+
+function parseUntilDate(dateStr: string | undefined): Date | undefined {
+  if (!dateStr) return undefined;
+  const parsed = dayjs(dateStr, "YYYY-MM-DD", true);
+  return parsed.isValid() ? parsed.endOf("day").toDate() : undefined;
 }
 
 function formatListResults(result: ListResponse): string {
@@ -129,12 +101,10 @@ function formatListResults(result: ListResponse): string {
     return lines.join("\n");
   }
 
-  // Table format
   for (const item of result.items) {
     lines.push(formatItem(item));
   }
 
-  // Pagination info
   const totalPages = Math.ceil(result.total / result.limit);
   if (totalPages > 1) {
     lines.push("");
