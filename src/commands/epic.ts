@@ -5,6 +5,7 @@ import {
   listEpics,
   updateEpic,
   deleteEpic,
+  completeEpic,
 } from "../services/epic";
 import { parseStatus, parsePriority, validateRequired } from "../utils/validator";
 import {
@@ -129,6 +130,25 @@ epicCommand
     try {
       deleteEpic(epicId);
       success(`Epic deleted: ${epicId}`);
+    } catch (err) {
+      error(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+  });
+
+epicCommand
+  .command("complete <epic-id>")
+  .description("Complete an epic and archive all its tasks and subtasks")
+  .action((epicId) => {
+    try {
+      const result = completeEpic(epicId);
+
+      if (isToonMode()) {
+        output(result);
+      } else {
+        success(`Epic completed: ${result.epic}`);
+        console.log(`Archived ${result.archived.tasks} task(s) and ${result.archived.subtasks} subtask(s)`);
+      }
     } catch (err) {
       error(err instanceof Error ? err.message : String(err));
       process.exit(1);

@@ -83,6 +83,7 @@ trekker epic create -t <title> [-d <desc>] [-p <0-5>] [-s <status>]
 trekker epic list [--status <status>]
 trekker epic show <epic-id>
 trekker epic update <epic-id> [options]
+trekker epic complete <epic-id>  # Complete epic and archive all tasks/subtasks
 trekker epic delete <epic-id>
 ```
 
@@ -120,6 +121,53 @@ trekker comment delete <comment-id>
 trekker dep add <task-id> <depends-on-id>
 trekker dep remove <task-id> <depends-on-id>
 trekker dep list <task-id>
+```
+
+### Search
+
+Full-text search across epics, tasks, subtasks, and comments using FTS5:
+
+```bash
+trekker search <query> [--type <types>] [--status <status>] [--limit <n>] [--page <n>]
+```
+
+Examples:
+```bash
+trekker search "authentication"                          # Search all entities
+trekker search "bug fix" --type task,subtask             # Search only tasks and subtasks
+trekker search "login" --type comment --status completed # Search comments in completed items
+```
+
+### History
+
+View audit log of all changes (creates, updates, deletes):
+
+```bash
+trekker history [--entity <id>] [--type <types>] [--action <actions>] [--since <date>] [--until <date>]
+```
+
+Examples:
+```bash
+trekker history                                  # All events
+trekker history --entity TREK-1                  # Events for specific entity
+trekker history --type task --action update      # Only task updates
+trekker history --since 2025-01-01 --limit 20    # Events after date
+```
+
+### List
+
+Unified view of all epics, tasks, and subtasks:
+
+```bash
+trekker list [--type <types>] [--status <statuses>] [--priority <levels>] [--sort <fields>]
+```
+
+Examples:
+```bash
+trekker list                                     # All items, newest first
+trekker list --type task --status in_progress    # Active tasks only
+trekker list --priority 0,1 --sort priority:asc  # Critical/high priority first
+trekker list --sort title:asc,created:desc       # Sort by title, then by date
 ```
 
 ### Web Interface

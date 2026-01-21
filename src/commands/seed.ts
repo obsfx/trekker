@@ -4,8 +4,9 @@ import { createEpic } from "../services/epic";
 import { createTask } from "../services/task";
 import { addDependency } from "../services/dependency";
 import { success, error, info } from "../utils/output";
+import type { Priority } from "../types";
 
-const SAMPLE_EPICS = [
+const SAMPLE_EPICS: Array<{ title: string; description: string; priority: Priority; status: string }> = [
   {
     title: "User Authentication",
     description: "Implement user authentication and authorization system",
@@ -32,7 +33,7 @@ const SAMPLE_EPICS = [
   },
 ];
 
-const SAMPLE_TASKS = [
+const SAMPLE_TASKS: Array<{ epicIndex: number | null; title: string; description: string; priority: Priority; status: string; tags: string }> = [
   // Auth tasks
   {
     epicIndex: 0,
@@ -168,7 +169,7 @@ const SAMPLE_TASKS = [
   },
 ];
 
-const SAMPLE_SUBTASKS = [
+const SAMPLE_SUBTASKS: Array<{ parentIndex: number; title: string; status: string; priority: Priority }> = [
   {
     parentIndex: 1, // JWT token handling
     title: "Implement access token generation",

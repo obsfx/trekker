@@ -49,6 +49,7 @@
   "dependencies": {
     "@toon-format/toon": "^2.1.0",
     "commander": "^13.1.0",
+    "dayjs": "^1.11.19",
     "drizzle-orm": "^0.38.4"
   },
   "devDependencies": {

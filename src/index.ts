@@ -9,6 +9,9 @@ import { commentCommand } from "./commands/comment";
 import { depCommand } from "./commands/dep";
 import { quickstartCommand } from "./commands/quickstart";
 import { seedCommand } from "./commands/seed";
+import { searchCommand } from "./commands/search";
+import { historyCommand } from "./commands/history";
+import { listCommand } from "./commands/list";
 import { setToonMode } from "./utils/output";
 import pkg from "../package.json";
 
@@ -36,6 +39,9 @@ program.addCommand(commentCommand);
 program.addCommand(depCommand);
 program.addCommand(quickstartCommand);
 program.addCommand(seedCommand);
+program.addCommand(searchCommand);
+program.addCommand(historyCommand);
+program.addCommand(listCommand);
 
 // Parse and execute
 program.parse();

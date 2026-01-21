@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, and, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "../db/client";
-import { epics, projects } from "../db/schema";
+import { epics, projects, tasks } from "../db/schema";
 import { generateId } from "../utils/id-generator";
 import type {
   Epic,
@@ -87,4 +87,78 @@ export function deleteEpic(id: string): void {
   }
 
   db.delete(epics).where(eq(epics.id, id)).run();
+}
+
+export interface CompleteEpicResult {
+  epic: string;
+  status: string;
+  archived: {
+    tasks: number;
+    subtasks: number;
+  };
+}
+
+export function completeEpic(id: string): CompleteEpicResult {
+  const db = getDb();
+
+  const existing = getEpic(id);
+  if (!existing) {
+    throw new Error(`Epic not found: ${id}`);
+  }
+
+  if (existing.status === "completed") {
+    throw new Error(`Epic is already completed: ${id}`);
+  }
+
+  // Get all tasks under this epic (not subtasks)
+  const epicTasks = db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.epicId, id), isNull(tasks.parentTaskId)))
+    .all();
+
+  const taskIds = epicTasks.map((t) => t.id);
+
+  // Get all subtasks of those tasks
+  let subtaskCount = 0;
+  if (taskIds.length > 0) {
+    for (const taskId of taskIds) {
+      const subtasks = db
+        .select()
+        .from(tasks)
+        .where(eq(tasks.parentTaskId, taskId))
+        .all();
+
+      subtaskCount += subtasks.length;
+
+      // Archive subtasks
+      if (subtasks.length > 0) {
+        db.update(tasks)
+          .set({ status: "archived", updatedAt: new Date() })
+          .where(eq(tasks.parentTaskId, taskId))
+          .run();
+      }
+    }
+
+    // Archive tasks
+    db.update(tasks)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(and(eq(tasks.epicId, id), isNull(tasks.parentTaskId)))
+      .run();
+  }
+
+  // Complete the epic
+  db.update(epics)
+    .set({ status: "completed", updatedAt: new Date() })
+    .where(eq(epics.id, id))
+    .run();
+
+  return {
+    epic: id,
+    status: "completed",
+    archived: {
+      tasks: taskIds.length,
+      subtasks: subtaskCount,
+    },
+  };
 }
