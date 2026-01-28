@@ -102,6 +102,7 @@ export async function ensureModelLoaded(options?: EmbeddingOptions): Promise<boo
       extractor = await (pipeline as Function)("feature-extraction", MODEL_ID, {
         cache_dir: CACHE_DIR,
         quantized: true,
+        dtype: "fp32",
         progress_callback: createProgressCallback(silent),
       }) as FeatureExtractor;
 

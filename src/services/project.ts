@@ -1,27 +1,27 @@
-import { getDb, createDb, isTrekkerInitialized, deleteDb } from "../db/client";
+import { getDb, createDb, isTrekkerInitialized, deleteDb } from "../db/client-node";
 import { projects } from "../db/schema";
 import { generateUuid } from "../utils/id-generator";
 import { basename } from "path";
 
-export function initProject(cwd: string = process.cwd()): void {
+export async function initProject(cwd: string = process.cwd()): Promise<void> {
   if (isTrekkerInitialized(cwd)) {
     throw new Error("Trekker is already initialized in this directory.");
   }
 
-  const db = createDb(cwd);
+  const db = await createDb(cwd);
   const projectName = basename(cwd);
   const now = new Date();
 
-  db.insert(projects).values({
+  await db.insert(projects).values({
     id: generateUuid(),
     name: projectName,
     createdAt: now,
     updatedAt: now,
-  }).run();
+  });
 }
 
-export function getProject(cwd: string = process.cwd()) {
-  const db = getDb(cwd);
+export async function getProject(cwd: string = process.cwd()) {
+  const db = await getDb(cwd);
   return db.select().from(projects).get();
 }
 

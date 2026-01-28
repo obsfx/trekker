@@ -1,5 +1,5 @@
-import { eq, and, isNull, isNotNull } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { eq, and, isNull } from "drizzle-orm";
+import { getDb } from "../db/client-node";
 import { epics, projects, tasks } from "../db/schema";
 import { generateId } from "../utils/id-generator";
 import type {
@@ -13,11 +13,12 @@ import {
   DEFAULT_EPIC_STATUS,
 } from "../types";
 import { indexEntity, removeEntityIndex } from "./semantic-search";
+import { queueBackgroundTask } from "../utils/async";
 
-export function createEpic(input: CreateEpicInput): Epic {
-  const db = getDb();
+export async function createEpic(input: CreateEpicInput): Promise<Epic> {
+  const db = await getDb();
 
-  const project = db.select().from(projects).get();
+  const project = await db.select().from(projects).get();
   if (!project) {
     throw new Error("Project not found. Run 'trekker init' first.");
   }
@@ -36,40 +37,45 @@ export function createEpic(input: CreateEpicInput): Epic {
     updatedAt: now,
   };
 
-  db.insert(epics).values(epic).run();
+  await db.insert(epics).values(epic);
 
   // Queue embedding generation (non-blocking)
-  indexEntity(id, "epic", `${epic.title} ${epic.description ?? ""}`).catch(
-    () => {}
+  queueBackgroundTask(
+    indexEntity(id, "epic", `${epic.title} ${epic.description ?? ""}`),
+    `index ${id}`
   );
 
   return epic as Epic;
 }
 
-export function getEpic(id: string): Epic | undefined {
-  const db = getDb();
-  const result = db.select().from(epics).where(eq(epics.id, id)).get();
-  return result as Epic | undefined;
+export async function getEpic(id: string): Promise<Epic | undefined> {
+  const db = await getDb();
+  const result = await db.select().from(epics).where(eq(epics.id, id)).get();
+  // Workaround for drizzle-orm sqlite-proxy bug: empty result returns object with undefined values
+  if (!result || result.id === undefined) {
+    return undefined;
+  }
+  return result as Epic;
 }
 
-export function listEpics(status?: EpicStatus): Epic[] {
-  const db = getDb();
+export async function listEpics(status?: EpicStatus): Promise<Epic[]> {
+  const db = await getDb();
 
   if (status) {
-    return db
+    return await db
       .select()
       .from(epics)
       .where(eq(epics.status, status))
       .all() as Epic[];
   }
 
-  return db.select().from(epics).all() as Epic[];
+  return await db.select().from(epics).all() as Epic[];
 }
 
-export function updateEpic(id: string, input: UpdateEpicInput): Epic {
-  const db = getDb();
+export async function updateEpic(id: string, input: UpdateEpicInput): Promise<Epic> {
+  const db = await getDb();
 
-  const existing = getEpic(id);
+  const existing = await getEpic(id);
   if (!existing) {
     throw new Error(`Epic not found: ${id}`);
   }
@@ -83,37 +89,32 @@ export function updateEpic(id: string, input: UpdateEpicInput): Epic {
   if (input.status !== undefined) updates.status = input.status;
   if (input.priority !== undefined) updates.priority = input.priority;
 
-  db.update(epics).set(updates).where(eq(epics.id, id)).run();
+  await db.update(epics).set(updates).where(eq(epics.id, id));
 
   // Re-embed if title or description changed (non-blocking)
   if (input.title !== undefined || input.description !== undefined) {
-    const updated = getEpic(id)!;
-    indexEntity(
-      id,
-      "epic",
-      `${updated.title} ${updated.description ?? ""}`
-    ).catch(() => {});
+    const updated = (await getEpic(id))!;
+    queueBackgroundTask(
+      indexEntity(id, "epic", `${updated.title} ${updated.description ?? ""}`),
+      `reindex ${id}`
+    );
   }
 
-  return getEpic(id)!;
+  return (await getEpic(id))!;
 }
 
-export function deleteEpic(id: string): void {
-  const db = getDb();
+export async function deleteEpic(id: string): Promise<void> {
+  const db = await getDb();
 
-  const existing = getEpic(id);
+  const existing = await getEpic(id);
   if (!existing) {
     throw new Error(`Epic not found: ${id}`);
   }
 
-  // Remove from semantic index before deleting
-  try {
-    removeEntityIndex(id);
-  } catch {
-    // Ignore if semantic search not available
-  }
+  // Remove from semantic index (non-blocking)
+  queueBackgroundTask(removeEntityIndex(id), `remove index ${id}`);
 
-  db.delete(epics).where(eq(epics.id, id)).run();
+  await db.delete(epics).where(eq(epics.id, id));
 }
 
 export interface CompleteEpicResult {
@@ -125,10 +126,10 @@ export interface CompleteEpicResult {
   };
 }
 
-export function completeEpic(id: string): CompleteEpicResult {
-  const db = getDb();
+export async function completeEpic(id: string): Promise<CompleteEpicResult> {
+  const db = await getDb();
 
-  const existing = getEpic(id);
+  const existing = await getEpic(id);
   if (!existing) {
     throw new Error(`Epic not found: ${id}`);
   }
@@ -138,7 +139,7 @@ export function completeEpic(id: string): CompleteEpicResult {
   }
 
   // Get all tasks under this epic (not subtasks)
-  const epicTasks = db
+  const epicTasks = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.epicId, id), isNull(tasks.parentTaskId)))
@@ -150,7 +151,7 @@ export function completeEpic(id: string): CompleteEpicResult {
   let subtaskCount = 0;
   if (taskIds.length > 0) {
     for (const taskId of taskIds) {
-      const subtasks = db
+      const subtasks = await db
         .select()
         .from(tasks)
         .where(eq(tasks.parentTaskId, taskId))
@@ -160,25 +161,22 @@ export function completeEpic(id: string): CompleteEpicResult {
 
       // Archive subtasks
       if (subtasks.length > 0) {
-        db.update(tasks)
+        await db.update(tasks)
           .set({ status: "archived", updatedAt: new Date() })
-          .where(eq(tasks.parentTaskId, taskId))
-          .run();
+          .where(eq(tasks.parentTaskId, taskId));
       }
     }
 
     // Archive tasks
-    db.update(tasks)
+    await db.update(tasks)
       .set({ status: "archived", updatedAt: new Date() })
-      .where(and(eq(tasks.epicId, id), isNull(tasks.parentTaskId)))
-      .run();
+      .where(and(eq(tasks.epicId, id), isNull(tasks.parentTaskId)));
   }
 
   // Complete the epic
-  db.update(epics)
+  await db.update(epics)
     .set({ status: "completed", updatedAt: new Date() })
-    .where(eq(epics.id, id))
-    .run();
+    .where(eq(epics.id, id));
 
   return {
     epic: id,

@@ -11,6 +11,10 @@ export function isToonMode(): boolean {
   return toonMode;
 }
 
+export function resetOutput(): void {
+  toonMode = false;
+}
+
 export function output(data: unknown): void {
   if (toonMode) {
     console.log(encode(data));

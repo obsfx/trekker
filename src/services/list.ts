@@ -1,4 +1,4 @@
-import { requireSqliteInstance } from "../db/client";
+import { getDb, requireSqliteInstance } from "../db/client-node";
 import {
   VALID_SORT_FIELDS,
   PAGINATION_DEFAULTS,
@@ -36,7 +36,9 @@ export interface ListResponse {
   items: ListItem[];
 }
 
-export function listAll(options?: ListOptions): ListResponse {
+export async function listAll(options?: ListOptions): Promise<ListResponse> {
+  // Initialize database first (async with sql.js)
+  await getDb();
   const sqlite = requireSqliteInstance();
 
   const limit = options?.limit ?? PAGINATION_DEFAULTS.LIST_PAGE_SIZE;
@@ -97,19 +99,28 @@ export function listAll(options?: ListOptions): ListResponse {
   `;
 
   // Count total results
-  const countQuery = `SELECT COUNT(*) as total FROM (${baseQuery}) ${whereClause}`;
-  const countResult = sqlite.query(countQuery).get(...params) as { total: number };
-  const total = countResult?.total ?? 0;
+  const countSql = `SELECT COUNT(*) as total FROM (${baseQuery}) ${whereClause}`;
+  const stmt1 = sqlite.prepare(countSql);
+  stmt1.bind(params);
+  let total = 0;
+  if (stmt1.step()) {
+    const row = stmt1.getAsObject();
+    total = (row.total as number) ?? 0;
+  }
+  stmt1.free();
 
   // Get paginated results
-  const selectQuery = `
+  const selectSql = `
     SELECT * FROM (${baseQuery})
     ${whereClause}
     ${orderClause}
     LIMIT ? OFFSET ?
   `;
 
-  const results = sqlite.query(selectQuery).all(...params, limit, offset) as Array<{
+  const stmt2 = sqlite.prepare(selectSql);
+  stmt2.bind([...params, limit, offset]);
+
+  const results: Array<{
     type: string;
     id: string;
     title: string;
@@ -118,7 +129,12 @@ export function listAll(options?: ListOptions): ListResponse {
     parent_id: string | null;
     created_at: number;
     updated_at: number;
-  }>;
+  }> = [];
+
+  while (stmt2.step()) {
+    results.push(stmt2.getAsObject() as typeof results[0]);
+  }
+  stmt2.free();
 
   return {
     total,

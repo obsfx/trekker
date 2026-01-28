@@ -1,5 +1,5 @@
 import { eq, and, isNull } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { getDb } from "../db/client-node";
 import { tasks, projects, epics } from "../db/schema";
 import { generateId } from "../utils/id-generator";
 import type {
@@ -13,31 +13,35 @@ import {
   DEFAULT_TASK_STATUS,
 } from "../types";
 import { indexEntity, removeEntityIndex } from "./semantic-search";
+import { queueBackgroundTask } from "../utils/async";
 
-export function createTask(input: CreateTaskInput): Task {
-  const db = getDb();
+export async function createTask(input: CreateTaskInput): Promise<Task> {
+  const db = await getDb();
 
-  const project = db.select().from(projects).get();
-  if (!project) {
+  const project = await db.select().from(projects).get();
+  // Workaround for drizzle-orm sqlite-proxy bug: empty result returns object with undefined values
+  if (!project || project.id === undefined) {
     throw new Error("Project not found. Run 'trekker init' first.");
   }
 
   // Validate epic exists if provided
   if (input.epicId) {
-    const epic = db.select().from(epics).where(eq(epics.id, input.epicId)).get();
-    if (!epic) {
+    const epic = await db.select().from(epics).where(eq(epics.id, input.epicId)).get();
+    // Workaround for drizzle-orm sqlite-proxy bug
+    if (!epic || epic.id === undefined) {
       throw new Error(`Epic not found: ${input.epicId}`);
     }
   }
 
   // Validate parent task exists if provided
   if (input.parentTaskId) {
-    const parent = db
+    const parent = await db
       .select()
       .from(tasks)
       .where(eq(tasks.id, input.parentTaskId))
       .get();
-    if (!parent) {
+    // Workaround for drizzle-orm sqlite-proxy bug
+    if (!parent || parent.id === undefined) {
       throw new Error(`Parent task not found: ${input.parentTaskId}`);
     }
   }
@@ -59,29 +63,34 @@ export function createTask(input: CreateTaskInput): Task {
     updatedAt: now,
   };
 
-  db.insert(tasks).values(task).run();
+  await db.insert(tasks).values(task);
 
   // Queue embedding generation (non-blocking)
   const entityType = input.parentTaskId ? "subtask" : "task";
-  indexEntity(id, entityType, `${task.title} ${task.description ?? ""}`).catch(
-    () => {}
+  queueBackgroundTask(
+    indexEntity(id, entityType, `${task.title} ${task.description ?? ""}`),
+    `index ${id}`
   );
 
   return task as Task;
 }
 
-export function getTask(id: string): Task | undefined {
-  const db = getDb();
-  const result = db.select().from(tasks).where(eq(tasks.id, id)).get();
-  return result as Task | undefined;
+export async function getTask(id: string): Promise<Task | undefined> {
+  const db = await getDb();
+  const result = await db.select().from(tasks).where(eq(tasks.id, id)).get();
+  // Workaround for drizzle-orm sqlite-proxy bug: empty result returns object with undefined values
+  if (!result || result.id === undefined) {
+    return undefined;
+  }
+  return result as Task;
 }
 
-export function listTasks(options?: {
+export async function listTasks(options?: {
   status?: TaskStatus;
   epicId?: string;
   parentTaskId?: string | null;
-}): Task[] {
-  const db = getDb();
+}): Promise<Task[]> {
+  const db = await getDb();
 
   const conditions = [];
 
@@ -101,36 +110,36 @@ export function listTasks(options?: {
   }
 
   if (conditions.length > 0) {
-    return db
+    return await db
       .select()
       .from(tasks)
       .where(and(...conditions))
       .all() as Task[];
   }
 
-  return db.select().from(tasks).all() as Task[];
+  return await db.select().from(tasks).all() as Task[];
 }
 
-export function listSubtasks(parentTaskId: string): Task[] {
-  const db = getDb();
-  return db
+export async function listSubtasks(parentTaskId: string): Promise<Task[]> {
+  const db = await getDb();
+  return await db
     .select()
     .from(tasks)
     .where(eq(tasks.parentTaskId, parentTaskId))
     .all() as Task[];
 }
 
-export function updateTask(id: string, input: UpdateTaskInput): Task {
-  const db = getDb();
+export async function updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
+  const db = await getDb();
 
-  const existing = getTask(id);
+  const existing = await getTask(id);
   if (!existing) {
     throw new Error(`Task not found: ${id}`);
   }
 
   // Validate epic exists if provided
   if (input.epicId) {
-    const epic = db.select().from(epics).where(eq(epics.id, input.epicId)).get();
+    const epic = await db.select().from(epics).where(eq(epics.id, input.epicId)).get();
     if (!epic) {
       throw new Error(`Epic not found: ${input.epicId}`);
     }
@@ -147,37 +156,32 @@ export function updateTask(id: string, input: UpdateTaskInput): Task {
   if (input.tags !== undefined) updates.tags = input.tags;
   if (input.epicId !== undefined) updates.epicId = input.epicId;
 
-  db.update(tasks).set(updates).where(eq(tasks.id, id)).run();
+  await db.update(tasks).set(updates).where(eq(tasks.id, id));
 
   // Re-embed if title or description changed (non-blocking)
   if (input.title !== undefined || input.description !== undefined) {
-    const updated = getTask(id)!;
+    const updated = (await getTask(id))!;
     const entityType = updated.parentTaskId ? "subtask" : "task";
-    indexEntity(
-      id,
-      entityType,
-      `${updated.title} ${updated.description ?? ""}`
-    ).catch(() => {});
+    queueBackgroundTask(
+      indexEntity(id, entityType, `${updated.title} ${updated.description ?? ""}`),
+      `reindex ${id}`
+    );
   }
 
-  return getTask(id)!;
+  return (await getTask(id))!;
 }
 
-export function deleteTask(id: string): void {
-  const db = getDb();
+export async function deleteTask(id: string): Promise<void> {
+  const db = await getDb();
 
-  const existing = getTask(id);
+  const existing = await getTask(id);
   if (!existing) {
     throw new Error(`Task not found: ${id}`);
   }
 
-  // Remove from semantic index before deleting
-  try {
-    removeEntityIndex(id);
-  } catch {
-    // Ignore if semantic search not available
-  }
+  // Remove from semantic index (non-blocking)
+  queueBackgroundTask(removeEntityIndex(id), `remove index ${id}`);
 
   // Note: Subtasks and comments will be cascade deleted by SQLite
-  db.delete(tasks).where(eq(tasks.id, id)).run();
+  await db.delete(tasks).where(eq(tasks.id, id));
 }

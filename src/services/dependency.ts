@@ -1,24 +1,26 @@
-import { eq, or } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { eq } from "drizzle-orm";
+import { getDb } from "../db/client-node";
 import { dependencies, tasks } from "../db/schema";
 import { generateUuid } from "../utils/id-generator";
 import type { Dependency } from "../types";
 
-export function addDependency(taskId: string, dependsOnId: string): Dependency {
-  const db = getDb();
+export async function addDependency(taskId: string, dependsOnId: string): Promise<Dependency> {
+  const db = await getDb();
 
   // Validate both tasks exist
-  const task = db.select().from(tasks).where(eq(tasks.id, taskId)).get();
-  if (!task) {
+  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get();
+  // Workaround for drizzle-orm sqlite-proxy bug: empty result returns object with undefined values
+  if (!task || task.id === undefined) {
     throw new Error(`Task not found: ${taskId}`);
   }
 
-  const dependsOnTask = db
+  const dependsOnTask = await db
     .select()
     .from(tasks)
     .where(eq(tasks.id, dependsOnId))
     .get();
-  if (!dependsOnTask) {
+  // Workaround for drizzle-orm sqlite-proxy bug
+  if (!dependsOnTask || dependsOnTask.id === undefined) {
     throw new Error(`Task not found: ${dependsOnId}`);
   }
 
@@ -28,21 +30,20 @@ export function addDependency(taskId: string, dependsOnId: string): Dependency {
   }
 
   // Check if dependency already exists
-  const existing = db
+  const existingDeps = await db
     .select()
     .from(dependencies)
-    .where(
-      eq(dependencies.taskId, taskId)
-    )
-    .all()
-    .find((d) => d.dependsOnId === dependsOnId);
+    .where(eq(dependencies.taskId, taskId))
+    .all();
+
+  const existing = existingDeps.find((d) => d.dependsOnId === dependsOnId);
 
   if (existing) {
     throw new Error(`Dependency already exists: ${taskId} → ${dependsOnId}`);
   }
 
   // Check for cycles
-  if (wouldCreateCycle(taskId, dependsOnId)) {
+  if (await wouldCreateCycle(taskId, dependsOnId)) {
     throw new Error(
       `Adding this dependency would create a cycle. ${dependsOnId} already depends on ${taskId} (directly or transitively).`
     );
@@ -58,36 +59,37 @@ export function addDependency(taskId: string, dependsOnId: string): Dependency {
     createdAt: now,
   };
 
-  db.insert(dependencies).values(dependency).run();
+  await db.insert(dependencies).values(dependency);
 
   return dependency as Dependency;
 }
 
-export function removeDependency(taskId: string, dependsOnId: string): void {
-  const db = getDb();
+export async function removeDependency(taskId: string, dependsOnId: string): Promise<void> {
+  const db = await getDb();
 
-  const existing = db
+  const existingDeps = await db
     .select()
     .from(dependencies)
     .where(eq(dependencies.taskId, taskId))
-    .all()
-    .find((d) => d.dependsOnId === dependsOnId);
+    .all();
+
+  const existing = existingDeps.find((d) => d.dependsOnId === dependsOnId);
 
   if (!existing) {
     throw new Error(`Dependency not found: ${taskId} → ${dependsOnId}`);
   }
 
-  db.delete(dependencies).where(eq(dependencies.id, existing.id)).run();
+  await db.delete(dependencies).where(eq(dependencies.id, existing.id));
 }
 
-export function getDependencies(taskId: string): {
+export async function getDependencies(taskId: string): Promise<{
   dependsOn: Array<{ taskId: string; dependsOnId: string }>;
   blocks: Array<{ taskId: string; dependsOnId: string }>;
-} {
-  const db = getDb();
+}> {
+  const db = await getDb();
 
   // Tasks that this task depends on
-  const dependsOn = db
+  const dependsOn = await db
     .select({
       taskId: dependencies.taskId,
       dependsOnId: dependencies.dependsOnId,
@@ -97,7 +99,7 @@ export function getDependencies(taskId: string): {
     .all();
 
   // Tasks that are blocked by this task
-  const blocks = db
+  const blocks = await db
     .select({
       taskId: dependencies.taskId,
       dependsOnId: dependencies.dependsOnId,
@@ -109,8 +111,8 @@ export function getDependencies(taskId: string): {
   return { dependsOn, blocks };
 }
 
-function wouldCreateCycle(taskId: string, dependsOnId: string): boolean {
-  const db = getDb();
+async function wouldCreateCycle(taskId: string, dependsOnId: string): Promise<boolean> {
+  const db = await getDb();
 
   // Use DFS to check if dependsOnId can reach taskId
   // If so, adding taskId → dependsOnId would create a cycle
@@ -130,7 +132,7 @@ function wouldCreateCycle(taskId: string, dependsOnId: string): boolean {
     visited.add(current);
 
     // Get all tasks that `current` depends on
-    const deps = db
+    const deps = await db
       .select({ dependsOnId: dependencies.dependsOnId })
       .from(dependencies)
       .where(eq(dependencies.taskId, current))
@@ -146,12 +148,12 @@ function wouldCreateCycle(taskId: string, dependsOnId: string): boolean {
   return false;
 }
 
-export function getAllDependencies(): Array<{
+export async function getAllDependencies(): Promise<Array<{
   taskId: string;
   dependsOnId: string;
-}> {
-  const db = getDb();
-  return db
+}>> {
+  const db = await getDb();
+  return await db
     .select({
       taskId: dependencies.taskId,
       dependsOnId: dependencies.dependsOnId,

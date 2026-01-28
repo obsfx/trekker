@@ -1,31 +1,27 @@
-import { getDb } from "../db/client";
-import { idCounters } from "../db/schema";
-import { eq, sql } from "drizzle-orm";
+import { requireSqliteInstance, runSql, querySql } from "../db/client-node";
 import { type EntityType, PREFIX_MAP } from "../types";
 
 export type { EntityType };
 
 export function generateId(entityType: EntityType): string {
-  const db = getDb();
   const prefix = PREFIX_MAP[entityType];
 
-  // Atomically increment the counter and return the new value
-  db.update(idCounters)
-    .set({ counter: sql`${idCounters.counter} + 1` })
-    .where(eq(idCounters.entityType, entityType))
-    .run();
+  // Atomically increment the counter using raw SQL
+  runSql(
+    "UPDATE id_counters SET counter = counter + 1 WHERE entity_type = ?",
+    [entityType]
+  );
 
-  const result = db
-    .select({ counter: idCounters.counter })
-    .from(idCounters)
-    .where(eq(idCounters.entityType, entityType))
-    .get();
+  const result = querySql<{ counter: number }>(
+    "SELECT counter FROM id_counters WHERE entity_type = ?",
+    [entityType]
+  );
 
-  if (!result) {
+  if (result.length === 0) {
     throw new Error(`Counter not found for entity type: ${entityType}`);
   }
 
-  return `${prefix}-${result.counter}`;
+  return `${prefix}-${result[0].counter}`;
 }
 
 export function generateUuid(): string {

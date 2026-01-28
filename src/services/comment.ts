@@ -1,16 +1,18 @@
 import { eq } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { getDb } from "../db/client-node";
 import { comments, tasks } from "../db/schema";
 import { generateId } from "../utils/id-generator";
 import type { Comment, CreateCommentInput, UpdateCommentInput } from "../types";
 import { indexEntity, removeEntityIndex } from "./semantic-search";
+import { queueBackgroundTask } from "../utils/async";
 
-export function createComment(input: CreateCommentInput): Comment {
-  const db = getDb();
+export async function createComment(input: CreateCommentInput): Promise<Comment> {
+  const db = await getDb();
 
   // Validate task exists
-  const task = db.select().from(tasks).where(eq(tasks.id, input.taskId)).get();
-  if (!task) {
+  const task = await db.select().from(tasks).where(eq(tasks.id, input.taskId)).get();
+  // Workaround for drizzle-orm sqlite-proxy bug: empty result returns object with undefined values
+  if (!task || task.id === undefined) {
     throw new Error(`Task not found: ${input.taskId}`);
   }
 
@@ -26,73 +28,79 @@ export function createComment(input: CreateCommentInput): Comment {
     updatedAt: now,
   };
 
-  db.insert(comments).values(comment).run();
+  await db.insert(comments).values(comment);
 
   // Queue embedding generation (non-blocking)
-  indexEntity(id, "comment", comment.content).catch(() => {});
+  queueBackgroundTask(
+    indexEntity(id, "comment", comment.content),
+    `index ${id}`
+  );
 
   return comment as Comment;
 }
 
-export function getComment(id: string): Comment | undefined {
-  const db = getDb();
-  const result = db.select().from(comments).where(eq(comments.id, id)).get();
-  return result as Comment | undefined;
+export async function getComment(id: string): Promise<Comment | undefined> {
+  const db = await getDb();
+  const result = await db.select().from(comments).where(eq(comments.id, id)).get();
+  // Workaround for drizzle-orm sqlite-proxy bug: empty result returns object with undefined values
+  if (!result || result.id === undefined) {
+    return undefined;
+  }
+  return result as Comment;
 }
 
-export function listComments(taskId: string): Comment[] {
-  const db = getDb();
+export async function listComments(taskId: string): Promise<Comment[]> {
+  const db = await getDb();
 
   // Validate task exists
-  const task = db.select().from(tasks).where(eq(tasks.id, taskId)).get();
-  if (!task) {
+  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get();
+  // Workaround for drizzle-orm sqlite-proxy bug: empty result returns object with undefined values
+  if (!task || task.id === undefined) {
     throw new Error(`Task not found: ${taskId}`);
   }
 
-  return db
+  return await db
     .select()
     .from(comments)
     .where(eq(comments.taskId, taskId))
     .all() as Comment[];
 }
 
-export function updateComment(id: string, input: UpdateCommentInput): Comment {
-  const db = getDb();
+export async function updateComment(id: string, input: UpdateCommentInput): Promise<Comment> {
+  const db = await getDb();
 
-  const existing = getComment(id);
+  const existing = await getComment(id);
   if (!existing) {
     throw new Error(`Comment not found: ${id}`);
   }
 
-  db.update(comments)
+  await db.update(comments)
     .set({
       content: input.content,
       updatedAt: new Date(),
     })
-    .where(eq(comments.id, id))
-    .run();
+    .where(eq(comments.id, id));
 
   // Re-embed comment content (non-blocking)
-  const updated = getComment(id)!;
-  indexEntity(id, "comment", updated.content).catch(() => {});
+  const updated = (await getComment(id))!;
+  queueBackgroundTask(
+    indexEntity(id, "comment", updated.content),
+    `reindex ${id}`
+  );
 
-  return getComment(id)!;
+  return (await getComment(id))!;
 }
 
-export function deleteComment(id: string): void {
-  const db = getDb();
+export async function deleteComment(id: string): Promise<void> {
+  const db = await getDb();
 
-  const existing = getComment(id);
+  const existing = await getComment(id);
   if (!existing) {
     throw new Error(`Comment not found: ${id}`);
   }
 
-  // Remove from semantic index before deleting
-  try {
-    removeEntityIndex(id);
-  } catch {
-    // Ignore if semantic search not available
-  }
+  // Remove from semantic index (non-blocking)
+  queueBackgroundTask(removeEntityIndex(id), `remove index ${id}`);
 
-  db.delete(comments).where(eq(comments.id, id)).run();
+  await db.delete(comments).where(eq(comments.id, id));
 }

@@ -1,21 +1,14 @@
-import type { SQLQueryBindings } from "bun:sqlite";
+import { getDb, requireSqliteInstance } from "../db/client-node";
 import {
-  requireSqliteInstance,
-  isSqliteVecAvailable,
+  searchEmbeddings,
   upsertEmbedding,
   deleteEmbedding,
-} from "../db/client";
+  isVectorStorageAvailable,
+} from "../db/vectors";
 import { embed, ensureModelLoaded } from "./embedding";
 import { PAGINATION_DEFAULTS, type SearchEntityType } from "../types";
 import { truncateText } from "../utils/text";
-
-/**
- * Convert cosine distance (0-2 range) to similarity (0-1 range).
- * 0 distance = 1 similarity (identical), 2 distance = 0 similarity (opposite)
- */
-export function distanceToSimilarity(distance: number): number {
-  return 1 - distance / 2;
-}
+import type { Database as SqlJsDatabase } from "sql.js";
 
 export type { SearchEntityType };
 
@@ -45,12 +38,6 @@ export interface SemanticSearchResponse {
   results: SemanticSearchResult[];
 }
 
-interface EmbeddingSearchRow {
-  entity_id: string;
-  entity_type: string;
-  distance: number;
-}
-
 interface EntityMetaRow {
   entity_id: string;
   entity_type: string;
@@ -59,27 +46,21 @@ interface EntityMetaRow {
   parent_id: string | null;
 }
 
-export function requireSemanticSearch(): void {
-  // Ensure DB is initialized first (this triggers sqlite-vec loading)
-  requireSqliteInstance();
-
-  if (!isSqliteVecAvailable()) {
-    throw new Error(
-      "Semantic search is not available. Your SQLite build does not support dynamic extension loading."
-    );
-  }
+/**
+ * Check if semantic search is available.
+ */
+export function isSemanticSearchAvailable(): boolean {
+  return isVectorStorageAvailable();
 }
 
 /**
  * Perform semantic search using vector similarity.
- * Generates query embedding and finds similar entities using cosine distance.
+ * Generates query embedding and finds similar entities using SQLite vectors.
  */
 export async function semanticSearch(
   query: string,
   options?: SemanticSearchOptions
 ): Promise<SemanticSearchResponse> {
-  requireSemanticSearch();
-
   const limit = options?.limit ?? PAGINATION_DEFAULTS.SEARCH_PAGE_SIZE;
   const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
   const threshold = options?.threshold ?? 0.5;
@@ -92,52 +73,23 @@ export async function semanticSearch(
   }
 
   const queryEmbedding = await embed(query);
+
+  // Search embeddings using SQLite vectors
+  const embeddingResults = await searchEmbeddings(queryEmbedding, {
+    limit: limit * 10, // Fetch more to allow for filtering
+    types: options?.types,
+    similarityThreshold: threshold,
+  });
+
+  // Initialize database and get SQLite instance for metadata lookup
+  await getDb();
   const sqlite = requireSqliteInstance();
 
-  // Build type filter condition
-  let typeCondition = "";
-  const typeParams: string[] = [];
-  if (options?.types && options.types.length > 0) {
-    const placeholders = options.types.map(() => "?").join(", ");
-    typeCondition = `AND e.entity_type IN (${placeholders})`;
-    typeParams.push(...options.types);
-  }
-
-  // First, get all embeddings with distance, filtered by type
-  // We use vec_distance_cosine which returns distance in range [0, 2]
-  // 0 = identical, 2 = opposite
-  // Convert distance to similarity: similarity = 1 - (distance / 2)
-  const distanceThreshold = (1 - threshold) * 2;
-
-  const searchQuery = `
-    SELECT
-      e.entity_id,
-      e.entity_type,
-      vec_distance_cosine(e.embedding, ?) as distance
-    FROM embeddings e
-    WHERE vec_distance_cosine(e.embedding, ?) <= ?
-      ${typeCondition}
-    ORDER BY distance ASC
-  `;
-
-  // Convert Float32Array buffer to Uint8Array for SQLite binding
-  const embeddingBuffer = new Uint8Array(queryEmbedding.buffer);
-  const searchParams: SQLQueryBindings[] = [
-    embeddingBuffer,
-    embeddingBuffer,
-    distanceThreshold,
-    ...typeParams,
-  ];
-
-  const embeddingResults = sqlite
-    .query<EmbeddingSearchRow, SQLQueryBindings[]>(searchQuery)
-    .all(...searchParams);
-
-  // Now get metadata for each result and filter by status
+  // Get metadata for each result and filter by status
   const results: SemanticSearchResult[] = [];
 
   for (const row of embeddingResults) {
-    const meta = getEntityMeta(sqlite, row.entity_id, row.entity_type);
+    const meta = getEntityMeta(sqlite, row.entityId, row.entityType);
     if (!meta) continue;
 
     // Filter by status if specified
@@ -146,10 +98,10 @@ export async function semanticSearch(
     }
 
     results.push({
-      type: row.entity_type as SearchEntityType,
-      id: row.entity_id,
+      type: row.entityType as SearchEntityType,
+      id: row.entityId,
       title: meta.title,
-      similarity: distanceToSimilarity(row.distance),
+      similarity: row.similarity,
       status: meta.status,
       parentId: meta.parent_id,
     });
@@ -173,60 +125,72 @@ export async function semanticSearch(
  * Get entity metadata (title, status, parentId) from the appropriate table.
  */
 export function getEntityMeta(
-  sqlite: ReturnType<typeof requireSqliteInstance>,
+  sqlite: SqlJsDatabase,
   entityId: string,
   entityType: string
 ): EntityMetaRow | null {
   if (entityType === "epic") {
-    const result = sqlite
-      .query<{ title: string; status: string }, [string]>(
-        "SELECT title, status FROM epics WHERE id = ?"
-      )
-      .get(entityId);
+    const stmt = sqlite.prepare("SELECT title, status FROM epics WHERE id = ?");
+    stmt.bind([entityId]);
 
-    if (!result) return null;
-    return {
-      entity_id: entityId,
-      entity_type: entityType,
-      title: result.title,
-      status: result.status,
-      parent_id: null,
-    };
+    if (stmt.step()) {
+      const row = stmt.getAsObject() as { title: string; status: string };
+      stmt.free();
+      return {
+        entity_id: entityId,
+        entity_type: entityType,
+        title: row.title,
+        status: row.status,
+        parent_id: null,
+      };
+    }
+    stmt.free();
+    return null;
   }
 
   if (entityType === "task" || entityType === "subtask") {
-    const result = sqlite
-      .query<
-        { title: string; status: string; parent_task_id: string | null; epic_id: string | null },
-        [string]
-      >("SELECT title, status, parent_task_id, epic_id FROM tasks WHERE id = ?")
-      .get(entityId);
+    const stmt = sqlite.prepare(
+      "SELECT title, status, parent_task_id, epic_id FROM tasks WHERE id = ?"
+    );
+    stmt.bind([entityId]);
 
-    if (!result) return null;
-    return {
-      entity_id: entityId,
-      entity_type: entityType,
-      title: result.title,
-      status: result.status,
-      parent_id: result.parent_task_id ?? result.epic_id,
-    };
+    if (stmt.step()) {
+      const row = stmt.getAsObject() as {
+        title: string;
+        status: string;
+        parent_task_id: string | null;
+        epic_id: string | null;
+      };
+      stmt.free();
+      return {
+        entity_id: entityId,
+        entity_type: entityType,
+        title: row.title,
+        status: row.status,
+        parent_id: row.parent_task_id ?? row.epic_id,
+      };
+    }
+    stmt.free();
+    return null;
   }
 
   if (entityType === "comment") {
-    const result = sqlite
-      .query<{ content: string; task_id: string }, [string]>(
-        "SELECT content, task_id FROM comments WHERE id = ?"
-      )
-      .get(entityId);
+    const stmt = sqlite.prepare("SELECT content, task_id FROM comments WHERE id = ?");
+    stmt.bind([entityId]);
 
-    if (!result) return null;
-    return {
-      entity_id: entityId,
-      entity_type: entityType,
-      title: truncateText(result.content, 50),
-      status: null,
-      parent_id: result.task_id,
-    };
+    if (stmt.step()) {
+      const row = stmt.getAsObject() as { content: string; task_id: string };
+      stmt.free();
+      return {
+        entity_id: entityId,
+        entity_type: entityType,
+        title: truncateText(row.content, 50),
+        status: null,
+        parent_id: row.task_id,
+      };
+    }
+    stmt.free();
+    return null;
   }
 
   return null;
@@ -243,8 +207,6 @@ export async function indexEntity(
   entityType: SearchEntityType,
   text: string
 ): Promise<void> {
-  requireSemanticSearch();
-
   if (!text || text.trim().length === 0) {
     return;
   }
@@ -255,14 +217,13 @@ export async function indexEntity(
   }
 
   const embedding = await embed(text);
-  upsertEmbedding(entityId, entityType, embedding);
+  await upsertEmbedding(entityId, entityType, embedding);
 }
 
 /**
  * Remove an entity from the semantic search index.
  * @param entityId The entity ID to remove
  */
-export function removeEntityIndex(entityId: string): void {
-  requireSemanticSearch();
-  deleteEmbedding(entityId);
+export async function removeEntityIndex(entityId: string): Promise<void> {
+  await deleteEmbedding(entityId);
 }
