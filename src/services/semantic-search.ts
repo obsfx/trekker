@@ -49,7 +49,7 @@ interface EntityMetaRow {
   parent_id: string | null;
 }
 
-function requireSemanticSearch(): void {
+export function requireSemanticSearch(): void {
   if (!isSqliteVecAvailable()) {
     throw new Error(
       "Semantic search is not available. Your SQLite build does not support dynamic extension loading."
@@ -160,7 +160,7 @@ export async function semanticSearch(
 /**
  * Get entity metadata (title, status, parentId) from the appropriate table.
  */
-function getEntityMeta(
+export function getEntityMeta(
   sqlite: ReturnType<typeof requireSqliteInstance>,
   entityId: string,
   entityType: string

@@ -11,6 +11,7 @@ import { quickstartCommand } from "./commands/quickstart";
 import { seedCommand } from "./commands/seed";
 import { searchCommand } from "./commands/search";
 import { semanticSearchCommand } from "./commands/semantic-search";
+import { similarCommand } from "./commands/similar";
 import { historyCommand } from "./commands/history";
 import { listCommand } from "./commands/list";
 import { setToonMode } from "./utils/output";
@@ -42,6 +43,7 @@ program.addCommand(quickstartCommand);
 program.addCommand(seedCommand);
 program.addCommand(searchCommand);
 program.addCommand(semanticSearchCommand);
+program.addCommand(similarCommand);
 program.addCommand(historyCommand);
 program.addCommand(listCommand);
 
