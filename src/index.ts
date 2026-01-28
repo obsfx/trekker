@@ -14,6 +14,7 @@ import { semanticSearchCommand } from "./commands/semantic-search";
 import { similarCommand } from "./commands/similar";
 import { historyCommand } from "./commands/history";
 import { listCommand } from "./commands/list";
+import { reindexCommand } from "./commands/reindex";
 import { setToonMode } from "./utils/output";
 import pkg from "../package.json";
 
@@ -46,6 +47,7 @@ program.addCommand(semanticSearchCommand);
 program.addCommand(similarCommand);
 program.addCommand(historyCommand);
 program.addCommand(listCommand);
+program.addCommand(reindexCommand);
 
 // Parse and execute
 program.parse();
