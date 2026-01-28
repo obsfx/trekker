@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "bun:test";
+import { describe, it, expect, afterEach } from "vitest";
 import { existsSync } from "fs";
 import { join } from "path";
 import { createTestContext, initTrekker, type TestContext } from "../helpers/test-context";

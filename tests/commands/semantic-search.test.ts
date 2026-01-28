@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestContext, initTrekker, type TestContext } from "../helpers/test-context";
 
 describe("semantic-search command", () => {
@@ -57,7 +57,7 @@ describe("semantic-search command", () => {
 
   describe("valid type options", () => {
     // These tests verify that valid types are accepted by the parser
-    // The actual semantic search may fail due to sqlite-vec, but validation should pass
+    // The actual semantic search may fail if embedding model isn't loaded, but validation should pass
     it("should accept epic type", () => {
       // Type validation happens before semantic search is called
       // If we get a different error (not about type), validation passed

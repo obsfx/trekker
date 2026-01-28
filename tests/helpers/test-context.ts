@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import { spawnSync } from "child_process";
 import { decode } from "@toon-format/toon";
 
@@ -12,16 +13,22 @@ export interface TestContext {
   cleanup: () => void;
 }
 
-const CLI_PATH = join(import.meta.dir, "../../src/index.ts");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLI_PATH = join(__dirname, "../../src/index.ts");
 
 export function createTestContext(): TestContext {
   const cwd = mkdtempSync(join(tmpdir(), "trekker-test-"));
 
   function runCommand(args: string[]): { stdout: string; stderr: string; status: number } {
-    const result = spawnSync("bun", ["run", CLI_PATH, ...args], {
+    const result = spawnSync("npx", ["tsx", CLI_PATH, ...args], {
       cwd,
       encoding: "utf-8",
-      env: { ...process.env, NO_COLOR: "1" },
+      timeout: 30000,
+      env: {
+        ...process.env,
+        NO_COLOR: "1",
+        TREKKER_SKIP_EMBEDDINGS: "1",
+      },
     });
 
     return {
@@ -32,7 +39,6 @@ export function createTestContext(): TestContext {
   }
 
   function parseArgs(args: string): string[] {
-    // Simple argument parser that handles quoted strings
     const result: string[] = [];
     let current = "";
     let inQuote = false;
@@ -86,7 +92,6 @@ export function createTestContext(): TestContext {
         throw new Error(`Command failed: ${result.stderr || result.stdout}`);
       }
 
-      // Parse TOON format
       return decode(result.stdout) as T;
     },
 
@@ -98,9 +103,8 @@ export function createTestContext(): TestContext {
         throw new Error("Expected command to fail but it succeeded");
       }
 
-      // Try to parse TOON error format, otherwise return raw output
       try {
-        const parsed = decode(result.stderr || result.stdout) as { error?: string; success?: boolean };
+        const parsed = decode(result.stderr || result.stdout) as { error?: string };
         if (parsed && typeof parsed === "object" && "error" in parsed) {
           return parsed.error as string;
         }

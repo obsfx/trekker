@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestContext, initTrekker, type TestContext } from "../helpers/test-context";
 
 describe("similar command", () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestContext, type TestContext } from "../helpers/test-context";
 
 describe("quickstart command", () => {
