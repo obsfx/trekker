@@ -7,6 +7,15 @@ import {
 } from "../db/client";
 import { embed, ensureModelLoaded } from "./embedding";
 import { PAGINATION_DEFAULTS, type SearchEntityType } from "../types";
+import { truncateText } from "../utils/text";
+
+/**
+ * Convert cosine distance (0-2 range) to similarity (0-1 range).
+ * 0 distance = 1 similarity (identical), 2 distance = 0 similarity (opposite)
+ */
+export function distanceToSimilarity(distance: number): number {
+  return 1 - distance / 2;
+}
 
 export type { SearchEntityType };
 
@@ -133,14 +142,11 @@ export async function semanticSearch(
       continue;
     }
 
-    // Convert distance to similarity (0-1 range where 1 is most similar)
-    const similarity = 1 - row.distance / 2;
-
     results.push({
       type: row.entity_type as SearchEntityType,
       id: row.entity_id,
       title: meta.title,
-      similarity,
+      similarity: distanceToSimilarity(row.distance),
       status: meta.status,
       parentId: meta.parent_id,
     });
@@ -214,7 +220,7 @@ export function getEntityMeta(
     return {
       entity_id: entityId,
       entity_type: entityType,
-      title: result.content.length > 50 ? result.content.slice(0, 50) + "..." : result.content,
+      title: truncateText(result.content, 50),
       status: null,
       parent_id: result.task_id,
     };

@@ -47,6 +47,17 @@ export const similarCommand = new Command("similar")
     }
   });
 
+interface ScoreIndicator {
+  symbol: string;
+  suggestion: string;
+}
+
+function getScoreIndicator(percent: number): ScoreIndicator {
+  if (percent >= 90) return { symbol: "!!", suggestion: "LIKELY DUPLICATE - review before creating" };
+  if (percent >= 80) return { symbol: "!", suggestion: "Highly related - check if same issue" };
+  return { symbol: "", suggestion: "" };
+}
+
 function formatSimilarResults(response: SimilarResponse): string {
   const lines: string[] = [];
 
@@ -69,20 +80,10 @@ function formatSimilarResults(response: SimilarResponse): string {
   for (const r of response.results) {
     const percent = Math.round(r.similarity * 100);
     const statusLabel = r.status ? ` [${r.status}]` : "";
-
-    // Score indicators
-    let indicator = "";
-    let suggestion = "";
-    if (percent >= 90) {
-      indicator = "!!";
-      suggestion = "LIKELY DUPLICATE - review before creating";
-    } else if (percent >= 80) {
-      indicator = "!";
-      suggestion = "Highly related - check if same issue";
-    }
+    const { symbol, suggestion } = getScoreIndicator(percent);
 
     const idPad = r.id.padEnd(10);
-    const percentLabel = `[${percent}%]${indicator}`;
+    const percentLabel = `[${percent}%]${symbol}`;
 
     lines.push(`${idPad} ${percentLabel}${statusLabel}`);
     if (r.title) {

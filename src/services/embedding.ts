@@ -63,19 +63,35 @@ export function resetModelState(): void {
   modelLoadFailed = false;
 }
 
+interface DownloadProgress {
+  status: string;
+  file?: string;
+  progress?: number;
+}
+
+function createProgressCallback(silent: boolean): ((progress: DownloadProgress) => void) | undefined {
+  if (silent) return undefined;
+
+  return (progress: DownloadProgress) => {
+    if (progress.status === "download" && progress.file && progress.progress !== undefined) {
+      const percent = Math.round(progress.progress);
+      process.stderr.write(`\rDownloading ${progress.file}: ${percent}%`);
+      return;
+    }
+    if (progress.status === "done") {
+      process.stderr.write("\n");
+    }
+  };
+}
+
+function formatErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function ensureModelLoaded(options?: EmbeddingOptions): Promise<boolean> {
-  if (extractor) {
-    return true;
-  }
-
-  if (modelLoadFailed) {
-    return false;
-  }
-
-  // If already loading, wait for that promise
-  if (modelLoading) {
-    return modelLoading;
-  }
+  if (extractor) return true;
+  if (modelLoadFailed) return false;
+  if (modelLoading) return modelLoading;
 
   const silent = options?.silent ?? false;
 
@@ -83,30 +99,17 @@ export async function ensureModelLoaded(options?: EmbeddingOptions): Promise<boo
     try {
       ensureCacheDir();
 
-      // Progress callback writes to stderr unless silent
-      const progressCallback = silent
-        ? undefined
-        : (progress: { status: string; file?: string; progress?: number }) => {
-            if (progress.status === "download" && progress.file && progress.progress !== undefined) {
-              const percent = Math.round(progress.progress);
-              process.stderr.write(`\rDownloading ${progress.file}: ${percent}%`);
-            } else if (progress.status === "done") {
-              process.stderr.write("\n");
-            }
-          };
-
       extractor = await (pipeline as Function)("feature-extraction", MODEL_ID, {
         cache_dir: CACHE_DIR,
         quantized: true,
-        progress_callback: progressCallback,
+        progress_callback: createProgressCallback(silent),
       }) as FeatureExtractor;
 
       return true;
     } catch (error) {
       modelLoadFailed = true;
       if (!silent) {
-        const message = error instanceof Error ? error.message : String(error);
-        process.stderr.write(`\nFailed to load embedding model: ${message}\n`);
+        process.stderr.write(`\nFailed to load embedding model: ${formatErrorMessage(error)}\n`);
       }
       return false;
     } finally {

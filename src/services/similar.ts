@@ -1,9 +1,10 @@
 import type { SQLQueryBindings } from "bun:sqlite";
 import { requireSqliteInstance } from "../db/client";
 import { embed, ensureModelLoaded } from "./embedding";
-import { requireSemanticSearch, getEntityMeta } from "./semantic-search";
+import { requireSemanticSearch, getEntityMeta, distanceToSimilarity } from "./semantic-search";
 import { getTask } from "./task";
 import { getEpic } from "./epic";
+import { truncateText, buildEntityText } from "../utils/text";
 
 const ID_PATTERN = /^(TREK|EPIC)-\d+$/i;
 
@@ -89,14 +90,11 @@ export async function findSimilar(
     const meta = getEntityMeta(sqlite, row.entity_id, row.entity_type);
     if (!meta) continue;
 
-    // Convert distance to similarity (0-1 range where 1 is most similar)
-    const similarity = 1 - row.distance / 2;
-
     results.push({
       id: row.entity_id,
       type: row.entity_type,
       title: meta.title,
-      similarity,
+      similarity: distanceToSimilarity(row.distance),
       status: meta.status,
     });
 
@@ -119,34 +117,26 @@ export function resolveSearchInput(idOrText: string): {
   sourceId?: string;
   sourceText?: string;
 } {
-  if (ID_PATTERN.test(idOrText)) {
-    const normalizedId = idOrText.toUpperCase();
-
-    if (normalizedId.startsWith("TREK-")) {
-      const task = getTask(normalizedId);
-      if (!task) {
-        throw new Error(`Task not found: ${normalizedId}`);
-      }
-      return {
-        searchText: task.title + (task.description ? " " + task.description : ""),
-        sourceId: normalizedId,
-      };
-    } else if (normalizedId.startsWith("EPIC-")) {
-      const epic = getEpic(normalizedId);
-      if (!epic) {
-        throw new Error(`Epic not found: ${normalizedId}`);
-      }
-      return {
-        searchText: epic.title + (epic.description ? " " + epic.description : ""),
-        sourceId: normalizedId,
-      };
-    } else {
-      throw new Error(`Unknown ID format: ${normalizedId}`);
-    }
+  if (!ID_PATTERN.test(idOrText)) {
+    return {
+      searchText: idOrText,
+      sourceText: truncateText(idOrText, 100),
+    };
   }
 
-  return {
-    searchText: idOrText,
-    sourceText: idOrText.length > 100 ? idOrText.slice(0, 100) + "..." : idOrText,
-  };
+  const normalizedId = idOrText.toUpperCase();
+
+  if (normalizedId.startsWith("TREK-")) {
+    const task = getTask(normalizedId);
+    if (!task) throw new Error(`Task not found: ${normalizedId}`);
+    return { searchText: buildEntityText(task), sourceId: normalizedId };
+  }
+
+  if (normalizedId.startsWith("EPIC-")) {
+    const epic = getEpic(normalizedId);
+    if (!epic) throw new Error(`Epic not found: ${normalizedId}`);
+    return { searchText: buildEntityText(epic), sourceId: normalizedId };
+  }
+
+  throw new Error(`Unknown ID format: ${normalizedId}`);
 }

@@ -48,33 +48,28 @@ export const searchCommand = new Command("search")
 
       if (types) validateSearchEntityTypes(types);
 
+      const searchOptions = {
+        types: types as SearchEntityType[] | undefined,
+        status: options.status,
+        limit,
+        page,
+      };
+
       if (mode === "keyword") {
-        const result = search(query, {
-          types: types as SearchEntityType[] | undefined,
-          status: options.status,
-          limit,
-          page,
-        });
+        const result = search(query, searchOptions);
         outputResult(result, formatSearchResults);
-      } else if (mode === "semantic") {
-        const result = await semanticSearch(query, {
-          types: types as SearchEntityType[] | undefined,
-          status: options.status,
-          limit,
-          page,
-          threshold: 0.5,
-        });
-        outputResult(result, formatSemanticSearchResults);
-      } else {
-        // hybrid mode
-        const result = await hybridSearch(query, {
-          types: types as SearchEntityType[] | undefined,
-          status: options.status,
-          limit,
-          page,
-        });
-        outputResult(result, formatHybridSearchResults);
+        return;
       }
+
+      if (mode === "semantic") {
+        const result = await semanticSearch(query, { ...searchOptions, threshold: 0.5 });
+        outputResult(result, formatSemanticSearchResults);
+        return;
+      }
+
+      // hybrid mode
+      const result = await hybridSearch(query, searchOptions);
+      outputResult(result, formatHybridSearchResults);
     } catch (err) {
       handleCommandError(err);
     }
