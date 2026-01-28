@@ -122,7 +122,7 @@ export async function searchEmbeddings(
 
   // Build query with optional type filter
   let sql = `SELECT entity_id, entity_type, vector FROM embeddings`;
-  const params: unknown[] = [];
+  const params: string[] = [];
 
   if (options.types && options.types.length > 0) {
     const placeholders = options.types.map(() => "?").join(", ");

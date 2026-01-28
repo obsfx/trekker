@@ -146,7 +146,7 @@ export async function search(query: string, options?: SearchOptions): Promise<Se
     const stmt = sqlite.prepare(epicSql);
     stmt.bind(epicParams);
     while (stmt.step()) {
-      allResults.push(stmt.getAsObject() as RawResult);
+      allResults.push(stmt.getAsObject() as unknown as RawResult);
     }
     stmt.free();
   }
@@ -169,7 +169,7 @@ export async function search(query: string, options?: SearchOptions): Promise<Se
     const stmt = sqlite.prepare(taskSql);
     stmt.bind(taskParams);
     while (stmt.step()) {
-      allResults.push(stmt.getAsObject() as RawResult);
+      allResults.push(stmt.getAsObject() as unknown as RawResult);
     }
     stmt.free();
   }
@@ -192,7 +192,7 @@ export async function search(query: string, options?: SearchOptions): Promise<Se
     const stmt = sqlite.prepare(subtaskSql);
     stmt.bind(subtaskParams);
     while (stmt.step()) {
-      allResults.push(stmt.getAsObject() as RawResult);
+      allResults.push(stmt.getAsObject() as unknown as RawResult);
     }
     stmt.free();
   }
@@ -212,7 +212,7 @@ export async function search(query: string, options?: SearchOptions): Promise<Se
     const stmt = sqlite.prepare(commentSql);
     stmt.bind(commentParams);
     while (stmt.step()) {
-      allResults.push(stmt.getAsObject() as RawResult);
+      allResults.push(stmt.getAsObject() as unknown as RawResult);
     }
     stmt.free();
   }
@@ -302,7 +302,7 @@ export async function hybridSearch(
   const alpha = 0.3; // Favor semantic (1 - 0.3 = 0.7 weight)
 
   // Get keyword results
-  const keywordResults = search(query, {
+  const keywordResults = await search(query, {
     types: options?.types,
     status: options?.status,
     limit: expandedLimit,

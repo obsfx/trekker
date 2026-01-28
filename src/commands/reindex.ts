@@ -74,21 +74,21 @@ async function reindexEmbeddings(): Promise<ReindexResult> {
   const tasksStmt = sqlite.prepare("SELECT id, parent_task_id, title, description FROM tasks");
   const tasks: TaskRow[] = [];
   while (tasksStmt.step()) {
-    tasks.push(tasksStmt.getAsObject() as TaskRow);
+    tasks.push(tasksStmt.getAsObject() as unknown as TaskRow);
   }
   tasksStmt.free();
 
   const epicsStmt = sqlite.prepare("SELECT id, title, description FROM epics");
   const epics: EpicRow[] = [];
   while (epicsStmt.step()) {
-    epics.push(epicsStmt.getAsObject() as EpicRow);
+    epics.push(epicsStmt.getAsObject() as unknown as EpicRow);
   }
   epicsStmt.free();
 
   const commentsStmt = sqlite.prepare("SELECT id, content FROM comments");
   const comments: CommentRow[] = [];
   while (commentsStmt.step()) {
-    comments.push(commentsStmt.getAsObject() as CommentRow);
+    comments.push(commentsStmt.getAsObject() as unknown as CommentRow);
   }
   commentsStmt.free();
 

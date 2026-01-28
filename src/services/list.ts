@@ -7,6 +7,12 @@ import {
 
 export type { ListEntityType };
 
+function mapSortFieldToColumn(field: string): string {
+  if (field === "created") return "created_at";
+  if (field === "updated") return "updated_at";
+  return field;
+}
+
 export interface ListOptions {
   types?: ListEntityType[];
   statuses?: string[];
@@ -83,8 +89,8 @@ export async function listAll(options?: ListOptions): Promise<ListResponse> {
   let orderClause = "ORDER BY created_at DESC";
   if (options?.sort && options.sort.length > 0) {
     const sortParts = options.sort.map((s) => {
-      const field = s.field === "created" ? "created_at" : s.field === "updated" ? "updated_at" : s.field;
-      return `${field} ${s.direction.toUpperCase()}`;
+      const column = mapSortFieldToColumn(s.field);
+      return `${column} ${s.direction.toUpperCase()}`;
     });
     orderClause = `ORDER BY ${sortParts.join(", ")}`;
   }

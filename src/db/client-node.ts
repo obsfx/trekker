@@ -8,7 +8,7 @@
  *
  * Uses drizzle-orm/sqlite-proxy to wrap sql.js.
  */
-import initSqlJs, { type Database as SqlJsDatabase } from "sql.js";
+import initSqlJs, { type Database as SqlJsDatabase, type SqlValue } from "sql.js";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import * as schema from "./schema";
 import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "fs";
@@ -71,14 +71,14 @@ function createDrizzleInstance(sqlite: SqlJsDatabase): ReturnType<typeof drizzle
       try {
         // Handle different query methods
         if (method === "run") {
-          sqlite.run(sql, params as unknown[]);
+          sqlite.run(sql, params as SqlValue[]);
           saveDb();
           return { rows: [] };
         }
 
         if (method === "get") {
           const stmt = sqlite.prepare(sql);
-          stmt.bind(params as unknown[]);
+          stmt.bind(params as SqlValue[]);
           if (stmt.step()) {
             // For 'get', return single row directly (not wrapped in array)
             const row = stmt.get();
@@ -91,7 +91,7 @@ function createDrizzleInstance(sqlite: SqlJsDatabase): ReturnType<typeof drizzle
 
         // method === "all" or "values"
         const stmt = sqlite.prepare(sql);
-        stmt.bind(params as unknown[]);
+        stmt.bind(params as SqlValue[]);
         const rows: unknown[][] = [];
         while (stmt.step()) {
           const row = stmt.get();
@@ -106,21 +106,23 @@ function createDrizzleInstance(sqlite: SqlJsDatabase): ReturnType<typeof drizzle
     },
     // Batch callback (optional but improves performance)
     async (queries) => {
-      const results: { rows: unknown[][] }[] = [];
+      // drizzle-orm expects different row shapes for different methods:
+      // - "get": single row as unknown[] (raw values)
+      // - "all"/"values": array of rows as unknown[][]
+      const results: { rows: unknown[] | unknown[][] }[] = [];
       for (const query of queries) {
         const { sql, params, method } = query;
         try {
           if (method === "run") {
-            sqlite.run(sql, params as unknown[]);
+            sqlite.run(sql, params as SqlValue[]);
             results.push({ rows: [] });
             continue;
           }
 
           if (method === "get") {
             const stmt = sqlite.prepare(sql);
-            stmt.bind(params as unknown[]);
+            stmt.bind(params as SqlValue[]);
             if (stmt.step()) {
-              // For 'get', return single row directly (not wrapped in array)
               const row = stmt.get();
               stmt.free();
               results.push({ rows: row as unknown[] });
@@ -133,7 +135,7 @@ function createDrizzleInstance(sqlite: SqlJsDatabase): ReturnType<typeof drizzle
 
           // method === "all" or "values"
           const stmt = sqlite.prepare(sql);
-          stmt.bind(params as unknown[]);
+          stmt.bind(params as SqlValue[]);
           const rows: unknown[][] = [];
           while (stmt.step()) {
             const row = stmt.get();
@@ -505,7 +507,7 @@ export function requireSqliteInstance(): SqlJsDatabase {
 /**
  * Run raw SQL and save (for vector operations).
  */
-export function runSql(sql: string, params?: unknown[]): void {
+export function runSql(sql: string, params?: SqlValue[]): void {
   if (!sqlJsDb) {
     throw new Error("Database not initialized");
   }
@@ -516,7 +518,7 @@ export function runSql(sql: string, params?: unknown[]): void {
 /**
  * Query raw SQL (for vector operations).
  */
-export function querySql<T = unknown>(sql: string, params?: unknown[]): T[] {
+export function querySql<T = unknown>(sql: string, params?: SqlValue[]): T[] {
   if (!sqlJsDb) {
     throw new Error("Database not initialized");
   }

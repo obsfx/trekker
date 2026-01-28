@@ -2,30 +2,7 @@
 
 A CLI issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database. No server required.
 
-## Prerequisites
-
-Trekker requires [Bun](https://bun.sh) runtime. It uses `bun:sqlite` for database operations. This is a deliberate choice: `bun:sqlite` is significantly faster than Node.js SQLite drivers, making CLI operations feel instant.
-
-**Install Bun:**
-
-```bash
-# macOS/Linux
-curl -fsSL https://bun.sh/install | bash
-
-# Windows
-powershell -c "irm bun.sh/install.ps1 | iex"
-
-# Or via npm
-npm install -g bun
-```
-
 ## Install
-
-```bash
-bun install -g @obsfx/trekker
-```
-
-Or with npm:
 
 ```bash
 npm install -g @obsfx/trekker
@@ -188,6 +165,25 @@ trekker list --type task --status in_progress    # Active tasks only
 trekker list --priority 0,1 --sort priority:asc  # Critical/high priority first
 trekker list --sort title:asc,created:desc       # Sort by title, then by date
 ```
+
+### Semantic Search
+
+Find related items by meaning, not just keywords:
+
+```bash
+trekker semantic-search <query> [--type <types>] [--threshold <0-1>] [--limit <n>]
+trekker similar <entity-id>                      # Find duplicates/related items
+trekker search <query> --mode hybrid             # Combine keyword + semantic
+```
+
+Examples:
+```bash
+trekker semantic-search "auth problems"          # Finds "login", "OAuth", "credentials"
+trekker similar TREK-1                           # Find tasks similar to TREK-1
+trekker search "performance" --mode hybrid       # Best of both search modes
+```
+
+The embedding model (~200MB) downloads on first use and is cached at `~/.trekker/models/`.
 
 ### Web Interface
 

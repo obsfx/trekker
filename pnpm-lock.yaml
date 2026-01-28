@@ -22,7 +22,7 @@ importers:
         version: 1.11.19
       drizzle-orm:
         specifier: ^0.38.4
-        version: 0.38.4(sql.js@1.13.0)
+        version: 0.38.4(@types/sql.js@1.4.9)(sql.js@1.13.0)
       sql.js:
         specifier: ^1.11.0
         version: 1.13.0
@@ -30,6 +30,9 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.30
+      '@types/sql.js':
+        specifier: ^1.4.9
+        version: 1.4.9
       drizzle-kit:
         specifier: ^0.30.4
         version: 0.30.6
@@ -948,11 +951,17 @@ packages:
   '@toon-format/toon@2.1.0':
     resolution: {integrity: sha512-JwWptdF5eOA0HaQxbKAzkpQtR4wSWTEfDlEy/y3/4okmOAX1qwnpLZMmtEWr+ncAhTTY1raCKH0kteHhSXnQqg==}
 
+  '@types/emscripten@1.41.5':
+    resolution: {integrity: sha512-cMQm7pxu6BxtHyqJ7mQZ2kXWV5SLmugybFdHCBbJ5eHzOo6VhBckEgAT3//rP5FwPHNPeEiq4SmQ5ucBwsOo4Q==}
+
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
   '@types/node@20.19.30':
     resolution: {integrity: sha512-WJtwWJu7UdlvzEAUm484QNg5eAoq5QR08KDNx7g45Usrs2NtOPiX8ugDqmKdXkyL03rBqU5dYNYVQetEpBHq2g==}
+
+  '@types/sql.js@1.4.9':
+    resolution: {integrity: sha512-ep8b36RKHlgWPqjNG9ToUrPiwkhwh0AEzy883mO5Xnd+cL6VBH1EvSjBAAuxLUFF2Vn/moE3Me6v9E1Lo+48GQ==}
 
   '@vitest/expect@2.1.9':
     resolution: {integrity: sha512-UJCIkTBenHeKT1TTlKMJWy1laZewsRIzYighyYiJKZreqtdxSos/S1t+ktRMQWu2CKqaarrkeszJx1cgC5tGZw==}
@@ -2159,11 +2168,18 @@ snapshots:
 
   '@toon-format/toon@2.1.0': {}
 
+  '@types/emscripten@1.41.5': {}
+
   '@types/estree@1.0.8': {}
 
   '@types/node@20.19.30':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/sql.js@1.4.9':
+    dependencies:
+      '@types/emscripten': 1.41.5
+      '@types/node': 20.19.30
 
   '@vitest/expect@2.1.9':
     dependencies:
@@ -2280,8 +2296,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.38.4(sql.js@1.13.0):
+  drizzle-orm@0.38.4(@types/sql.js@1.4.9)(sql.js@1.13.0):
     optionalDependencies:
+      '@types/sql.js': 1.4.9
       sql.js: 1.13.0
 
   env-paths@3.0.0: {}
