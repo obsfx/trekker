@@ -7,9 +7,9 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distPath = resolve(__dirname, "../dist/index.js");
 
-// Use built dist if available (production), otherwise use source (development)
-if (existsSync(distPath)) {
-  await import(distPath);
-} else {
-  await import("../src/index.ts");
+if (!existsSync(distPath)) {
+  console.error("Error: dist/index.js not found. Run 'pnpm build' first.");
+  process.exit(1);
 }
+
+await import(distPath);

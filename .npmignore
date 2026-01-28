@@ -4,6 +4,8 @@ src/
 # Config files
 tsconfig.json
 drizzle.config.ts
+vitest.config.ts
+tsup.config.ts
 .editorconfig
 .prettierrc
 .eslintrc*
@@ -12,7 +14,12 @@ drizzle.config.ts
 *.test.ts
 *.spec.ts
 __tests__/
+tests/
 coverage/
+
+# Lock files
+pnpm-lock.yaml
+bun.lock
 
 # Trekker database
 .trekker/
@@ -34,14 +41,18 @@ Thumbs.db
 # Logs
 *.log
 
-# Documentation (keep README)
+# Documentation (keep README and LICENSE)
 docs/
+guides/
+site/
 CONTRIBUTING.md
 CHANGELOG.md
+CLAUDE.md
+
+# Claude Code
+.claude/
 
 # CI/CD
 .github/
 .gitlab-ci.yml
 .travis.yml
-
-tests/
