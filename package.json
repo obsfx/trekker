@@ -49,6 +49,7 @@
     "bun": ">=1.0.0"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@toon-format/toon": "^2.1.0",
     "commander": "^13.1.0",
     "dayjs": "^1.11.19",
