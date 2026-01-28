@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## CRITICAL: Sandbox Testing Rule
+
+```
+NEVER remove or modify the .trekker folder in this project.
+For testing, ALWAYS create a temporary directory in /tmp and initialize trekker there.
+
+Example:
+  mkdir -p /tmp/trekker-test && cd /tmp/trekker-test && bun run dev init
+```
+
 ## Project Overview
 
 Trekker is a CLI-based issue tracker designed for AI coding agents. It stores tasks, epics, and dependencies in a local SQLite database per project. Requires Bun runtime for `bun:sqlite`.
