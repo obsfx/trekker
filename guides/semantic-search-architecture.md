@@ -1,6 +1,6 @@
 # Semantic Search Architecture in Trekker
 
-A deep dive into how Trekker implements semantic search using EmbeddingGemma, sqlite-vec, and Matryoshka Representation Learning.
+A deep dive into how Trekker implements semantic search using EmbeddingGemma, LanceDB, and Matryoshka Representation Learning.
 
 ## Table of Contents
 
@@ -9,7 +9,7 @@ A deep dive into how Trekker implements semantic search using EmbeddingGemma, sq
 3. [How Semantic Search Works](#how-semantic-search-works)
 4. [Architecture Components](#architecture-components)
 5. [The Embedding Model: EmbeddingGemma](#the-embedding-model-embeddinggemma)
-6. [Vector Storage: sqlite-vec](#vector-storage-sqlite-vec)
+6. [Vector Storage: LanceDB](#vector-storage-lancedb)
 7. [Matryoshka Representation Learning (MRL)](#matryoshka-representation-learning-mrl)
 8. [The Complete Data Flow](#the-complete-data-flow)
 9. [Search Modes Explained](#search-modes-explained)
@@ -29,11 +29,11 @@ Trekker's semantic search enables finding related tasks even without exact keywo
 │   User Query          Embedding Model         Vector Database   │
 │   ───────────         ───────────────         ───────────────   │
 │                                                                 │
-│   "auth issues"  ──▶  EmbeddingGemma   ──▶   sqlite-vec        │
+│   "auth issues"  ──▶  EmbeddingGemma   ──▶   LanceDB           │
 │                       (300M params)           (256-dim vectors) │
 │                             │                       │           │
 │                             ▼                       ▼           │
-│                       [0.12, -0.34,          Cosine Distance    │
+│                       [0.12, -0.34,          L2 Distance        │
 │                        0.56, ...]             Calculation       │
 │                       (256 floats)                  │           │
 │                                                     ▼           │
@@ -78,29 +78,23 @@ Text: "authentication" →  [0.21, -0.18, 0.65, 0.44, ...]  (similar numbers!)
 Text: "database index" →  [-0.45, 0.82, -0.11, 0.03, ...] (very different)
 ```
 
-### Measuring Similarity: Cosine Distance
+### Measuring Similarity: L2 Distance
 
-We compare vectors using **cosine distance**:
-- **0** = Identical meaning
-- **2** = Opposite meaning
+We compare vectors using **L2 (Euclidean) distance** and convert to similarity:
 
 ```
-                     Vector A
-                        ↗
-                       /
-                      /  θ (angle)
-                     /
-                    ○────────────→ Vector B
+For normalized vectors:
+L2² = 2(1 - cosine_similarity)
 
-    Cosine Distance = 1 - cos(θ)
-
-    Small angle (similar vectors) → Small distance → High similarity
+Therefore:
+cosine_similarity = 1 - L2²/2
 ```
 
 We convert distance to similarity for user-friendliness:
 ```typescript
 function distanceToSimilarity(distance: number): number {
-  return 1 - distance / 2;  // Maps [0,2] → [1,0]
+  const similarity = 1 - (distance * distance) / 2;
+  return Math.max(0, Math.min(1, similarity));  // Clamp to [0, 1]
 }
 ```
 
@@ -108,21 +102,23 @@ function distanceToSimilarity(distance: number): number {
 
 ## Architecture Components
 
+Trekker uses a **hybrid architecture**: SQLite for relational data, LanceDB for vector embeddings.
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        Trekker Architecture                         │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  ┌───────────────┐     ┌───────────────┐     ┌───────────────────┐ │
-│  │   Commands    │     │   Services    │     │     Database      │ │
+│  │   Commands    │     │   Services    │     │     Databases     │ │
 │  │               │     │               │     │                   │ │
-│  │ semantic-     │────▶│ semantic-     │────▶│ embeddings table  │ │
-│  │ search.ts     │     │ search.ts     │     │ (sqlite-vec)      │ │
+│  │ semantic-     │────▶│ semantic-     │────▶│ LanceDB           │ │
+│  │ search.ts     │     │ search.ts     │     │ (vectors)         │ │
 │  │               │     │               │     │                   │ │
-│  │ similar.ts    │────▶│ similar.ts    │     │                   │ │
-│  │               │     │               │     │                   │ │
-│  │ reindex.ts    │────▶│ embedding.ts  │────▶│ embedding_meta    │ │
-│  │               │     │ (model wrapper)│     │ table             │ │
+│  │ similar.ts    │────▶│ similar.ts    │────▶│ SQLite            │ │
+│  │               │     │               │     │ (metadata)        │ │
+│  │ reindex.ts    │────▶│ embedding.ts  │     │                   │ │
+│  │               │     │ (model)       │     │                   │ │
 │  └───────────────┘     └───────────────┘     └───────────────────┘ │
 │                                                                     │
 │         ▲                     ▲                      ▲              │
@@ -132,15 +128,25 @@ function distanceToSimilarity(distance: number): number {
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### Why Hybrid Architecture?
+
+| Concern | SQLite | LanceDB |
+|---------|--------|---------|
+| Relational data (tasks, epics) | ✅ ACID, constraints | ❌ No unique constraints |
+| Vector similarity search | ❌ Requires extensions | ✅ Built-in, fast |
+| Cross-platform | ✅ bun:sqlite works everywhere | ✅ NAPI-RS bindings |
+
 ### Key Files
 
 | File | Purpose |
 |------|---------|
 | `src/services/embedding.ts` | Wraps Transformers.js, manages model loading |
-| `src/services/semantic-search.ts` | Search logic, embedding CRUD |
+| `src/services/semantic-search.ts` | Search logic, indexing entities |
 | `src/services/similar.ts` | Duplicate detection logic |
-| `src/db/client.ts` | sqlite-vec setup, vector table management |
+| `src/db/lance.ts` | LanceDB connection and vector operations |
+| `src/db/client.ts` | SQLite setup, relational data |
 | `src/utils/text.ts` | Text utilities (truncation, entity text building) |
+| `src/utils/async.ts` | Background task handling |
 
 ---
 
@@ -178,7 +184,8 @@ export async function ensureModelLoaded(): Promise<boolean> {
   // Load the model (downloads ~200MB on first run)
   extractor = await pipeline("feature-extraction", MODEL_ID, {
     cache_dir: CACHE_DIR,
-    quantized: true,  // Use quantized ONNX for smaller size
+    quantized: true,
+    dtype: "fp32",  // Explicit dtype to avoid warnings
   });
 
   return true;
@@ -204,54 +211,79 @@ export async function embed(text: string): Promise<Float32Array> {
 
 ---
 
-## Vector Storage: sqlite-vec
+## Vector Storage: LanceDB
 
-### Why sqlite-vec?
+### Why LanceDB?
 
-- **Zero infrastructure**: No separate vector database needed
-- **Embedded**: Ships with the SQLite database
-- **Fast**: Optimized C implementation
-- **Simple**: Just SQL queries
+- **Zero infrastructure**: Embedded vector database
+- **Cross-platform**: NAPI-RS bindings work with Bun
+- **Fast**: Optimized for vector similarity search
+- **Simple**: No extension loading required
 
 ### The Embeddings Table
 
-```sql
-CREATE VIRTUAL TABLE embeddings USING vec0(
-  entity_id TEXT,        -- e.g., "TREK-1", "EPIC-2"
-  entity_type TEXT,      -- "task", "epic", "subtask", "comment"
-  embedding float[256]   -- 256-dimensional vector
-);
+```typescript
+// src/db/lance.ts
+
+interface EmbeddingRecord {
+  id: string;           // e.g., "TREK-1"
+  entity_id: string;    // Same as id
+  entity_type: string;  // "task", "epic", "subtask", "comment"
+  vector: number[];     // 256-dimensional vector
+}
 ```
 
-### Vector Search Query
-
-```sql
-SELECT
-  entity_id,
-  entity_type,
-  vec_distance_cosine(embedding, ?) as distance
-FROM embeddings
-WHERE vec_distance_cosine(embedding, ?) <= ?  -- threshold
-ORDER BY distance ASC
-LIMIT ?;
-```
-
-### Loading the Extension
+### Vector Operations
 
 ```typescript
-// src/db/client.ts
+// Insert or update an embedding
+export async function upsertEmbedding(
+  entityId: string,
+  entityType: string,
+  embedding: Float32Array
+): Promise<void> {
+  const table = await getEmbeddingsTable();
 
-import * as sqliteVec from "sqlite-vec";
+  // Delete existing (LanceDB has no unique constraints)
+  await table.delete(`entity_id = '${entityId}'`);
 
-function loadSqliteVec(sqlite: Database): boolean {
-  try {
-    sqliteVec.load(sqlite);  // Injects vec0 virtual table support
-    return true;
-  } catch {
-    // Extension loading failed - graceful degradation
-    return false;
-  }
+  // Insert new
+  await table.add([{
+    id: entityId,
+    entity_id: entityId,
+    entity_type: entityType,
+    vector: Array.from(embedding),
+  }]);
 }
+
+// Search for similar embeddings
+export async function searchEmbeddings(
+  queryVector: Float32Array,
+  options: { limit?: number; types?: string[]; distanceThreshold?: number }
+): Promise<EmbeddingSearchResult[]> {
+  const table = await getEmbeddingsTable();
+
+  let query = table.search(Array.from(queryVector)).limit(options.limit ?? 100);
+
+  const typeFilter = buildTypeFilter(options.types);
+  if (typeFilter) {
+    query = query.where(typeFilter);
+  }
+
+  const results = await query.toArray();
+  return filterByDistance(results, options.distanceThreshold);
+}
+```
+
+### Storage Location
+
+LanceDB stores vectors in `.trekker/vectors/` alongside the SQLite database:
+
+```
+.trekker/
+├── trekker.db      # SQLite: tasks, epics, comments, etc.
+└── vectors/        # LanceDB: embeddings
+    └── embeddings/ # Vector table data
 ```
 
 ---
@@ -333,7 +365,7 @@ We chose 256 as the sweet spot between quality and efficiency.
    └── INSERT INTO tasks (id, title, ...) VALUES ('TREK-42', 'Fix OAuth timeout', ...)
 
 3. Embedding generated (async, non-blocking)
-   └── indexEntity('TREK-42', 'task', 'Fix OAuth timeout')
+   └── queueBackgroundTask(indexEntity('TREK-42', 'task', 'Fix OAuth timeout'))
        │
        ├── ensureModelLoaded()  // Load model if needed
        │
@@ -341,8 +373,7 @@ We chose 256 as the sweet spot between quality and efficiency.
        │   └── Returns Float32Array[256]
        │
        └── upsertEmbedding('TREK-42', 'task', embedding)
-           └── INSERT INTO embeddings (entity_id, entity_type, embedding)
-               VALUES ('TREK-42', 'task', X'...')
+           └── LanceDB: INSERT into embeddings table
 ```
 
 ### When User Searches
@@ -355,13 +386,13 @@ We chose 256 as the sweet spot between quality and efficiency.
    └── embed('auth problems')
        └── Returns Float32Array[256]
 
-3. Vector similarity search
-   └── SELECT entity_id, vec_distance_cosine(embedding, ?) as distance
-       FROM embeddings
-       WHERE vec_distance_cosine(embedding, ?) <= 1.0  -- threshold 0.5
-       ORDER BY distance ASC
+3. Vector similarity search in LanceDB
+   └── table.search(queryVector)
+           .limit(200)
+           .where(typeFilter)
+           .toArray()
 
-4. Results enriched with metadata
+4. Results enriched with metadata from SQLite
    └── For each result, fetch title/status from tasks/epics table
 
 5. Results returned
@@ -418,7 +449,7 @@ const hybridScore = alpha * keywordScore + (1 - alpha) * semanticScore;
 │  ┌──────────┐    ┌──────────┐                                  │
 │  │ Keyword  │    │ Semantic │                                  │
 │  │ Search   │    │ Search   │                                  │
-│  │ (FTS5)   │    │ (Vector) │                                  │
+│  │ (FTS5)   │    │ (LanceDB)│                                  │
 │  └────┬─────┘    └────┬─────┘                                  │
 │       │               │                                        │
 │       ▼               ▼                                        │
@@ -470,7 +501,7 @@ const hybridScore = alpha * keywordScore + (1 - alpha) * semanticScore;
 1. **Lazy loading**: Model only loads when semantic features are used
 2. **Non-blocking indexing**: Embedding generation doesn't block task creation
 3. **Batch reindexing**: `reindex --embeddings` processes in batches
-4. **Graceful degradation**: Falls back to keyword search if model unavailable
+4. **Background tasks**: Errors logged only in debug mode (`TREKKER_DEBUG=1`)
 
 ---
 
@@ -505,19 +536,21 @@ export async function indexEntity(
   text: string
 ): Promise<void>;
 
-export function removeEntityIndex(entityId: string): void;
+export async function removeEntityIndex(entityId: string): Promise<void>;
 export function distanceToSimilarity(distance: number): number;
 ```
 
-### Database Helpers
+### LanceDB Operations
 
 ```typescript
-// src/db/client.ts
+// src/db/lance.ts
 
-export function isSqliteVecAvailable(): boolean;
-export function upsertEmbedding(entityId: string, entityType: string, embedding: Float32Array): void;
-export function getEmbedding(entityId: string): EmbeddingRow | null;
-export function deleteEmbedding(entityId: string): void;
+export async function getLanceDb(): Promise<lancedb.Connection>;
+export async function upsertEmbedding(entityId: string, entityType: string, embedding: Float32Array): Promise<void>;
+export async function deleteEmbedding(entityId: string): Promise<void>;
+export async function searchEmbeddings(queryVector: Float32Array, options: SearchOptions): Promise<EmbeddingSearchResult[]>;
+export async function clearAllEmbeddings(): Promise<void>;
+export function isLanceDbAvailable(): boolean;
 ```
 
 ---
@@ -526,5 +559,5 @@ export function deleteEmbedding(entityId: string): void;
 
 - [EmbeddingGemma Paper](https://ai.google.dev/gemma)
 - [Matryoshka Representation Learning](https://arxiv.org/abs/2205.13147)
-- [sqlite-vec Documentation](https://github.com/asg017/sqlite-vec)
+- [LanceDB Documentation](https://lancedb.github.io/lancedb/)
 - [Transformers.js](https://huggingface.co/docs/transformers.js)
