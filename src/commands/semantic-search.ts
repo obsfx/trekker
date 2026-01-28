@@ -44,7 +44,7 @@ export const semanticSearchCommand = new Command("semantic-search")
     }
   });
 
-function formatSemanticSearchResults(result: SemanticSearchResponse): string {
+export function formatSemanticSearchResults(result: SemanticSearchResponse): string {
   const lines: string[] = [];
 
   lines.push(`Semantic Search: "${result.query}"`);
