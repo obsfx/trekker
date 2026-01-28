@@ -29,14 +29,14 @@ subtaskCommand
   .option("-d, --description <description>", "Subtask description")
   .option("-p, --priority <priority>", "Priority (0-5, default: 2)")
   .option("-s, --status <status>", "Status (todo, in_progress, completed, wont_fix, archived)")
-  .action((parentTaskId, options) => {
+  .action(async (parentTaskId, options) => {
     try {
       validateRequired(options.title, "Title");
 
-      const parent = getTask(parentTaskId);
+      const parent = await getTask(parentTaskId);
       if (!parent) return handleNotFound("Parent task", parentTaskId);
 
-      const subtask = createTask({
+      const subtask = await createTask({
         title: options.title,
         description: options.description,
         priority: parsePriority(options.priority),
@@ -54,12 +54,12 @@ subtaskCommand
 subtaskCommand
   .command("list <parent-task-id>")
   .description("List all subtasks of a task")
-  .action((parentTaskId) => {
+  .action(async (parentTaskId) => {
     try {
-      const parent = getTask(parentTaskId);
+      const parent = await getTask(parentTaskId);
       if (!parent) return handleNotFound("Parent task", parentTaskId);
 
-      const subtasks = listSubtasks(parentTaskId);
+      const subtasks = await listSubtasks(parentTaskId);
 
       if (isToonMode()) {
         output(subtasks);
@@ -83,9 +83,9 @@ subtaskCommand
   .option("-d, --description <description>", "New description")
   .option("-p, --priority <priority>", "New priority (0-5)")
   .option("-s, --status <status>", "New status")
-  .action((subtaskId, options) => {
+  .action(async (subtaskId, options) => {
     try {
-      const subtask = getTask(subtaskId);
+      const subtask = await getTask(subtaskId);
       if (!subtask) return handleNotFound("Subtask", subtaskId);
 
       if (!subtask.parentTaskId) {
@@ -99,7 +99,7 @@ subtaskCommand
       if (options.priority !== undefined) updateInput.priority = parsePriority(options.priority);
       if (options.status !== undefined) updateInput.status = parseStatus(options.status, "task");
 
-      const updated = updateTask(subtaskId, updateInput);
+      const updated = await updateTask(subtaskId, updateInput);
       outputResult(updated, formatTask, `Subtask updated: ${updated.id}`);
     } catch (err) {
       handleCommandError(err);
@@ -109,9 +109,9 @@ subtaskCommand
 subtaskCommand
   .command("delete <subtask-id>")
   .description("Delete a subtask")
-  .action((subtaskId) => {
+  .action(async (subtaskId) => {
     try {
-      const subtask = getTask(subtaskId);
+      const subtask = await getTask(subtaskId);
       if (!subtask) return handleNotFound("Subtask", subtaskId);
 
       if (!subtask.parentTaskId) {
@@ -119,7 +119,7 @@ subtaskCommand
         process.exit(1);
       }
 
-      deleteTask(subtaskId);
+      await deleteTask(subtaskId);
       success(`Subtask deleted: ${subtaskId}`);
     } catch (err) {
       handleCommandError(err);

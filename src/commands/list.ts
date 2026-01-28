@@ -22,7 +22,7 @@ export const listCommand = new Command("list")
   .option("--sort <fields>", "Sort by fields (field:direction, comma-separated)", "created:desc")
   .option("--limit <n>", "Results per page (default: 50)", "50")
   .option("--page <n>", "Page number (default: 1)", "1")
-  .action((options) => {
+  .action(async (options) => {
     try {
       const limit = parseInt(options.limit, 10);
       const page = parseInt(options.page, 10);
@@ -61,7 +61,7 @@ export const listCommand = new Command("list")
         throw new Error("Invalid until date. Use YYYY-MM-DD format.");
       }
 
-      const result = listAll({
+      const result = await listAll({
         types: types as ListEntityType[] | undefined,
         statuses,
         priorities,

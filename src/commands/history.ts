@@ -16,7 +16,7 @@ export const historyCommand = new Command("history")
   .option("--until <date>", "Events before date (YYYY-MM-DD)")
   .option("--limit <n>", "Results per page (default: 50)", "50")
   .option("--page <n>", "Page number (default: 1)", "1")
-  .action((options) => {
+  .action(async (options) => {
     try {
       const types = options.type
         ? (options.type.split(",").map((t: string) => t.trim()) as HistoryEntityType[])
@@ -76,7 +76,7 @@ export const historyCommand = new Command("history")
         until = parsedUntil.endOf("day").toDate();
       }
 
-      const result = getHistory({
+      const result = await getHistory({
         entityId: options.entity,
         types,
         actions,

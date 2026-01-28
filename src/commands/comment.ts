@@ -23,12 +23,12 @@ commentCommand
   .description("Add a comment to a task")
   .requiredOption("-a, --author <author>", "Comment author")
   .requiredOption("-c, --content <content>", "Comment content")
-  .action((taskId, options) => {
+  .action(async (taskId, options) => {
     try {
       validateRequired(options.author, "Author");
       validateRequired(options.content, "Content");
 
-      const comment = createComment({
+      const comment = await createComment({
         taskId,
         author: options.author,
         content: options.content,
@@ -43,9 +43,9 @@ commentCommand
 commentCommand
   .command("list <task-id>")
   .description("List all comments on a task")
-  .action((taskId) => {
+  .action(async (taskId) => {
     try {
-      const comments = listComments(taskId);
+      const comments = await listComments(taskId);
 
       if (isToonMode()) {
         output(comments);
@@ -66,11 +66,11 @@ commentCommand
   .command("update <comment-id>")
   .description("Update a comment")
   .requiredOption("-c, --content <content>", "New comment content")
-  .action((commentId, options) => {
+  .action(async (commentId, options) => {
     try {
       validateRequired(options.content, "Content");
 
-      const comment = updateComment(commentId, {
+      const comment = await updateComment(commentId, {
         content: options.content,
       });
 
@@ -83,9 +83,9 @@ commentCommand
 commentCommand
   .command("delete <comment-id>")
   .description("Delete a comment")
-  .action((commentId) => {
+  .action(async (commentId) => {
     try {
-      deleteComment(commentId);
+      await deleteComment(commentId);
       success(`Comment deleted: ${commentId}`);
     } catch (err) {
       handleCommandError(err);

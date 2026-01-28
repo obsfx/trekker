@@ -1,12 +1,9 @@
 import { Command } from "commander";
-import {
-  requireSqliteInstance,
-  isSqliteVecAvailable,
-  upsertEmbedding,
-  setEmbeddingMeta,
-} from "../db/client";
+import { getDb, requireSqliteInstance } from "../db/client-node";
+import { clearAllEmbeddings, upsertEmbedding } from "../db/vectors";
 import { ensureModelLoaded, embedBatch, resetModelState } from "../services/embedding";
 import { handleCommandError, success, info, isToonMode, output } from "../utils/output";
+import { buildEntityText } from "../utils/text";
 
 interface ReindexResult {
   success: boolean;
@@ -61,95 +58,47 @@ export const reindexCommand = new Command("reindex")
 async function reindexEmbeddings(): Promise<ReindexResult> {
   info("Rebuilding semantic search index...");
 
-  // 1. Get database (this initializes sqlite-vec check)
+  // Initialize database first (async with sql.js)
+  await getDb();
   const sqlite = requireSqliteInstance();
 
-  // 2. Check sqlite-vec is available
-  if (!isSqliteVecAvailable()) {
-    throw new Error(
-      "Cannot reindex: sqlite-vec extension is not available. Your SQLite build does not support dynamic extension loading."
-    );
-  }
-
-  // 3. Ensure model loads (reset state first to allow retry)
   resetModelState();
   const modelReady = await ensureModelLoaded();
   if (!modelReady) {
     throw new Error("Cannot reindex: embedding model failed to load");
   }
 
-  // 4. Clear existing embeddings
-  sqlite.run("DELETE FROM embeddings");
+  await clearAllEmbeddings();
 
-  // 5. Fetch all entities
-  const tasks = sqlite
-    .query<TaskRow, []>(
-      "SELECT id, parent_task_id, title, description FROM tasks"
-    )
-    .all();
-  const epics = sqlite
-    .query<EpicRow, []>("SELECT id, title, description FROM epics")
-    .all();
-  const comments = sqlite
-    .query<CommentRow, []>("SELECT id, content FROM comments")
-    .all();
+  // Fetch all entities using sql.js prepared statements
+  const tasksStmt = sqlite.prepare("SELECT id, parent_task_id, title, description FROM tasks");
+  const tasks: TaskRow[] = [];
+  while (tasksStmt.step()) {
+    tasks.push(tasksStmt.getAsObject() as TaskRow);
+  }
+  tasksStmt.free();
+
+  const epicsStmt = sqlite.prepare("SELECT id, title, description FROM epics");
+  const epics: EpicRow[] = [];
+  while (epicsStmt.step()) {
+    epics.push(epicsStmt.getAsObject() as EpicRow);
+  }
+  epicsStmt.free();
+
+  const commentsStmt = sqlite.prepare("SELECT id, content FROM comments");
+  const comments: CommentRow[] = [];
+  while (commentsStmt.step()) {
+    comments.push(commentsStmt.getAsObject() as CommentRow);
+  }
+  commentsStmt.free();
 
   const total = tasks.length + epics.length + comments.length;
   info(`Indexing ${total} entities...`);
 
-  let tasksIndexed = 0;
-  let epicsIndexed = 0;
-  let commentsIndexed = 0;
-
-  // 6. Index tasks
-  if (tasks.length > 0) {
-    const taskTexts = tasks.map((t) => {
-      const parts = [t.title];
-      if (t.description) parts.push(t.description);
-      return parts.join(" ");
-    });
-
-    const taskEmbeddings = await embedBatch(taskTexts);
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
-      const entityType = task.parent_task_id ? "subtask" : "task";
-      upsertEmbedding(task.id, entityType, taskEmbeddings[i]);
-      tasksIndexed++;
-    }
-    info(`  ✓ ${tasksIndexed} tasks indexed`);
-  }
-
-  // 7. Index epics
-  if (epics.length > 0) {
-    const epicTexts = epics.map((e) => {
-      const parts = [e.title];
-      if (e.description) parts.push(e.description);
-      return parts.join(" ");
-    });
-
-    const epicEmbeddings = await embedBatch(epicTexts);
-    for (let i = 0; i < epics.length; i++) {
-      upsertEmbedding(epics[i].id, "epic", epicEmbeddings[i]);
-      epicsIndexed++;
-    }
-    info(`  ✓ ${epicsIndexed} epics indexed`);
-  }
-
-  // 8. Index comments
-  if (comments.length > 0) {
-    const commentTexts = comments.map((c) => c.content);
-
-    const commentEmbeddings = await embedBatch(commentTexts);
-    for (let i = 0; i < comments.length; i++) {
-      upsertEmbedding(comments[i].id, "comment", commentEmbeddings[i]);
-      commentsIndexed++;
-    }
-    info(`  ✓ ${commentsIndexed} comments indexed`);
-  }
-
-  // 9. Update metadata
+  const tasksIndexed = await indexTasks(tasks);
+  const epicsIndexed = await indexEpics(epics);
+  const commentsIndexed = await indexComments(comments);
   const lastReindex = new Date().toISOString();
-  setEmbeddingMeta("last_reindex", lastReindex);
 
   return {
     success: true,
@@ -159,4 +108,47 @@ async function reindexEmbeddings(): Promise<ReindexResult> {
     comments: commentsIndexed,
     lastReindex,
   };
+}
+
+async function indexTasks(tasks: TaskRow[]): Promise<number> {
+  if (tasks.length === 0) return 0;
+
+  const texts = tasks.map((t) => buildEntityText(t));
+  const embeddings = await embedBatch(texts);
+
+  for (let i = 0; i < tasks.length; i++) {
+    const entityType = tasks[i].parent_task_id ? "subtask" : "task";
+    await upsertEmbedding(tasks[i].id, entityType, embeddings[i]);
+  }
+
+  info(`  ✓ ${tasks.length} tasks indexed`);
+  return tasks.length;
+}
+
+async function indexEpics(epics: EpicRow[]): Promise<number> {
+  if (epics.length === 0) return 0;
+
+  const texts = epics.map((e) => buildEntityText(e));
+  const embeddings = await embedBatch(texts);
+
+  for (let i = 0; i < epics.length; i++) {
+    await upsertEmbedding(epics[i].id, "epic", embeddings[i]);
+  }
+
+  info(`  ✓ ${epics.length} epics indexed`);
+  return epics.length;
+}
+
+async function indexComments(comments: CommentRow[]): Promise<number> {
+  if (comments.length === 0) return 0;
+
+  const texts = comments.map((c) => c.content);
+  const embeddings = await embedBatch(texts);
+
+  for (let i = 0; i < comments.length; i++) {
+    await upsertEmbedding(comments[i].id, "comment", embeddings[i]);
+  }
+
+  info(`  ✓ ${comments.length} comments indexed`);
+  return comments.length;
 }

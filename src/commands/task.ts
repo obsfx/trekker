@@ -28,11 +28,11 @@ taskCommand
   .option("-s, --status <status>", "Status (todo, in_progress, completed, wont_fix, archived)")
   .option("--tags <tags>", "Comma-separated tags")
   .option("-e, --epic <epic-id>", "Epic ID to assign task to")
-  .action((options) => {
+  .action(async (options) => {
     try {
       validateRequired(options.title, "Title");
 
-      const task = createTask({
+      const task = await createTask({
         title: options.title,
         description: options.description,
         priority: parsePriority(options.priority),
@@ -52,10 +52,10 @@ taskCommand
   .description("List all tasks")
   .option("-s, --status <status>", "Filter by status")
   .option("-e, --epic <epic-id>", "Filter by epic")
-  .action((options) => {
+  .action(async (options) => {
     try {
       const status = parseStatus(options.status, "task") as TaskStatus | undefined;
-      const tasks = listTasks({
+      const tasks = await listTasks({
         status,
         epicId: options.epic,
         parentTaskId: null,
@@ -70,9 +70,9 @@ taskCommand
 taskCommand
   .command("show <task-id>")
   .description("Show task details")
-  .action((taskId) => {
+  .action(async (taskId) => {
     try {
-      const task = getTask(taskId);
+      const task = await getTask(taskId);
       if (!task) return handleNotFound("Task", taskId);
 
       outputResult(task, formatTask);
@@ -91,7 +91,7 @@ taskCommand
   .option("--tags <tags>", "New tags (comma-separated)")
   .option("-e, --epic <epic-id>", "New epic ID")
   .option("--no-epic", "Remove from epic")
-  .action((taskId, options) => {
+  .action(async (taskId, options) => {
     try {
       const updateInput: Record<string, unknown> = {};
 
@@ -106,7 +106,7 @@ taskCommand
         updateInput.epicId = options.epic;
       }
 
-      const task = updateTask(taskId, updateInput);
+      const task = await updateTask(taskId, updateInput);
       outputResult(task, formatTask, `Task updated: ${task.id}`);
     } catch (err) {
       handleCommandError(err);
@@ -116,9 +116,9 @@ taskCommand
 taskCommand
   .command("delete <task-id>")
   .description("Delete a task")
-  .action((taskId) => {
+  .action(async (taskId) => {
     try {
-      deleteTask(taskId);
+      await deleteTask(taskId);
       success(`Task deleted: ${taskId}`);
     } catch (err) {
       handleCommandError(err);

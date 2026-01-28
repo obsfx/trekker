@@ -222,7 +222,7 @@ const SAMPLE_DEPENDENCIES = [
 export const seedCommand = new Command("seed")
   .description("Seed the database with sample data (development only)")
   .option("--force", "Skip confirmation prompt")
-  .action((options) => {
+  .action(async (options) => {
     try {
       if (!isTrekkerInitialized()) {
         error("Trekker is not initialized. Run 'trekker init' first.");
@@ -240,7 +240,7 @@ export const seedCommand = new Command("seed")
       // Create epics
       info("Creating epics...");
       for (const epicData of SAMPLE_EPICS) {
-        const epic = createEpic({
+        const epic = await createEpic({
           title: epicData.title,
           description: epicData.description,
           priority: epicData.priority,
@@ -253,7 +253,7 @@ export const seedCommand = new Command("seed")
       // Create tasks
       info("\nCreating tasks...");
       for (const taskData of SAMPLE_TASKS) {
-        const task = createTask({
+        const task = await createTask({
           title: taskData.title,
           description: taskData.description,
           priority: taskData.priority,
@@ -268,7 +268,7 @@ export const seedCommand = new Command("seed")
       // Create subtasks
       info("\nCreating subtasks...");
       for (const subtaskData of SAMPLE_SUBTASKS) {
-        const subtask = createTask({
+        const subtask = await createTask({
           title: subtaskData.title,
           priority: subtaskData.priority,
           status: subtaskData.status as "todo" | "in_progress" | "completed",
@@ -282,7 +282,7 @@ export const seedCommand = new Command("seed")
       for (const [taskIndex, dependsOnIndex] of SAMPLE_DEPENDENCIES) {
         const taskId = taskIds[taskIndex];
         const dependsOnId = taskIds[dependsOnIndex];
-        addDependency(taskId, dependsOnId);
+        await addDependency(taskId, dependsOnId);
         info(`  ${taskId} depends on ${dependsOnId}`);
       }
 

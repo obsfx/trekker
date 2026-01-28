@@ -26,7 +26,7 @@ export const similarCommand = new Command("similar")
         throw new Error("Invalid limit value. Must be a positive integer.");
       }
 
-      const { searchText, sourceId, sourceText } = resolveSearchInput(idOrText);
+      const { searchText, sourceId, sourceText } = await resolveSearchInput(idOrText);
 
       const results = await findSimilar(searchText, {
         threshold,

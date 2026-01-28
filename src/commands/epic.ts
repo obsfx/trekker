@@ -29,11 +29,11 @@ epicCommand
   .option("-d, --description <description>", "Epic description")
   .option("-p, --priority <priority>", "Priority (0-5, default: 2)")
   .option("-s, --status <status>", "Status (todo, in_progress, completed, archived)")
-  .action((options) => {
+  .action(async (options) => {
     try {
       validateRequired(options.title, "Title");
 
-      const epic = createEpic({
+      const epic = await createEpic({
         title: options.title,
         description: options.description,
         priority: parsePriority(options.priority),
@@ -50,10 +50,10 @@ epicCommand
   .command("list")
   .description("List all epics")
   .option("-s, --status <status>", "Filter by status")
-  .action((options) => {
+  .action(async (options) => {
     try {
       const status = parseStatus(options.status, "epic") as EpicStatus | undefined;
-      const epics = listEpics(status);
+      const epics = await listEpics(status);
 
       outputResult(epics, formatEpicList);
     } catch (err) {
@@ -64,9 +64,9 @@ epicCommand
 epicCommand
   .command("show <epic-id>")
   .description("Show epic details")
-  .action((epicId) => {
+  .action(async (epicId) => {
     try {
-      const epic = getEpic(epicId);
+      const epic = await getEpic(epicId);
       if (!epic) return handleNotFound("Epic", epicId);
 
       outputResult(epic, formatEpic);
@@ -82,9 +82,9 @@ epicCommand
   .option("-d, --description <description>", "New description")
   .option("-p, --priority <priority>", "New priority (0-5)")
   .option("-s, --status <status>", "New status")
-  .action((epicId, options) => {
+  .action(async (epicId, options) => {
     try {
-      const epic = updateEpic(epicId, {
+      const epic = await updateEpic(epicId, {
         title: options.title,
         description: options.description,
         priority: parsePriority(options.priority),
@@ -100,9 +100,9 @@ epicCommand
 epicCommand
   .command("delete <epic-id>")
   .description("Delete an epic")
-  .action((epicId) => {
+  .action(async (epicId) => {
     try {
-      deleteEpic(epicId);
+      await deleteEpic(epicId);
       success(`Epic deleted: ${epicId}`);
     } catch (err) {
       handleCommandError(err);
@@ -112,9 +112,9 @@ epicCommand
 epicCommand
   .command("complete <epic-id>")
   .description("Complete an epic and archive all its tasks and subtasks")
-  .action((epicId) => {
+  .action(async (epicId) => {
     try {
-      const result = completeEpic(epicId);
+      const result = await completeEpic(epicId);
 
       if (isToonMode()) {
         output(result);

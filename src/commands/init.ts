@@ -4,14 +4,14 @@ import { success, error } from "../utils/output";
 
 export const initCommand = new Command("init")
   .description("Initialize Trekker in the current directory")
-  .action(() => {
+  .action(async () => {
     try {
       if (isTrekkerInitialized()) {
         error("Trekker is already initialized in this directory.");
         process.exit(1);
       }
 
-      initProject();
+      await initProject();
       success("Trekker initialized successfully.");
     } catch (err) {
       error(err instanceof Error ? err.message : String(err));

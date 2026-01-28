@@ -28,7 +28,7 @@ export const searchCommand = new Command("search")
   .action(async (query, options) => {
     try {
       if (options.rebuildIndex) {
-        rebuildSearchIndex();
+        await rebuildSearchIndex();
       }
 
       const limit = parseInt(options.limit, 10);
@@ -56,7 +56,7 @@ export const searchCommand = new Command("search")
       };
 
       if (mode === "keyword") {
-        const result = search(query, searchOptions);
+        const result = await search(query, searchOptions);
         outputResult(result, formatSearchResults);
         return;
       }

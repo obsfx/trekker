@@ -23,7 +23,7 @@ export const wipeCommand = new Command("wipe")
         }
       }
 
-      wipeProject();
+      await wipeProject();
       success("Trekker data deleted successfully.");
     } catch (err) {
       error(err instanceof Error ? err.message : String(err));
