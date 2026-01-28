@@ -1,3 +1,4 @@
+import type { SQLQueryBindings } from "bun:sqlite";
 import { requireSqliteInstance } from "../db/client";
 import { embed, ensureModelLoaded } from "./embedding";
 import { requireSemanticSearch, getEntityMeta } from "./semantic-search";
@@ -70,14 +71,12 @@ export async function findSimilar(
   // Request extra results to account for potential exclusion
   const fetchLimit = options.excludeId ? options.limit + 1 : options.limit;
 
+  // Convert Float32Array buffer to Uint8Array for SQLite binding
+  const embeddingBuffer = new Uint8Array(queryEmbedding.buffer);
+
   const embeddingResults = sqlite
-    .query<EmbeddingSearchRow, unknown[]>(searchQuery)
-    .all(
-      queryEmbedding.buffer,
-      queryEmbedding.buffer,
-      distanceThreshold,
-      fetchLimit
-    );
+    .query<EmbeddingSearchRow, SQLQueryBindings[]>(searchQuery)
+    .all(embeddingBuffer, embeddingBuffer, distanceThreshold, fetchLimit);
 
   const results: SimilarResult[] = [];
 

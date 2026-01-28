@@ -597,11 +597,12 @@ export function upsertEmbedding(
     sqlite.run("DELETE FROM embeddings WHERE entity_id = ?", [entityId]);
 
     // Insert new embedding
+    // Convert Float32Array buffer to Uint8Array for SQLite binding
     sqlite
       .query(
         "INSERT INTO embeddings (entity_id, entity_type, embedding) VALUES (?, ?, ?)"
       )
-      .run(entityId, entityType, embedding.buffer);
+      .run(entityId, entityType, new Uint8Array(embedding.buffer));
   });
 
   upsert();

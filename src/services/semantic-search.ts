@@ -1,3 +1,4 @@
+import type { SQLQueryBindings } from "bun:sqlite";
 import {
   requireSqliteInstance,
   isSqliteVecAvailable,
@@ -107,15 +108,17 @@ export async function semanticSearch(
     ORDER BY distance ASC
   `;
 
-  const searchParams = [
-    queryEmbedding.buffer,
-    queryEmbedding.buffer,
+  // Convert Float32Array buffer to Uint8Array for SQLite binding
+  const embeddingBuffer = new Uint8Array(queryEmbedding.buffer);
+  const searchParams: SQLQueryBindings[] = [
+    embeddingBuffer,
+    embeddingBuffer,
     distanceThreshold,
     ...typeParams,
   ];
 
   const embeddingResults = sqlite
-    .query<EmbeddingSearchRow, unknown[]>(searchQuery)
+    .query<EmbeddingSearchRow, SQLQueryBindings[]>(searchQuery)
     .all(...searchParams);
 
   // Now get metadata for each result and filter by status
