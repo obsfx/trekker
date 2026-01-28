@@ -12,7 +12,7 @@
     "bin"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun --external commander --external drizzle-orm",
+    "build": "bun build src/index.ts --outdir dist --target bun --external commander --external drizzle-orm --external onnxruntime-node --external sqlite-vec --external better-sqlite3",
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",

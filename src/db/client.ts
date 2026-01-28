@@ -4,6 +4,7 @@ import * as sqliteVec from "sqlite-vec";
 import * as schema from "./schema";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
+import { platform } from "os";
 
 const EMBEDDING_DIMENSION = 256;
 
@@ -11,6 +12,37 @@ const TREKKER_DIR = ".trekker";
 const DB_NAME = "trekker.db";
 
 let sqliteVecLoaded = false;
+let customSqliteConfigured = false;
+
+/**
+ * Configure custom SQLite library on macOS for extension support.
+ * macOS ships with Apple's SQLite build that doesn't support dynamic extensions.
+ * Homebrew's SQLite has extension support enabled.
+ */
+function configureCustomSqlite(): void {
+  if (customSqliteConfigured) return;
+  customSqliteConfigured = true;
+
+  if (platform() !== "darwin") return;
+
+  // Common Homebrew SQLite paths (Apple Silicon and Intel)
+  const homebrewPaths = [
+    "/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib", // Apple Silicon
+    "/usr/local/opt/sqlite/lib/libsqlite3.dylib", // Intel
+  ];
+
+  for (const sqlitePath of homebrewPaths) {
+    if (existsSync(sqlitePath)) {
+      try {
+        Database.setCustomSQLite(sqlitePath);
+        return;
+      } catch {
+        // Failed to set custom SQLite, continue to next path
+      }
+    }
+  }
+  // No Homebrew SQLite found - will use system SQLite (extensions won't work)
+}
 
 function loadSqliteVec(sqlite: Database): boolean {
   try {
@@ -61,6 +93,9 @@ export function getDb(cwd: string = process.cwd()) {
     );
   }
 
+  // Configure Homebrew SQLite on macOS for extension support
+  configureCustomSqlite();
+
   sqliteInstance = new Database(dbPath);
   sqliteVecLoaded = loadSqliteVec(sqliteInstance);
   dbInstance = drizzle(sqliteInstance, { schema });
@@ -82,6 +117,9 @@ export function getDb(cwd: string = process.cwd()) {
 export function createDb(cwd: string = process.cwd()) {
   ensureTrekkerDir(cwd);
   const dbPath = getDbPath(cwd);
+
+  // Configure Homebrew SQLite on macOS for extension support
+  configureCustomSqlite();
 
   sqliteInstance = new Database(dbPath);
   sqliteVecLoaded = loadSqliteVec(sqliteInstance);

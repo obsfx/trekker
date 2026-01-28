@@ -60,6 +60,9 @@ interface EntityMetaRow {
 }
 
 export function requireSemanticSearch(): void {
+  // Ensure DB is initialized first (this triggers sqlite-vec loading)
+  requireSqliteInstance();
+
   if (!isSqliteVecAvailable()) {
     throw new Error(
       "Semantic search is not available. Your SQLite build does not support dynamic extension loading."
