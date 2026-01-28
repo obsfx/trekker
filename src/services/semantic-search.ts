@@ -66,6 +66,10 @@ export async function semanticSearch(
   const threshold = options?.threshold ?? 0.5;
   const offset = (page - 1) * limit;
 
+  // Initialize database first
+  await getDb();
+  const sqlite = requireSqliteInstance();
+
   // Ensure model is loaded and generate query embedding
   const loaded = await ensureModelLoaded({ silent: true });
   if (!loaded) {
@@ -80,10 +84,6 @@ export async function semanticSearch(
     types: options?.types,
     similarityThreshold: threshold,
   });
-
-  // Initialize database and get SQLite instance for metadata lookup
-  await getDb();
-  const sqlite = requireSqliteInstance();
 
   // Get metadata for each result and filter by status
   const results: SemanticSearchResult[] = [];

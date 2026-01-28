@@ -11,5 +11,9 @@ export default defineConfig({
     "commander",
     "drizzle-orm",
     "sql.js",
+    "dayjs",
+    "dayjs/plugin/customParseFormat",
+    "@huggingface/transformers",
+    "@toon-format/toon",
   ],
 });

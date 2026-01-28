@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import { listAll, parseSort } from "../services/list";
 import type { ListEntityType, ListResponse, ListItem } from "../services/list";
 import { handleCommandError, outputResult } from "../utils/output";

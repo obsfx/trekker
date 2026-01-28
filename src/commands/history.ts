@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import { getHistory } from "../services/history";
 
 dayjs.extend(customParseFormat);
