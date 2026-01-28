@@ -12,10 +12,10 @@
     "bin"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun --external commander --external drizzle-orm --external onnxruntime-node --external sqlite-vec --external better-sqlite3",
-    "dev": "bun run src/index.ts",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "release:patch": "npm version patch && npm run build && npm publish --access public",
@@ -32,7 +32,7 @@
     "project-management",
     "todo",
     "epic",
-    "bun"
+    "node"
   ],
   "author": "Omercan Balandi <balandiomer@gmail.com>",
   "license": "MIT",
@@ -45,8 +45,7 @@
     "url": "https://github.com/obsfx/trekker/issues"
   },
   "engines": {
-    "node": ">=18",
-    "bun": ">=1.0.0"
+    "node": ">=18"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
@@ -54,11 +53,14 @@
     "commander": "^13.1.0",
     "dayjs": "^1.11.19",
     "drizzle-orm": "^0.38.4",
-    "sqlite-vec": "^0.1.7-alpha.2"
+    "sql.js": "^1.11.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.2",
+    "@types/node": "^20.11.0",
     "drizzle-kit": "^0.30.4",
-    "typescript": "^5.7.3"
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.7.3",
+    "vitest": "^2.0.0"
   }
 }

@@ -1,0 +1,7 @@
+[test]
+# CLI integration tests spawn processes, so need longer timeout
+# 30s for tests + beforeEach hooks that create multiple entities
+timeout = 30000
+
+# Preload setup file to handle cleanup
+preload = ["./tests/setup.ts"]
