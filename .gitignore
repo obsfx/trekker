@@ -33,3 +33,6 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Design plans (local only)
+docs/plans/
