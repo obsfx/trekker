@@ -1,11 +1,31 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
+import * as sqliteVec from "sqlite-vec";
 import * as schema from "./schema";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
 
+const EMBEDDING_DIMENSION = 256;
+
 const TREKKER_DIR = ".trekker";
 const DB_NAME = "trekker.db";
+
+let sqliteVecLoaded = false;
+
+function loadSqliteVec(sqlite: Database): boolean {
+  try {
+    sqliteVec.load(sqlite);
+    return true;
+  } catch {
+    // sqlite-vec extension loading failed (likely unsupported SQLite build)
+    // Semantic search features will be unavailable
+    return false;
+  }
+}
+
+export function isSqliteVecAvailable(): boolean {
+  return sqliteVecLoaded;
+}
 
 export function getTrekkerDir(cwd: string = process.cwd()): string {
   return join(cwd, TREKKER_DIR);
@@ -42,10 +62,16 @@ export function getDb(cwd: string = process.cwd()) {
   }
 
   sqliteInstance = new Database(dbPath);
+  sqliteVecLoaded = loadSqliteVec(sqliteInstance);
   dbInstance = drizzle(sqliteInstance, { schema });
 
   // Migrate existing databases to add search index if missing
   migrateSearchIndex(sqliteInstance);
+
+  // Migrate existing databases to add embeddings table if missing (only if sqlite-vec is available)
+  if (sqliteVecLoaded) {
+    migrateEmbeddingsTable(sqliteInstance);
+  }
 
   // Migrate existing databases to add history table if missing
   migrateHistoryTable(sqliteInstance);
@@ -58,6 +84,7 @@ export function createDb(cwd: string = process.cwd()) {
   const dbPath = getDbPath(cwd);
 
   sqliteInstance = new Database(dbPath);
+  sqliteVecLoaded = loadSqliteVec(sqliteInstance);
   dbInstance = drizzle(sqliteInstance, { schema });
 
   // Create tables
@@ -141,6 +168,11 @@ export function createDb(cwd: string = process.cwd()) {
 
   // Create history event triggers
   createHistoryTriggers(sqliteInstance);
+
+  // Create embeddings virtual table and metadata table (only if sqlite-vec is available)
+  if (sqliteVecLoaded) {
+    createEmbeddingsTable(sqliteInstance);
+  }
 
   return dbInstance;
 }
@@ -444,6 +476,36 @@ function migrateHistoryTable(sqlite: Database): void {
   }
 }
 
+function createEmbeddingsTable(sqlite: Database): void {
+  // Create vec0 virtual table for vector embeddings
+  sqlite.run(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS embeddings USING vec0(
+      entity_id TEXT,
+      entity_type TEXT,
+      embedding float[${EMBEDDING_DIMENSION}]
+    )
+  `);
+
+  // Create embedding_meta table for model versioning
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS embedding_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+}
+
+function migrateEmbeddingsTable(sqlite: Database): void {
+  // Check if embeddings table exists
+  const tableExists = sqlite
+    .query("SELECT name FROM sqlite_master WHERE type='table' AND name='embeddings'")
+    .get();
+
+  if (!tableExists) {
+    createEmbeddingsTable(sqlite);
+  }
+}
+
 export function rebuildSearchIndex(): void {
   // Ensure database is initialized first
   getDb();
@@ -474,6 +536,7 @@ export function closeDb(): void {
     sqliteInstance.close();
     sqliteInstance = null;
     dbInstance = null;
+    sqliteVecLoaded = false;
   }
 }
 
@@ -483,4 +546,89 @@ export function deleteDb(cwd: string = process.cwd()): void {
   if (existsSync(trekkerDir)) {
     rmSync(trekkerDir, { recursive: true, force: true });
   }
+}
+
+// Embedding helper types
+export interface EmbeddingRow {
+  entity_id: string;
+  entity_type: string;
+  embedding: ArrayBuffer;
+  distance?: number;
+}
+
+function requireSqliteVec(): void {
+  if (!sqliteVecLoaded) {
+    throw new Error(
+      "Semantic search is not available. Your SQLite build does not support dynamic extension loading."
+    );
+  }
+}
+
+// Embedding helper functions
+export function getEmbedding(entityId: string): EmbeddingRow | null {
+  requireSqliteVec();
+  const sqlite = requireSqliteInstance();
+  const result = sqlite
+    .query<EmbeddingRow, [string]>(
+      "SELECT entity_id, entity_type, embedding FROM embeddings WHERE entity_id = ?"
+    )
+    .get(entityId);
+  return result ?? null;
+}
+
+export function upsertEmbedding(
+  entityId: string,
+  entityType: string,
+  embedding: Float32Array
+): void {
+  requireSqliteVec();
+  const sqlite = requireSqliteInstance();
+
+  // Validate embedding dimension
+  if (embedding.length !== EMBEDDING_DIMENSION) {
+    throw new Error(
+      `Invalid embedding dimension: expected ${EMBEDDING_DIMENSION}, got ${embedding.length}`
+    );
+  }
+
+  // Use transaction to ensure atomicity of delete + insert
+  const upsert = sqlite.transaction(() => {
+    // Delete existing embedding if present
+    sqlite.run("DELETE FROM embeddings WHERE entity_id = ?", [entityId]);
+
+    // Insert new embedding
+    sqlite
+      .query(
+        "INSERT INTO embeddings (entity_id, entity_type, embedding) VALUES (?, ?, ?)"
+      )
+      .run(entityId, entityType, embedding.buffer);
+  });
+
+  upsert();
+}
+
+export function deleteEmbedding(entityId: string): void {
+  requireSqliteVec();
+  const sqlite = requireSqliteInstance();
+  sqlite.run("DELETE FROM embeddings WHERE entity_id = ?", [entityId]);
+}
+
+export function getEmbeddingMeta(key: string): string | null {
+  requireSqliteVec();
+  const sqlite = requireSqliteInstance();
+  const result = sqlite
+    .query<{ value: string }, [string]>(
+      "SELECT value FROM embedding_meta WHERE key = ?"
+    )
+    .get(key);
+  return result?.value ?? null;
+}
+
+export function setEmbeddingMeta(key: string, value: string): void {
+  requireSqliteVec();
+  const sqlite = requireSqliteInstance();
+  sqlite.run(
+    "INSERT OR REPLACE INTO embedding_meta (key, value) VALUES (?, ?)",
+    [key, value]
+  );
 }

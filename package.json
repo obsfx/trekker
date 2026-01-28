@@ -52,7 +52,8 @@
     "@toon-format/toon": "^2.1.0",
     "commander": "^13.1.0",
     "dayjs": "^1.11.19",
-    "drizzle-orm": "^0.38.4"
+    "drizzle-orm": "^0.38.4",
+    "sqlite-vec": "^0.1.7-alpha.2"
   },
   "devDependencies": {
     "@types/bun": "^1.2.2",
