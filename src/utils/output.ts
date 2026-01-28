@@ -89,6 +89,12 @@ export function info(message: string): void {
   }
 }
 
+export function warn(message: string): void {
+  if (!toonMode) {
+    console.log(`⚠ ${message}`);
+  }
+}
+
 export function formatTask(task: Task): string {
   const lines = [
     `ID:          ${task.id}`,

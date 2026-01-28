@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+```
+rm -rf .trekker IS BANNED, DO NOT REMOVE THIS PROJECTS TREKKER INITIALIZATION
+IF YOU NEED TO TEST SOMETHING CREATE ANOTHER TEMP DIRECTORY
+```
+
 ## Project Overview
 
 Trekker is a CLI-based issue tracker designed for AI coding agents. It stores tasks, epics, and dependencies in a local SQLite database per project. Requires Node.js 18+.
@@ -31,6 +36,7 @@ Three-layer architecture: `commands/` → `services/` → `db/`
 ### Database Architecture
 
 Trekker uses sql.js (WASM-based SQLite) for all data storage:
+
 - **Relational data**: Tasks, epics, comments via Drizzle ORM
 - **Vector embeddings**: Stored in SQLite `embeddings` table for semantic search
 - **Full-text search**: FTS5 index for keyword search
@@ -79,20 +85,23 @@ Trekker includes semantic search powered by Transformers.js:
 ### Key Commands
 
 ```bash
-trekker semantic-search "query"     # Find semantically similar items
-trekker similar TREK-1              # Find duplicates/related items
-trekker search "query" --mode hybrid # Combine keyword + semantic
-trekker reindex --embeddings        # Rebuild all embeddings
+trekker search "query"              # Semantic search (default)
+trekker search "query" --mode keyword # FTS5 keyword search
+trekker search "query" --mode hybrid  # Combine keyword + semantic
 ```
+
+### Auto-Indexing
+
+Embeddings are generated automatically when entities are created or updated - no manual reindexing required.
 
 ### Key Files for Semantic Search
 
-| File | Purpose |
-|------|---------|
-| `src/services/embedding.ts` | Model loading, embedding generation |
-| `src/services/semantic-search.ts` | Search logic, entity indexing |
-| `src/db/vectors.ts` | SQLite vector storage and similarity search |
-| `src/utils/async.ts` | Background task handling |
+| File                              | Purpose                                     |
+| --------------------------------- | ------------------------------------------- |
+| `src/services/embedding.ts`       | Model loading, embedding generation         |
+| `src/services/semantic-search.ts` | Search logic, entity indexing               |
+| `src/db/vectors.ts`               | SQLite vector storage and similarity search |
+| `src/utils/async.ts`              | Background task handling                    |
 
 ### Debug Mode
 

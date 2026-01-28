@@ -121,18 +121,21 @@ trekker dep list <task-id>
 
 ### Search
 
-Full-text search across epics, tasks, subtasks, and comments using FTS5:
+Search across epics, tasks, subtasks, and comments. Uses semantic search by default:
 
 ```bash
-trekker search <query> [--type <types>] [--status <status>] [--limit <n>] [--page <n>]
+trekker search <query> [--type <types>] [--status <status>] [--mode <mode>] [--limit <n>]
 ```
 
 Examples:
 ```bash
-trekker search "authentication"                          # Search all entities
-trekker search "bug fix" --type task,subtask             # Search only tasks and subtasks
-trekker search "login" --type comment --status completed # Search comments in completed items
+trekker search "auth problems"                    # Semantic search (finds "login", "OAuth", etc.)
+trekker search "bug" --mode keyword               # FTS5 keyword search
+trekker search "performance" --mode hybrid        # Combine keyword + semantic
+trekker search "login" --type task --status todo  # Filter by type and status
 ```
+
+Embeddings are generated automatically when tasks/epics are created or updated. The model (~200MB) downloads on first use and is cached at `~/.trekker/models/`.
 
 ### History
 
@@ -165,25 +168,6 @@ trekker list --type task --status in_progress    # Active tasks only
 trekker list --priority 0,1 --sort priority:asc  # Critical/high priority first
 trekker list --sort title:asc,created:desc       # Sort by title, then by date
 ```
-
-### Semantic Search
-
-Find related items by meaning, not just keywords:
-
-```bash
-trekker semantic-search <query> [--type <types>] [--threshold <0-1>] [--limit <n>]
-trekker similar <entity-id>                      # Find duplicates/related items
-trekker search <query> --mode hybrid             # Combine keyword + semantic
-```
-
-Examples:
-```bash
-trekker semantic-search "auth problems"          # Finds "login", "OAuth", "credentials"
-trekker similar TREK-1                           # Find tasks similar to TREK-1
-trekker search "performance" --mode hybrid       # Best of both search modes
-```
-
-The embedding model (~200MB) downloads on first use and is cached at `~/.trekker/models/`.
 
 ### Web Interface
 

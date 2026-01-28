@@ -108,12 +108,12 @@ Trekker uses a **unified SQLite architecture**: all data (relational and vector)
 │  ┌───────────────┐     ┌───────────────┐     ┌───────────────────┐ │
 │  │   Commands    │     │   Services    │     │     Database      │ │
 │  │               │     │               │     │                   │ │
-│  │ semantic-     │────▶│ semantic-     │────▶│ SQLite            │ │
-│  │ search.ts     │     │ search.ts     │     │ (sql.js WASM)     │ │
-│  │               │     │               │     │                   │ │
-│  │ similar.ts    │────▶│ similar.ts    │────▶│ ├─ tasks          │ │
-│  │               │     │               │     │ ├─ epics          │ │
-│  │ reindex.ts    │────▶│ embedding.ts  │     │ ├─ embeddings     │ │
+│  │ search.ts     │────▶│ semantic-     │────▶│ SQLite            │ │
+│  │ (semantic is  │     │ search.ts     │     │ (sql.js WASM)     │ │
+│  │  default)     │     │               │     │                   │ │
+│  │               │────▶│ search.ts     │────▶│ ├─ tasks          │ │
+│  │               │     │ (FTS5)        │     │ ├─ epics          │ │
+│  │               │────▶│ embedding.ts  │     │ ├─ embeddings     │ │
 │  │               │     │ (model)       │     │ └─ events         │ │
 │  └───────────────┘     └───────────────┘     └───────────────────┘ │
 │                                                                     │
@@ -121,7 +121,7 @@ Trekker uses a **unified SQLite architecture**: all data (relational and vector)
 │         │                     │                      │              │
 │    CLI Layer            Business Logic          Data Layer          │
 │                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Why Unified SQLite?
@@ -139,13 +139,13 @@ For Trekker's scale (hundreds to low thousands of entities), brute-force cosine 
 
 | File | Purpose |
 |------|---------|
+| `src/commands/search.ts` | Unified search command (semantic default) |
 | `src/services/embedding.ts` | Wraps Transformers.js, manages model loading |
-| `src/services/semantic-search.ts` | Search logic, indexing entities |
-| `src/services/similar.ts` | Duplicate detection logic |
+| `src/services/semantic-search.ts` | Semantic search logic, entity indexing |
+| `src/services/search.ts` | FTS5 keyword search, hybrid search |
 | `src/db/vectors.ts` | SQLite vector storage and similarity search |
 | `src/db/client-node.ts` | sql.js (WASM SQLite) setup via Drizzle ORM |
-| `src/utils/text.ts` | Text utilities (truncation, entity text building) |
-| `src/utils/async.ts` | Background task handling |
+| `src/utils/async.ts` | Background task handling (auto-indexing) |
 
 ---
 
@@ -385,8 +385,8 @@ We chose 256 as the sweet spot between quality and efficiency.
 ### When User Searches
 
 ```
-1. User searches
-   └── trekker semantic-search "auth problems"
+1. User searches (semantic is default)
+   └── trekker search "auth problems"
 
 2. Query embedding generated
    └── embed('auth problems')
@@ -410,7 +410,18 @@ We chose 256 as the sweet spot between quality and efficiency.
 
 ## Search Modes Explained
 
-### Keyword Mode (Default)
+### Semantic Mode (Default)
+
+Uses vector similarity for meaning-based search:
+
+```typescript
+const result = await semanticSearch(query, { threshold: 0.5 });
+```
+
+**Pros**: Finds related concepts, natural language queries work great
+**Cons**: Requires model, may miss exact keyword matches
+
+### Keyword Mode
 
 Uses SQLite FTS5 for fast text matching:
 
@@ -420,17 +431,6 @@ SELECT * FROM search_index WHERE search_index MATCH 'auth*'
 
 **Pros**: Fast, exact matches, no model needed
 **Cons**: Misses synonyms and related concepts
-
-### Semantic Mode
-
-Uses vector similarity exclusively:
-
-```typescript
-const result = await semanticSearch(query, { threshold: 0.5 });
-```
-
-**Pros**: Finds related concepts, natural language queries
-**Cons**: Slower, requires model, may miss exact matches
 
 ### Hybrid Mode
 
@@ -508,10 +508,9 @@ This is fast enough for Trekker's expected scale.
 ### Optimization Tips
 
 1. **Lazy loading**: Model only loads when semantic features are used
-2. **Non-blocking indexing**: Embedding generation doesn't block task creation
-3. **Batch reindexing**: `reindex --embeddings` processes in batches
-4. **Skip embeddings in tests**: Set `TREKKER_SKIP_EMBEDDINGS=1` for faster tests
-5. **Background tasks**: Errors logged only in debug mode (`TREKKER_DEBUG=1`)
+2. **Auto-indexing**: Embeddings generated automatically on create/update (non-blocking)
+3. **Skip embeddings in tests**: Set `TREKKER_SKIP_EMBEDDINGS=1` for faster tests
+4. **Background tasks**: Errors logged only in debug mode (`TREKKER_DEBUG=1`)
 
 ---
 

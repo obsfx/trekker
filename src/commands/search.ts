@@ -11,9 +11,12 @@ import type {
   SearchResponse,
   HybridSearchResponse,
 } from "../services/search";
-import { semanticSearch } from "../services/semantic-search";
-import { formatSemanticSearchResults } from "./semantic-search";
-import { handleCommandError, outputResult } from "../utils/output";
+import {
+  semanticSearch,
+  type SemanticSearchResponse,
+} from "../services/semantic-search";
+import { countEmbeddings } from "../db/vectors";
+import { handleCommandError, outputResult, warn } from "../utils/output";
 import { validatePagination, validateSearchEntityTypes } from "../utils/validator";
 
 export const searchCommand = new Command("search")
@@ -23,7 +26,7 @@ export const searchCommand = new Command("search")
   .option("--status <status>", "Filter by status")
   .option("--limit <n>", "Results per page (default: 20)", "20")
   .option("--page <n>", "Page number (default: 1)", "1")
-  .option("--mode <mode>", "Search mode: keyword, semantic, or hybrid (default: keyword)", "keyword")
+  .option("--mode <mode>", "Search mode: semantic, keyword, or hybrid (default: semantic)", "semantic")
   .option("--rebuild-index", "Rebuild the search index before searching")
   .action(async (query, options) => {
     try {
@@ -63,6 +66,15 @@ export const searchCommand = new Command("search")
 
       if (mode === "semantic") {
         const result = await semanticSearch(query, { ...searchOptions, threshold: 0.5 });
+
+        // Warn if embeddings are empty (migrated DB without auto-indexed data)
+        if (result.results.length === 0) {
+          const embeddingCount = await countEmbeddings();
+          if (embeddingCount === 0) {
+            warn("No embeddings found. Create some tasks/epics to enable semantic search.");
+          }
+        }
+
         outputResult(result, formatSemanticSearchResults);
         return;
       }
@@ -131,6 +143,39 @@ function formatHybridSearchResults(result: HybridSearchResponse): string {
       lines.push(`  Title: ${r.title}`);
     }
     lines.push(`  ${r.snippet}`);
+    lines.push("");
+  }
+
+  const totalPages = Math.ceil(result.total / result.limit);
+  if (totalPages > 1) {
+    lines.push(`Page ${result.page} of ${totalPages}`);
+  }
+
+  return lines.join("\n");
+}
+
+function formatSemanticSearchResults(result: SemanticSearchResponse): string {
+  const lines: string[] = [];
+
+  lines.push(`Search: "${result.query}"`);
+  lines.push(`Found ${result.total} results (page ${result.page}, ${result.limit} per page)`);
+  lines.push("");
+
+  if (result.results.length === 0) {
+    lines.push("No results found.");
+    return lines.join("\n");
+  }
+
+  for (const r of result.results) {
+    const typeLabel = r.type.toUpperCase().padEnd(7);
+    const similarityLabel = `[${r.similarity.toFixed(2)}]`;
+    const statusLabel = r.status ? ` [${r.status}]` : "";
+    const parentLabel = r.parentId ? ` (parent: ${r.parentId})` : "";
+
+    lines.push(`${typeLabel} ${r.id} ${similarityLabel}${statusLabel}${parentLabel}`);
+    if (r.title) {
+      lines.push(`  ${r.title}`);
+    }
     lines.push("");
   }
 
