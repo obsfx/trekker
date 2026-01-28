@@ -12,6 +12,7 @@ import {
   DEFAULT_PRIORITY,
   DEFAULT_EPIC_STATUS,
 } from "../types";
+import { indexEntity, removeEntityIndex } from "./semantic-search";
 
 export function createEpic(input: CreateEpicInput): Epic {
   const db = getDb();
@@ -36,6 +37,11 @@ export function createEpic(input: CreateEpicInput): Epic {
   };
 
   db.insert(epics).values(epic).run();
+
+  // Queue embedding generation (non-blocking)
+  indexEntity(id, "epic", `${epic.title} ${epic.description ?? ""}`).catch(
+    () => {}
+  );
 
   return epic as Epic;
 }
@@ -79,6 +85,16 @@ export function updateEpic(id: string, input: UpdateEpicInput): Epic {
 
   db.update(epics).set(updates).where(eq(epics.id, id)).run();
 
+  // Re-embed if title or description changed (non-blocking)
+  if (input.title !== undefined || input.description !== undefined) {
+    const updated = getEpic(id)!;
+    indexEntity(
+      id,
+      "epic",
+      `${updated.title} ${updated.description ?? ""}`
+    ).catch(() => {});
+  }
+
   return getEpic(id)!;
 }
 
@@ -88,6 +104,13 @@ export function deleteEpic(id: string): void {
   const existing = getEpic(id);
   if (!existing) {
     throw new Error(`Epic not found: ${id}`);
+  }
+
+  // Remove from semantic index before deleting
+  try {
+    removeEntityIndex(id);
+  } catch {
+    // Ignore if semantic search not available
   }
 
   db.delete(epics).where(eq(epics.id, id)).run();

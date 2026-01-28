@@ -12,6 +12,7 @@ import {
   DEFAULT_PRIORITY,
   DEFAULT_TASK_STATUS,
 } from "../types";
+import { indexEntity, removeEntityIndex } from "./semantic-search";
 
 export function createTask(input: CreateTaskInput): Task {
   const db = getDb();
@@ -59,6 +60,12 @@ export function createTask(input: CreateTaskInput): Task {
   };
 
   db.insert(tasks).values(task).run();
+
+  // Queue embedding generation (non-blocking)
+  const entityType = input.parentTaskId ? "subtask" : "task";
+  indexEntity(id, entityType, `${task.title} ${task.description ?? ""}`).catch(
+    () => {}
+  );
 
   return task as Task;
 }
@@ -142,6 +149,17 @@ export function updateTask(id: string, input: UpdateTaskInput): Task {
 
   db.update(tasks).set(updates).where(eq(tasks.id, id)).run();
 
+  // Re-embed if title or description changed (non-blocking)
+  if (input.title !== undefined || input.description !== undefined) {
+    const updated = getTask(id)!;
+    const entityType = updated.parentTaskId ? "subtask" : "task";
+    indexEntity(
+      id,
+      entityType,
+      `${updated.title} ${updated.description ?? ""}`
+    ).catch(() => {});
+  }
+
   return getTask(id)!;
 }
 
@@ -151,6 +169,13 @@ export function deleteTask(id: string): void {
   const existing = getTask(id);
   if (!existing) {
     throw new Error(`Task not found: ${id}`);
+  }
+
+  // Remove from semantic index before deleting
+  try {
+    removeEntityIndex(id);
+  } catch {
+    // Ignore if semantic search not available
   }
 
   // Note: Subtasks and comments will be cascade deleted by SQLite

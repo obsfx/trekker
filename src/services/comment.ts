@@ -3,6 +3,7 @@ import { getDb } from "../db/client";
 import { comments, tasks } from "../db/schema";
 import { generateId } from "../utils/id-generator";
 import type { Comment, CreateCommentInput, UpdateCommentInput } from "../types";
+import { indexEntity, removeEntityIndex } from "./semantic-search";
 
 export function createComment(input: CreateCommentInput): Comment {
   const db = getDb();
@@ -26,6 +27,9 @@ export function createComment(input: CreateCommentInput): Comment {
   };
 
   db.insert(comments).values(comment).run();
+
+  // Queue embedding generation (non-blocking)
+  indexEntity(id, "comment", comment.content).catch(() => {});
 
   return comment as Comment;
 }
@@ -68,6 +72,10 @@ export function updateComment(id: string, input: UpdateCommentInput): Comment {
     .where(eq(comments.id, id))
     .run();
 
+  // Re-embed comment content (non-blocking)
+  const updated = getComment(id)!;
+  indexEntity(id, "comment", updated.content).catch(() => {});
+
   return getComment(id)!;
 }
 
@@ -77,6 +85,13 @@ export function deleteComment(id: string): void {
   const existing = getComment(id);
   if (!existing) {
     throw new Error(`Comment not found: ${id}`);
+  }
+
+  // Remove from semantic index before deleting
+  try {
+    removeEntityIndex(id);
+  } catch {
+    // Ignore if semantic search not available
   }
 
   db.delete(comments).where(eq(comments.id, id)).run();
