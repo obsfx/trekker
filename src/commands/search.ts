@@ -120,6 +120,15 @@ function formatSearchResults(result: SearchResponse): string {
   return lines.join("\n");
 }
 
+function getScoreLabel(score: number): string {
+  const percent = Math.round(score * 100);
+  if (percent >= 95) return `${percent}% relevance (exact)`;
+  if (percent >= 85) return `${percent}% relevance (very high)`;
+  if (percent >= 75) return `${percent}% relevance (high)`;
+  if (percent >= 60) return `${percent}% relevance (moderate)`;
+  return `${percent}% relevance (low)`;
+}
+
 function formatHybridSearchResults(result: HybridSearchResponse): string {
   const lines: string[] = [];
 
@@ -134,11 +143,11 @@ function formatHybridSearchResults(result: HybridSearchResponse): string {
 
   for (const r of result.results) {
     const typeLabel = r.type.toUpperCase().padEnd(7);
-    const scoreLabel = `[${r.score.toFixed(2)}]`;
+    const scoreLabel = getScoreLabel(r.score);
     const statusLabel = r.status ? ` [${r.status}]` : "";
     const parentLabel = r.parentId ? ` (parent: ${r.parentId})` : "";
 
-    lines.push(`${typeLabel} ${r.id} ${scoreLabel}${statusLabel}${parentLabel}`);
+    lines.push(`${typeLabel} ${r.id} | ${scoreLabel}${statusLabel}${parentLabel}`);
     if (r.title) {
       lines.push(`  Title: ${r.title}`);
     }
@@ -152,6 +161,15 @@ function formatHybridSearchResults(result: HybridSearchResponse): string {
   }
 
   return lines.join("\n");
+}
+
+function getSimilarityLabel(similarity: number): string {
+  const percent = Math.round(similarity * 100);
+  if (percent >= 95) return `${percent}% match (exact)`;
+  if (percent >= 85) return `${percent}% match (very high)`;
+  if (percent >= 75) return `${percent}% match (high)`;
+  if (percent >= 60) return `${percent}% match (moderate)`;
+  return `${percent}% match (low)`;
 }
 
 function formatSemanticSearchResults(result: SemanticSearchResponse): string {
@@ -168,13 +186,17 @@ function formatSemanticSearchResults(result: SemanticSearchResponse): string {
 
   for (const r of result.results) {
     const typeLabel = r.type.toUpperCase().padEnd(7);
-    const similarityLabel = `[${r.similarity.toFixed(2)}]`;
+    const similarityLabel = getSimilarityLabel(r.similarity);
     const statusLabel = r.status ? ` [${r.status}]` : "";
     const parentLabel = r.parentId ? ` (parent: ${r.parentId})` : "";
 
-    lines.push(`${typeLabel} ${r.id} ${similarityLabel}${statusLabel}${parentLabel}`);
+    lines.push(`${typeLabel} ${r.id} | ${similarityLabel}${statusLabel}${parentLabel}`);
     if (r.title) {
-      lines.push(`  ${r.title}`);
+      lines.push(`  Title: ${r.title}`);
+    }
+    if (r.description) {
+      const desc = r.description.length > 100 ? r.description.substring(0, 100) + "..." : r.description;
+      lines.push(`  Desc:  ${desc}`);
     }
     lines.push("");
   }

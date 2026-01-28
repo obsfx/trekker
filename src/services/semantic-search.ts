@@ -24,6 +24,7 @@ export interface SemanticSearchResult {
   type: SearchEntityType;
   id: string;
   title: string | null;
+  description: string | null;
   similarity: number;
   status: string | null;
   parentId: string | null;
@@ -42,6 +43,7 @@ interface EntityMetaRow {
   entity_id: string;
   entity_type: string;
   title: string | null;
+  description: string | null;
   status: string | null;
   parent_id: string | null;
 }
@@ -101,6 +103,7 @@ export async function semanticSearch(
       type: row.entityType as SearchEntityType,
       id: row.entityId,
       title: meta.title,
+      description: meta.description,
       similarity: row.similarity,
       status: meta.status,
       parentId: meta.parent_id,
@@ -130,16 +133,17 @@ export function getEntityMeta(
   entityType: string
 ): EntityMetaRow | null {
   if (entityType === "epic") {
-    const stmt = sqlite.prepare("SELECT title, status FROM epics WHERE id = ?");
+    const stmt = sqlite.prepare("SELECT title, description, status FROM epics WHERE id = ?");
     stmt.bind([entityId]);
 
     if (stmt.step()) {
-      const row = stmt.getAsObject() as { title: string; status: string };
+      const row = stmt.getAsObject() as { title: string; description: string | null; status: string };
       stmt.free();
       return {
         entity_id: entityId,
         entity_type: entityType,
         title: row.title,
+        description: row.description,
         status: row.status,
         parent_id: null,
       };
@@ -150,13 +154,14 @@ export function getEntityMeta(
 
   if (entityType === "task" || entityType === "subtask") {
     const stmt = sqlite.prepare(
-      "SELECT title, status, parent_task_id, epic_id FROM tasks WHERE id = ?"
+      "SELECT title, description, status, parent_task_id, epic_id FROM tasks WHERE id = ?"
     );
     stmt.bind([entityId]);
 
     if (stmt.step()) {
       const row = stmt.getAsObject() as {
         title: string;
+        description: string | null;
         status: string;
         parent_task_id: string | null;
         epic_id: string | null;
@@ -166,6 +171,7 @@ export function getEntityMeta(
         entity_id: entityId,
         entity_type: entityType,
         title: row.title,
+        description: row.description,
         status: row.status,
         parent_id: row.parent_task_id ?? row.epic_id,
       };
@@ -185,6 +191,7 @@ export function getEntityMeta(
         entity_id: entityId,
         entity_type: entityType,
         title: truncateText(row.content, 50),
+        description: row.content,
         status: null,
         parent_id: row.task_id,
       };
