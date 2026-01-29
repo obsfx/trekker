@@ -1,4 +1,7 @@
 node_modules/
 .trekker/
 dist/
-site/
+site/.astro 
+site/dist
+
+docs/
