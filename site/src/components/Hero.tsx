@@ -1,41 +1,65 @@
 import { GitBranchPlus, Github, Package } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle";
+
+export function Header() {
+  return (
+    <header className="sticky top-4 z-50 mx-auto max-w-4xl px-4 md:px-6 mb-6 md:mb-8">
+      <div className="flex justify-between items-center px-4 py-3 rounded-full bg-white/10 backdrop-blur-sm">
+        <a href="/trekker/" className="flex items-center gap-2 font-bold text-fluid-sm text-white hover:opacity-70 transition-opacity">
+          <GitBranchPlus size={20} />
+          trekker
+        </a>
+        <nav className="flex items-center gap-4 md:gap-6">
+          <a href="#features" className="hidden sm:block text-fluid-sm font-medium text-white/70 hover:text-white transition-colors">
+            Features
+          </a>
+          <a href="#installation" className="hidden sm:block text-fluid-sm font-medium text-white/70 hover:text-white transition-colors">
+            Install
+          </a>
+          <a href="#commands" className="hidden sm:block text-fluid-sm font-medium text-white/70 hover:text-white transition-colors">
+            Commands
+          </a>
+        </nav>
+      </div>
+    </header>
+  );
+}
 
 export function Hero() {
   return (
-    <section className="py-8 md:py-12 max-w-3xl">
-      <div className="flex justify-between items-center mb-8 md:mb-12">
-        <span className="font-bold text-xl flex gap-2 items-center">
-          <GitBranchPlus />
-          trekker
-        </span>
-        <ThemeToggle />
-      </div>
+    <section className="pt-4 pb-12 md:pt-8 md:pb-16">
 
-      <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-        CLI Task Tracker for AI Agents
-      </h1>
+      {/* Hero Content - Asymmetric Layout */}
+      <div className="grid md:grid-cols-5 gap-8 md:gap-12 items-start">
+        <div className="md:col-span-3">
+          <h1 className="font-sans text-fluid-4xl font-bold text-white leading-tight mb-6">
+            Task tracking for
+            <br />
+            <span className="text-white/70">AI agents</span>
+          </h1>
+        </div>
 
-      <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-6">
-        Track tasks, epics, and dependencies from your terminal. Everything
-        stays in a local SQLite database.
-      </p>
+        <div className="md:col-span-2 md:pt-4">
+          <p className="text-fluid-base text-white/70 mb-8 leading-relaxed">
+            A CLI-based task manager that keeps AI coding agents on track. Tasks, epics, and dependencies—all in a local SQLite database.
+          </p>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <a
-          href="https://github.com/obsfx/trekker"
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent dark:bg-accent-dark text-white font-medium rounded-full hover:opacity-90 transition-opacity"
-        >
-          <Github size={16} />
-          GitHub
-        </a>
-        <a
-          href="https://www.npmjs.com/package/@obsfx/trekker"
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium rounded-full border border-neutral-200 dark:border-neutral-700 hover:opacity-90 transition-opacity"
-        >
-          <Package size={16} />
-          npm
-        </a>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href="https://github.com/obsfx/trekker"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-[#001BB7] font-semibold rounded-full hover:bg-white/90 transition-colors"
+            >
+              <Github size={18} />
+              GitHub
+            </a>
+            <a
+              href="https://www.npmjs.com/package/@obsfx/trekker"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-colors"
+            >
+              <Package size={18} />
+              npm
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );

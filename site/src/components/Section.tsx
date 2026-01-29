@@ -4,12 +4,15 @@ interface SectionProps {
   title: string;
   children: ReactNode;
   className?: string;
+  id?: string;
 }
 
-export function Section({ title, children, className }: SectionProps) {
+export function Section({ title, children, className, id }: SectionProps) {
   return (
-    <section className={`mb-12 ${className || ""}`}>
-      <h2 className="text-xl md:text-2xl font-bold mb-4">{title}</h2>
+    <section id={id} className={`py-8 md:py-10 ${className || ""}`}>
+      <h2 className="font-sans text-fluid-2xl font-bold text-white mb-4">
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -23,7 +26,9 @@ interface SubSectionProps {
 export function SubSection({ title, children }: SubSectionProps) {
   return (
     <div className="mt-6">
-      <h3 className="text-base md:text-lg font-semibold mb-3">{title}</h3>
+      <h3 className="font-sans text-fluid-lg font-semibold text-white mb-3">
+        {title}
+      </h3>
       {children}
     </div>
   );

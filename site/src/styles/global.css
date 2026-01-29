@@ -1,25 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-accent: #6366f1;
-  --color-accent-dark: #818cf8;
-}
-
-[data-theme="dark"] {
-  color-scheme: dark;
+  --color-page: #001BB7;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
-body {
-  @apply bg-white text-neutral-900 antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-[data-theme="dark"] body {
-  @apply bg-neutral-950 text-white;
+body {
+  @apply antialiased;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: #001BB7;
+  min-height: 100vh;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Focus states for accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-2;
+}
+
+[data-theme="dark"] *:focus-visible {
+  @apply ring-accent-dark ring-offset-surface-dark;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  @apply absolute -top-10 left-4 z-50 bg-accent text-white px-4 py-2 rounded-md transition-all;
+}
+
+.skip-link:focus {
+  @apply top-4;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-text/10 text-text;
+}
+
+[data-theme="dark"] ::selection {
+  @apply bg-text-dark/20 text-text-dark;
 }

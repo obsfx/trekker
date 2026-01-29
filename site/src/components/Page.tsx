@@ -1,43 +1,58 @@
-import { Hero } from "./Hero";
+import { Header, Hero } from "./Hero";
 import { Section, SubSection } from "./Section";
 import { CodeBlock, InlineCode } from "./CodeBlock";
 import { Screenshots } from "./Screenshots";
 
 export function Page() {
   return (
-    <div className="px-4 md:px-6">
-      <Hero />
+    <>
+      {/* Skip link for accessibility */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
 
-      <Section title="Why Trekker" className="max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-          AI coding agents work better when they can track their own progress. A
-          simple CLI-based task manager keeps them on the right path across
-          sessions.
-        </p>
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-          I built this after using{" "}
-          <a
-            href="https://github.com/steveyegge/beads"
-            className="text-accent dark:text-accent-dark underline underline-offset-2 hover:decoration-dotted"
-          >
-            Beads
-          </a>{" "}
-          for a while. Beads does the job, but its codebase has grown quickly
-          without enough care for what is happening inside. A task tracker is a
-          simple application. It should not need thousands of lines of code.
-        </p>
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-          My concerns about the future and security of that project led me here.
-          Trekker is my simplified alternative.
-        </p>
-        <p className="text-neutral-600 dark:text-neutral-400">
-          I built this with AI assistance, but I did it for myself. That means I
-          put enough care into it to make it reliable for my own work.
-        </p>
+      <Header />
+
+      <div className="px-4 md:px-6 max-w-4xl mx-auto pb-8">
+          <Hero />
+
+      <main id="main-content">
+
+      {/* Divider */}
+      <div className="border-t border-white/20 my-4" />
+
+      <Section title="Why Trekker">
+        <div className="space-y-4">
+          <p className="text-fluid-base text-white/70 leading-relaxed">
+            AI coding agents work better when they can track their own progress. A
+            simple CLI-based task manager keeps them on the right path across
+            sessions.
+          </p>
+          <p className="text-fluid-base text-white/70 leading-relaxed">
+            I built this after using{" "}
+            <a
+              href="https://github.com/steveyegge/beads"
+              className="text-white underline underline-offset-4 decoration-white/30 hover:decoration-white transition-colors"
+            >
+              Beads
+            </a>{" "}
+            for a while. Beads does the job, but its codebase has grown quickly
+            without enough care for what is happening inside. A task tracker is a
+            simple application. It should not need thousands of lines of code.
+          </p>
+          <p className="text-fluid-base text-white/70 leading-relaxed">
+            My concerns about the future and security of that project led me here.
+            Trekker is my simplified alternative.
+          </p>
+          <p className="text-fluid-base text-white/70 leading-relaxed">
+            I built this with AI assistance, but I did it for myself. That means I
+            put enough care into it to make it reliable for my own work.
+          </p>
+        </div>
       </Section>
 
-      <Section title="Prerequisites" className="max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+      <Section title="Prerequisites">
+        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           You need the Bun runtime. Trekker uses{" "}
           <InlineCode>bun:sqlite</InlineCode> for database operations. This
           makes every command respond instantly.
@@ -52,7 +67,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 npm install -g bun`}</CodeBlock>
       </Section>
 
-      <Section title="Installation" className="max-w-3xl">
+      <Section title="Installation" id="installation">
         <CodeBlock>{`# Using bun (recommended)
 bun install -g @obsfx/trekker
 
@@ -60,21 +75,27 @@ bun install -g @obsfx/trekker
 npm install -g @obsfx/trekker`}</CodeBlock>
       </Section>
 
-      <Section title="Features" className="max-w-3xl">
-        <ul className="list-disc list-inside text-neutral-600 dark:text-neutral-400 space-y-2">
-          <li>Tasks, epics, subtasks, and dependencies</li>
-          <li>Full-text search across all items</li>
-          <li>Filter by type, status, or priority</li>
-          <li>Kanban board via separate dashboard package</li>
-          <li>
-            Stores everything in a local <InlineCode>.trekker</InlineCode>{" "}
-            folder
-          </li>
-          <li>TOON output format for AI token efficiency</li>
+      <Section title="Features" id="features">
+        <ul className="space-y-3">
+          {[
+            "Tasks, epics, subtasks, and dependencies",
+            "Full-text search across all items",
+            "Filter by type, status, or priority",
+            "Kanban board via separate dashboard package",
+            <>Stores everything in a local <InlineCode>.trekker</InlineCode> folder</>,
+            "TOON output format for AI token efficiency",
+          ].map((feature, index) => (
+            <li key={index} className="flex items-start gap-3 text-fluid-base text-white/70">
+              <svg className="w-5 h-5 text-white flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{feature}</span>
+            </li>
+          ))}
         </ul>
       </Section>
 
-      <Section title="Quick Start" className="max-w-3xl">
+      <Section title="Quick Start">
         <CodeBlock>{`# Initialize your project
 trekker init
 
@@ -93,7 +114,7 @@ trekker task update TREK-1 -s in_progress
 trekker task update TREK-1 -s completed`}</CodeBlock>
       </Section>
 
-      <Section title="Commands" className="max-w-3xl">
+      <Section title="Commands" id="commands">
         <SubSection title="Project Management">
           <CodeBlock>{`trekker init          # Initialize in current directory
 trekker wipe          # Delete all data
@@ -138,8 +159,8 @@ trekker dep list TREK-1`}</CodeBlock>
         </SubSection>
       </Section>
 
-      <Section title="Search" className="max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+      <Section title="Search">
+        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           Search across all tasks, epics, subtasks, and comments using FTS5.
         </p>
         <CodeBlock>{`trekker search "authentication"
@@ -148,8 +169,8 @@ trekker search "login" --type comment --status completed
 trekker search "query" [--type types] [--status status] [--limit n] [--page n]`}</CodeBlock>
       </Section>
 
-      <Section title="History" className="max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+      <Section title="History">
+        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           View an audit log of all changes.
         </p>
         <CodeBlock>{`trekker history
@@ -158,7 +179,7 @@ trekker history --type task,epic --action create,update
 trekker history --since 2024-01-01 --until 2024-12-31`}</CodeBlock>
       </Section>
 
-      <Section title="Unified List View" className="max-w-3xl">
+      <Section title="Unified List View">
         <CodeBlock>{`trekker list
 trekker list --type task,epic
 trekker list --status todo,in_progress
@@ -166,57 +187,46 @@ trekker list --priority 0,1,2
 trekker list --sort priority,created_at`}</CodeBlock>
       </Section>
 
-      <Section title="Status & Priority" className="max-w-3xl">
+      <Section title="Status & Priority">
         <SubSection title="Priority Scale">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-fluid-sm">
               <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                  <th className="text-left py-2 pr-4 font-semibold">
+                <tr className="border-b-2 border-white/20">
+                  <th className="text-left py-3 pr-4 font-semibold text-white">
                     Priority
                   </th>
-                  <th className="text-left py-2 font-semibold">Label</th>
+                  <th className="text-left py-3 font-semibold text-white">Label</th>
                 </tr>
               </thead>
-              <tbody className="text-neutral-600 dark:text-neutral-400">
-                <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                  <td className="py-2 pr-4">0</td>
-                  <td>Critical</td>
-                </tr>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                  <td className="py-2 pr-4">1</td>
-                  <td>High</td>
-                </tr>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                  <td className="py-2 pr-4">2</td>
-                  <td>Medium (default)</td>
-                </tr>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                  <td className="py-2 pr-4">3</td>
-                  <td>Low</td>
-                </tr>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                  <td className="py-2 pr-4">4</td>
-                  <td>Backlog</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4">5</td>
-                  <td>Someday</td>
-                </tr>
+              <tbody className="text-white/70">
+                {[
+                  { priority: 0, label: "Critical" },
+                  { priority: 1, label: "High" },
+                  { priority: 2, label: "Medium (default)" },
+                  { priority: 3, label: "Low" },
+                  { priority: 4, label: "Backlog" },
+                  { priority: 5, label: "Someday" },
+                ].map((row, i) => (
+                  <tr key={row.priority} className={`border-b border-white/10 ${i % 2 === 1 ? 'bg-white/5' : ''}`}>
+                    <td className="py-3 pr-4 font-mono text-white">{row.priority}</td>
+                    <td className="py-3">{row.label}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </SubSection>
 
         <SubSection title="Status Values">
-          <p className="text-neutral-600 dark:text-neutral-400 mb-2">
-            <strong className="text-neutral-900 dark:text-white">Tasks:</strong>{" "}
+          <p className="text-fluid-base text-white/70 mb-3">
+            <strong className="text-white">Tasks:</strong>{" "}
             <InlineCode>todo</InlineCode>, <InlineCode>in_progress</InlineCode>,{" "}
             <InlineCode>completed</InlineCode>,{" "}
             <InlineCode>wont_fix</InlineCode>, <InlineCode>archived</InlineCode>
           </p>
-          <p className="text-neutral-600 dark:text-neutral-400">
-            <strong className="text-neutral-900 dark:text-white">Epics:</strong>{" "}
+          <p className="text-fluid-base text-white/70">
+            <strong className="text-white">Epics:</strong>{" "}
             <InlineCode>todo</InlineCode>, <InlineCode>in_progress</InlineCode>,{" "}
             <InlineCode>completed</InlineCode>,{" "}
             <InlineCode>archived</InlineCode>
@@ -224,25 +234,28 @@ trekker list --sort priority,created_at`}</CodeBlock>
         </SubSection>
 
         <SubSection title="ID Formats">
-          <ul className="list-disc list-inside text-neutral-600 dark:text-neutral-400 space-y-1">
-            <li>
-              Epics: <InlineCode>EPIC-1</InlineCode>,{" "}
+          <ul className="space-y-2 text-fluid-base text-white/70">
+            <li className="flex items-center gap-2">
+              <span className="text-white">Epics:</span>
+              <InlineCode>EPIC-1</InlineCode>,{" "}
               <InlineCode>EPIC-2</InlineCode>, ...
             </li>
-            <li>
-              Tasks: <InlineCode>TREK-1</InlineCode>,{" "}
+            <li className="flex items-center gap-2">
+              <span className="text-white">Tasks:</span>
+              <InlineCode>TREK-1</InlineCode>,{" "}
               <InlineCode>TREK-2</InlineCode>, ...
             </li>
-            <li>
-              Comments: <InlineCode>CMT-1</InlineCode>,{" "}
+            <li className="flex items-center gap-2">
+              <span className="text-white">Comments:</span>
+              <InlineCode>CMT-1</InlineCode>,{" "}
               <InlineCode>CMT-2</InlineCode>, ...
             </li>
           </ul>
         </SubSection>
       </Section>
 
-      <Section title="TOON Output Format" className="max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+      <Section title="TOON Output Format">
+        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           Use the <InlineCode>--toon</InlineCode> flag to get structured output
           that uses fewer tokens.
         </p>
@@ -250,8 +263,8 @@ trekker list --sort priority,created_at`}</CodeBlock>
 trekker --toon task show TREK-1`}</CodeBlock>
       </Section>
 
-      <Section title="Dashboard" className="max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+      <Section title="Dashboard">
+        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           A kanban board that reads from your <InlineCode>.trekker</InlineCode>{" "}
           database.
         </p>
@@ -276,41 +289,67 @@ trekker-dashboard -p 3000`}</CodeBlock>
         ]}
       />
 
-      <Section title="Claude Code Integration" className="mt-12 max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+      <Section title="Claude Code Integration">
+        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           Install the plugin to give Claude Code direct access to Trekker. No
           CLI commands needed.
         </p>
         <CodeBlock>{`claude /plugin marketplace add obsfx/trekker-claude-code
 claude /plugin install trekker`}</CodeBlock>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-4">
+        <p className="text-fluid-base text-white/70 mt-4 leading-relaxed">
           The plugin includes 24 MCP tools, 13 slash commands, and a task agent.
         </p>
       </Section>
 
-      <Section title="Data Storage" className="max-w-3xl">
-        <p className="text-neutral-600 dark:text-neutral-400">
+      <Section title="Data Storage">
+        <p className="text-fluid-base text-white/70 leading-relaxed">
           Trekker creates a <InlineCode>.trekker</InlineCode> folder in your
           project root. Add it to <InlineCode>.gitignore</InlineCode> if you do
           not want to track it.
         </p>
       </Section>
 
-      <Section title="AI Agent Workflow" className="max-w-3xl">
-        <ol className="list-decimal list-inside text-neutral-600 dark:text-neutral-400 space-y-2 mb-4">
-          <li>Install the Claude Code plugin</li>
-          <li>Tell the agent to use Trekker in your prompt</li>
-          <li>
-            Point the agent to <InlineCode>trekker quickstart</InlineCode> for
-            reference
-          </li>
-          <li>Open the dashboard to watch progress</li>
+      <Section title="AI Agent Workflow">
+        <ol className="space-y-3 mb-6">
+          {[
+            "Install the Claude Code plugin",
+            "Tell the agent to use Trekker in your prompt",
+            <>Point the agent to <InlineCode>trekker quickstart</InlineCode> for reference</>,
+            "Open the dashboard to watch progress",
+          ].map((step, index) => (
+            <li key={index} className="flex items-start gap-3 text-fluid-base text-white/70">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white text-[#001BB7] text-sm font-semibold flex items-center justify-center">
+                {index + 1}
+              </span>
+              <span className="pt-0.5">{step}</span>
+            </li>
+          ))}
         </ol>
-        <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           Example prompt:
         </p>
         <CodeBlock>{`Use trekker to track your work. Run \`trekker quickstart\` if you need to learn how it works.`}</CodeBlock>
       </Section>
-    </div>
+
+      {/* Footer */}
+      <footer className="py-6 mt-4 border-t border-white/20">
+        <div className="flex justify-center items-center gap-6 text-fluid-sm text-white/60">
+          <a
+            href="https://github.com/obsfx/trekker"
+            className="hover:text-white transition-colors"
+          >
+            GitHub
+          </a>
+          <a
+            href="https://www.npmjs.com/package/@obsfx/trekker"
+            className="hover:text-white transition-colors"
+          >
+            npm
+          </a>
+        </div>
+      </footer>
+      </main>
+      </div>
+    </>
   );
 }
