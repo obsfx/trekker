@@ -51,9 +51,30 @@ body {
 
 /* Selection styling */
 ::selection {
-  @apply bg-text/10 text-text;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
-[data-theme="dark"] ::selection {
-  @apply bg-text-dark/20 text-text-dark;
+/* Custom scrollbar for code blocks */
+.codeblock-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.codeblock-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.codeblock-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.codeblock-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.codeblock-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }

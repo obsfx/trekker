@@ -33,14 +33,14 @@ export function Screenshots({ images }: ScreenshotsProps) {
         <button
           onClick={goToPrev}
           aria-label="Previous image"
-          className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+          className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-[#001BB7] text-white hover:bg-[#001BB7]/80 transition-colors shadow-lg"
         >
           <ChevronLeft size={20} />
         </button>
         <button
           onClick={goToNext}
           aria-label="Next image"
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-[#001BB7] text-white hover:bg-[#001BB7]/80 transition-colors shadow-lg"
         >
           <ChevronRight size={20} />
         </button>

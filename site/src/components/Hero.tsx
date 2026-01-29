@@ -43,20 +43,27 @@ export function Hero() {
             A CLI-based task manager that keeps AI coding agents on track. Tasks, epics, and dependencies—all in a local SQLite database.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-wrap gap-3">
             <a
               href="https://github.com/obsfx/trekker"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-[#001BB7] font-semibold rounded-full hover:bg-white/90 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-[#001BB7] font-semibold rounded-full hover:bg-white/90 transition-colors text-sm"
             >
-              <Github size={18} />
+              <Github size={16} />
               GitHub
             </a>
             <a
               href="https://www.npmjs.com/package/@obsfx/trekker"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-colors text-sm"
             >
-              <Package size={18} />
+              <Package size={16} />
               npm
+            </a>
+            <a
+              href="https://github.com/obsfx/trekker-claude-code"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-colors text-sm"
+            >
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/claude-color.png" alt="Claude" className="w-4 h-4" />
+              Claude Code
             </a>
           </div>
         </div>

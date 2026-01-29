@@ -57,22 +57,19 @@ export function Page() {
           <InlineCode>bun:sqlite</InlineCode> for database operations. This
           makes every command respond instantly.
         </p>
-        <CodeBlock>{`# macOS/Linux
-curl -fsSL https://bun.sh/install | bash
-
-# Windows
-powershell -c "irm bun.sh/install.ps1 | iex"
-
-# Via npm
-npm install -g bun`}</CodeBlock>
+        <p className="text-fluid-sm text-white/50 mb-2">macOS/Linux</p>
+        <CodeBlock>{`curl -fsSL https://bun.sh/install | bash`}</CodeBlock>
+        <p className="text-fluid-sm text-white/50 mb-2 mt-4">Windows</p>
+        <CodeBlock>{`powershell -c "irm bun.sh/install.ps1 | iex"`}</CodeBlock>
+        <p className="text-fluid-sm text-white/50 mb-2 mt-4">Via npm</p>
+        <CodeBlock>{`npm install -g bun`}</CodeBlock>
       </Section>
 
       <Section title="Installation" id="installation">
-        <CodeBlock>{`# Using bun (recommended)
-bun install -g @obsfx/trekker
-
-# Using npm
-npm install -g @obsfx/trekker`}</CodeBlock>
+        <p className="text-fluid-sm text-white/50 mb-2">Using bun (recommended)</p>
+        <CodeBlock>{`bun install -g @obsfx/trekker`}</CodeBlock>
+        <p className="text-fluid-sm text-white/50 mb-2 mt-4">Using npm</p>
+        <CodeBlock>{`npm install -g @obsfx/trekker`}</CodeBlock>
       </Section>
 
       <Section title="Features" id="features">
@@ -95,67 +92,139 @@ npm install -g @obsfx/trekker`}</CodeBlock>
         </ul>
       </Section>
 
+      <Section title="Claude Code Plugin">
+        <div className="flex items-center gap-3 mb-4">
+          <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/claude-color.png" alt="Claude" className="w-8 h-8" />
+          <p className="text-fluid-base text-white/70">
+            Give Claude Code direct access to Trekker with 25 MCP tools, 13 slash commands, and an autonomous task agent.
+          </p>
+        </div>
+
+        <SubSection title="Install">
+          <div className="space-y-2">
+            <CodeBlock>{`claude /plugin marketplace add obsfx/trekker-claude-code`}</CodeBlock>
+            <CodeBlock>{`claude /plugin install trekker`}</CodeBlock>
+          </div>
+        </SubSection>
+
+        <SubSection title="Key Features">
+          <ul className="space-y-2">
+            {[
+              "Persistent task memory across sessions via SQLite",
+              "Search-first workflow to restore context",
+              "Smart hooks for session start and context preservation",
+              "Autonomous task agent for discovery and completion",
+              "Multi-instance safe with conflict handling",
+            ].map((feature, index) => (
+              <li key={index} className="flex items-start gap-3 text-fluid-base text-white/70">
+                <svg className="w-5 h-5 text-white flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </SubSection>
+
+        <SubSection title="Slash Commands">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-fluid-sm">
+            {[
+              { cmd: "/trekker:prime", desc: "Load workflow context" },
+              { cmd: "/trekker:create", desc: "Create task interactively" },
+              { cmd: "/trekker:list", desc: "List tasks with filters" },
+              { cmd: "/trekker:ready", desc: "Find unblocked tasks" },
+              { cmd: "/trekker:start", desc: "Begin working on a task" },
+              { cmd: "/trekker:done", desc: "Complete with summary" },
+              { cmd: "/trekker:blocked", desc: "Mark task as blocked" },
+              { cmd: "/trekker:task-agent", desc: "Run autonomous agent" },
+            ].map((item, index) => (
+              <div key={index} className="flex items-center gap-2 text-white/70">
+                <InlineCode>{item.cmd}</InlineCode>
+                <span className="text-white/50">-</span>
+                <span>{item.desc}</span>
+              </div>
+            ))}
+          </div>
+        </SubSection>
+      </Section>
+
       <Section title="Quick Start">
-        <CodeBlock>{`# Initialize your project
-trekker init
+        <p className="text-fluid-sm text-white/50 mb-2">Initialize your project</p>
+        <CodeBlock>{`trekker init`}</CodeBlock>
 
-# Create an epic
-trekker epic create -t "User Authentication" -d "JWT-based auth"
+        <p className="text-fluid-sm text-white/50 mb-2 mt-4">Create an epic</p>
+        <CodeBlock>{`trekker epic create -t "User Authentication" -d "JWT-based auth"`}</CodeBlock>
 
-# Add tasks to the epic
-trekker task create -t "Create user model" -e EPIC-1
-trekker task create -t "Build login endpoint" -e EPIC-1
+        <p className="text-fluid-sm text-white/50 mb-2 mt-4">Add tasks to the epic</p>
+        <div className="space-y-2">
+          <CodeBlock>{`trekker task create -t "Create user model" -e EPIC-1`}</CodeBlock>
+          <CodeBlock>{`trekker task create -t "Build login endpoint" -e EPIC-1`}</CodeBlock>
+        </div>
 
-# Establish dependencies (TREK-2 depends on TREK-1)
-trekker dep add TREK-2 TREK-1
+        <p className="text-fluid-sm text-white/50 mb-2 mt-4">Establish dependencies (TREK-2 depends on TREK-1)</p>
+        <CodeBlock>{`trekker dep add TREK-2 TREK-1`}</CodeBlock>
 
-# Update task status
-trekker task update TREK-1 -s in_progress
-trekker task update TREK-1 -s completed`}</CodeBlock>
+        <p className="text-fluid-sm text-white/50 mb-2 mt-4">Update task status</p>
+        <div className="space-y-2">
+          <CodeBlock>{`trekker task update TREK-1 -s in_progress`}</CodeBlock>
+          <CodeBlock>{`trekker task update TREK-1 -s completed`}</CodeBlock>
+        </div>
       </Section>
 
       <Section title="Commands" id="commands">
         <SubSection title="Project Management">
-          <CodeBlock>{`trekker init          # Initialize in current directory
-trekker wipe          # Delete all data
-trekker quickstart    # Display full documentation`}</CodeBlock>
+          <div className="space-y-2">
+            <CodeBlock>{`trekker init`}</CodeBlock>
+            <CodeBlock>{`trekker wipe`}</CodeBlock>
+            <CodeBlock>{`trekker quickstart`}</CodeBlock>
+          </div>
         </SubSection>
 
         <SubSection title="Epics">
-          <CodeBlock>{`trekker epic create -t "Epic title" [-d "description"] [-p 0-5]
-trekker epic list [--status todo|in_progress|completed|archived]
-trekker epic show EPIC-1
-trekker epic update EPIC-1 -s in_progress
-trekker epic complete EPIC-1
-trekker epic delete EPIC-1`}</CodeBlock>
+          <div className="space-y-2">
+            <CodeBlock>{`trekker epic create -t "Epic title" [-d "description"] [-p 0-5]`}</CodeBlock>
+            <CodeBlock>{`trekker epic list [--status todo|in_progress|completed|archived]`}</CodeBlock>
+            <CodeBlock>{`trekker epic show EPIC-1`}</CodeBlock>
+            <CodeBlock>{`trekker epic update EPIC-1 -s in_progress`}</CodeBlock>
+            <CodeBlock>{`trekker epic complete EPIC-1`}</CodeBlock>
+            <CodeBlock>{`trekker epic delete EPIC-1`}</CodeBlock>
+          </div>
         </SubSection>
 
         <SubSection title="Tasks">
-          <CodeBlock>{`trekker task create -t "Task title" [-d "desc"] [-p 0-5] [-e EPIC-1] [--tags "tag1,tag2"]
-trekker task list [--status todo|in_progress|completed|wont_fix|archived] [--epic EPIC-1]
-trekker task show TREK-1
-trekker task update TREK-1 -s in_progress
-trekker task delete TREK-1`}</CodeBlock>
+          <div className="space-y-2">
+            <CodeBlock>{`trekker task create -t "Task title" [-d "desc"] [-p 0-5] [-e EPIC-1] [--tags "tag1,tag2"]`}</CodeBlock>
+            <CodeBlock>{`trekker task list [--status todo|in_progress|completed|wont_fix|archived] [--epic EPIC-1]`}</CodeBlock>
+            <CodeBlock>{`trekker task show TREK-1`}</CodeBlock>
+            <CodeBlock>{`trekker task update TREK-1 -s in_progress`}</CodeBlock>
+            <CodeBlock>{`trekker task delete TREK-1`}</CodeBlock>
+          </div>
         </SubSection>
 
         <SubSection title="Subtasks">
-          <CodeBlock>{`trekker subtask create TREK-1 -t "Subtask title" [-d "desc"] [-p 0-5]
-trekker subtask list TREK-1
-trekker subtask update TREK-1-1 -s completed
-trekker subtask delete TREK-1-1`}</CodeBlock>
+          <div className="space-y-2">
+            <CodeBlock>{`trekker subtask create TREK-1 -t "Subtask title" [-d "desc"] [-p 0-5]`}</CodeBlock>
+            <CodeBlock>{`trekker subtask list TREK-1`}</CodeBlock>
+            <CodeBlock>{`trekker subtask update TREK-1-1 -s completed`}</CodeBlock>
+            <CodeBlock>{`trekker subtask delete TREK-1-1`}</CodeBlock>
+          </div>
         </SubSection>
 
         <SubSection title="Comments">
-          <CodeBlock>{`trekker comment add TREK-1 -a "agent" -c "Progress note"
-trekker comment list TREK-1
-trekker comment update CMT-1 -c "Updated content"
-trekker comment delete CMT-1`}</CodeBlock>
+          <div className="space-y-2">
+            <CodeBlock>{`trekker comment add TREK-1 -a "agent" -c "Progress note"`}</CodeBlock>
+            <CodeBlock>{`trekker comment list TREK-1`}</CodeBlock>
+            <CodeBlock>{`trekker comment update CMT-1 -c "Updated content"`}</CodeBlock>
+            <CodeBlock>{`trekker comment delete CMT-1`}</CodeBlock>
+          </div>
         </SubSection>
 
         <SubSection title="Dependencies">
-          <CodeBlock>{`trekker dep add TREK-2 TREK-1      # TREK-2 depends on TREK-1
-trekker dep remove TREK-2 TREK-1
-trekker dep list TREK-1`}</CodeBlock>
+          <div className="space-y-2">
+            <CodeBlock>{`trekker dep add TREK-2 TREK-1`}</CodeBlock>
+            <CodeBlock>{`trekker dep remove TREK-2 TREK-1`}</CodeBlock>
+            <CodeBlock>{`trekker dep list TREK-1`}</CodeBlock>
+          </div>
         </SubSection>
       </Section>
 
@@ -163,28 +232,34 @@ trekker dep list TREK-1`}</CodeBlock>
         <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           Search across all tasks, epics, subtasks, and comments using FTS5.
         </p>
-        <CodeBlock>{`trekker search "authentication"
-trekker search "bug fix" --type task,subtask
-trekker search "login" --type comment --status completed
-trekker search "query" [--type types] [--status status] [--limit n] [--page n]`}</CodeBlock>
+        <div className="space-y-2">
+          <CodeBlock>{`trekker search "authentication"`}</CodeBlock>
+          <CodeBlock>{`trekker search "bug fix" --type task,subtask`}</CodeBlock>
+          <CodeBlock>{`trekker search "login" --type comment --status completed`}</CodeBlock>
+          <CodeBlock>{`trekker search "query" [--type types] [--status status] [--limit n] [--page n]`}</CodeBlock>
+        </div>
       </Section>
 
       <Section title="History">
         <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           View an audit log of all changes.
         </p>
-        <CodeBlock>{`trekker history
-trekker history --entity TREK-1
-trekker history --type task,epic --action create,update
-trekker history --since 2024-01-01 --until 2024-12-31`}</CodeBlock>
+        <div className="space-y-2">
+          <CodeBlock>{`trekker history`}</CodeBlock>
+          <CodeBlock>{`trekker history --entity TREK-1`}</CodeBlock>
+          <CodeBlock>{`trekker history --type task,epic --action create,update`}</CodeBlock>
+          <CodeBlock>{`trekker history --since 2024-01-01 --until 2024-12-31`}</CodeBlock>
+        </div>
       </Section>
 
       <Section title="Unified List View">
-        <CodeBlock>{`trekker list
-trekker list --type task,epic
-trekker list --status todo,in_progress
-trekker list --priority 0,1,2
-trekker list --sort priority,created_at`}</CodeBlock>
+        <div className="space-y-2">
+          <CodeBlock>{`trekker list`}</CodeBlock>
+          <CodeBlock>{`trekker list --type task,epic`}</CodeBlock>
+          <CodeBlock>{`trekker list --status todo,in_progress`}</CodeBlock>
+          <CodeBlock>{`trekker list --priority 0,1,2`}</CodeBlock>
+          <CodeBlock>{`trekker list --sort priority,created_at`}</CodeBlock>
+        </div>
       </Section>
 
       <Section title="Status & Priority">
@@ -259,8 +334,10 @@ trekker list --sort priority,created_at`}</CodeBlock>
           Use the <InlineCode>--toon</InlineCode> flag to get structured output
           that uses fewer tokens.
         </p>
-        <CodeBlock>{`trekker --toon task list
-trekker --toon task show TREK-1`}</CodeBlock>
+        <div className="space-y-2">
+          <CodeBlock>{`trekker --toon task list`}</CodeBlock>
+          <CodeBlock>{`trekker --toon task show TREK-1`}</CodeBlock>
+        </div>
       </Section>
 
       <Section title="Dashboard">
@@ -268,8 +345,10 @@ trekker --toon task show TREK-1`}</CodeBlock>
           A kanban board that reads from your <InlineCode>.trekker</InlineCode>{" "}
           database.
         </p>
-        <CodeBlock>{`npm install -g @obsfx/trekker-dashboard
-trekker-dashboard -p 3000`}</CodeBlock>
+        <div className="space-y-2">
+          <CodeBlock>{`npm install -g @obsfx/trekker-dashboard`}</CodeBlock>
+          <CodeBlock>{`trekker-dashboard -p 3000`}</CodeBlock>
+        </div>
       </Section>
 
       <Screenshots
@@ -288,18 +367,6 @@ trekker-dashboard -p 3000`}</CodeBlock>
           },
         ]}
       />
-
-      <Section title="Claude Code Integration">
-        <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
-          Install the plugin to give Claude Code direct access to Trekker. No
-          CLI commands needed.
-        </p>
-        <CodeBlock>{`claude /plugin marketplace add obsfx/trekker-claude-code
-claude /plugin install trekker`}</CodeBlock>
-        <p className="text-fluid-base text-white/70 mt-4 leading-relaxed">
-          The plugin includes 24 MCP tools, 13 slash commands, and a task agent.
-        </p>
-      </Section>
 
       <Section title="Data Storage">
         <p className="text-fluid-base text-white/70 leading-relaxed">
@@ -328,7 +395,7 @@ claude /plugin install trekker`}</CodeBlock>
         <p className="text-fluid-base text-white/70 mb-4 leading-relaxed">
           Example prompt:
         </p>
-        <CodeBlock>{`Use trekker to track your work. Run \`trekker quickstart\` if you need to learn how it works.`}</CodeBlock>
+        <CodeBlock wrap>{`Use trekker to track your work. Run \`trekker quickstart\` if you need to learn how it works.`}</CodeBlock>
       </Section>
 
       {/* Footer */}
