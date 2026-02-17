@@ -514,10 +514,11 @@ function migrateHistoryTable(sqlite: Database): void {
     sqlite.run("CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_id)");
     sqlite.run("CREATE INDEX IF NOT EXISTS idx_events_type_action ON events(entity_type, action)");
     sqlite.run("CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at)");
-
-    // Create the triggers
-    createHistoryTriggers(sqlite);
   }
+
+  // Always recreate triggers to ensure existing DBs get updated SQL
+  // (e.g. replacing unixepoch() with strftime for SQLite compatibility)
+  createHistoryTriggers(sqlite);
 }
 
 export function rebuildSearchIndex(dbName?: string): void {
