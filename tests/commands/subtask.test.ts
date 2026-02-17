@@ -37,7 +37,7 @@ describe("subtask command", () => {
     it("should create a subtask with title only", () => {
       const subtask = ctx.runToon<Task>(`subtask create ${parentTask.id} -t "Test Subtask"`);
 
-      expect(subtask.id).toMatch(/^TREK-\d+$/);
+      expect(subtask.id).toMatch(/^TREKKER-TREK-\d+$/);
       expect(subtask.title).toBe("Test Subtask");
       expect(subtask.description).toBeNull();
       expect(subtask.status).toBe("todo");
@@ -69,7 +69,7 @@ describe("subtask command", () => {
     });
 
     it("should fail with non-existent parent task", () => {
-      const error = ctx.runExpectError('subtask create TREK-999 -t "Test"');
+      const error = ctx.runExpectError('subtask create TREKKER-TREK-999 -t "Test"');
       expect(error.toLowerCase()).toContain("not found");
     });
 
@@ -111,7 +111,7 @@ describe("subtask command", () => {
     });
 
     it("should fail with non-existent parent task", () => {
-      const error = ctx.runExpectError("subtask list TREK-999");
+      const error = ctx.runExpectError("subtask list TREKKER-TREK-999");
       expect(error.toLowerCase()).toContain("not found");
     });
   });
@@ -156,7 +156,7 @@ describe("subtask command", () => {
     });
 
     it("should fail for non-existent subtask", () => {
-      const error = ctx.runExpectError('subtask update TREK-999 -t "Test"');
+      const error = ctx.runExpectError('subtask update TREKKER-TREK-999 -t "Test"');
       expect(error.toLowerCase()).toContain("not found");
     });
 
@@ -190,7 +190,7 @@ describe("subtask command", () => {
     });
 
     it("should fail for non-existent subtask", () => {
-      const error = ctx.runExpectError("subtask delete TREK-999");
+      const error = ctx.runExpectError("subtask delete TREKKER-TREK-999");
       expect(error.toLowerCase()).toContain("not found");
     });
 

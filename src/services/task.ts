@@ -1,7 +1,9 @@
 import { eq, and, isNull } from "drizzle-orm";
-import { getDb } from "../db/client";
-import { tasks, projects, epics } from "../db/schema";
+import { getDb, getDbForEntity, getAllDbNames } from "../db/client";
+import { tasks, projects, epics, dependencies } from "../db/schema";
 import { generateId } from "../utils/id-generator";
+import { getCurrentDbName } from "../utils/db-context";
+import { isDbExplicitlySet } from "../utils/db-context";
 import type {
   Task,
   CreateTaskInput,
@@ -14,7 +16,8 @@ import {
 } from "../types";
 
 export function createTask(input: CreateTaskInput): Task {
-  const db = getDb();
+  const dbName = getCurrentDbName();
+  const db = getDb(dbName);
 
   const project = db.select().from(projects).get();
   if (!project) {
@@ -31,7 +34,8 @@ export function createTask(input: CreateTaskInput): Task {
 
   // Validate parent task exists if provided
   if (input.parentTaskId) {
-    const parent = db
+    const parentDb = getDbForEntity(input.parentTaskId);
+    const parent = parentDb
       .select()
       .from(tasks)
       .where(eq(tasks.id, input.parentTaskId))
@@ -64,7 +68,7 @@ export function createTask(input: CreateTaskInput): Task {
 }
 
 export function getTask(id: string): Task | undefined {
-  const db = getDb();
+  const db = getDbForEntity(id);
   const result = db.select().from(tasks).where(eq(tasks.id, id)).get();
   return result as Task | undefined;
 }
@@ -74,7 +78,25 @@ export function listTasks(options?: {
   epicId?: string;
   parentTaskId?: string | null;
 }): Task[] {
-  const db = getDb();
+  if (isDbExplicitlySet()) {
+    return listTasksFromDb(getCurrentDbName(), options);
+  }
+
+  // Aggregate from all DBs
+  const allDbNames = getAllDbNames();
+  const allTasks: Task[] = [];
+  for (const dbName of allDbNames) {
+    allTasks.push(...listTasksFromDb(dbName, options));
+  }
+  return allTasks;
+}
+
+function listTasksFromDb(dbName: string, options?: {
+  status?: TaskStatus;
+  epicId?: string;
+  parentTaskId?: string | null;
+}): Task[] {
+  const db = getDb(dbName);
 
   const conditions = [];
 
@@ -105,7 +127,7 @@ export function listTasks(options?: {
 }
 
 export function listSubtasks(parentTaskId: string): Task[] {
-  const db = getDb();
+  const db = getDbForEntity(parentTaskId);
   return db
     .select()
     .from(tasks)
@@ -114,9 +136,9 @@ export function listSubtasks(parentTaskId: string): Task[] {
 }
 
 export function updateTask(id: string, input: UpdateTaskInput): Task {
-  const db = getDb();
+  const db = getDbForEntity(id);
 
-  const existing = getTask(id);
+  const existing = db.select().from(tasks).where(eq(tasks.id, id)).get() as Task | undefined;
   if (!existing) {
     throw new Error(`Task not found: ${id}`);
   }
@@ -142,17 +164,35 @@ export function updateTask(id: string, input: UpdateTaskInput): Task {
 
   db.update(tasks).set(updates).where(eq(tasks.id, id)).run();
 
-  return getTask(id)!;
+  return db.select().from(tasks).where(eq(tasks.id, id)).get() as Task;
 }
 
 export function deleteTask(id: string): void {
-  const db = getDb();
+  const db = getDbForEntity(id);
 
-  const existing = getTask(id);
+  const existing = db.select().from(tasks).where(eq(tasks.id, id)).get();
   if (!existing) {
     throw new Error(`Task not found: ${id}`);
   }
 
+  // Clean up cross-DB dependency references
+  cleanupCrossDbDeps(id);
+
   // Note: Subtasks and comments will be cascade deleted by SQLite
   db.delete(tasks).where(eq(tasks.id, id)).run();
+}
+
+/**
+ * When a task is deleted, scan all DBs and remove any dependency rows
+ * where depends_on_id matches the deleted task's ID.
+ */
+function cleanupCrossDbDeps(taskId: string): void {
+  const allDbNames = getAllDbNames();
+
+  for (const dbName of allDbNames) {
+    const db = getDb(dbName);
+    db.delete(dependencies)
+      .where(eq(dependencies.dependsOnId, taskId))
+      .run();
+  }
 }

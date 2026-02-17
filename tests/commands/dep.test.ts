@@ -77,12 +77,12 @@ describe("dep command", () => {
     });
 
     it("should fail with non-existent task", () => {
-      const error = ctx.runExpectError(`dep add TREK-999 ${task1.id}`);
+      const error = ctx.runExpectError(`dep add TREKKER-TREK-999 ${task1.id}`);
       expect(error.toLowerCase()).toContain("not found");
     });
 
     it("should fail with non-existent dependency task", () => {
-      const error = ctx.runExpectError(`dep add ${task1.id} TREK-999`);
+      const error = ctx.runExpectError(`dep add ${task1.id} TREKKER-TREK-999`);
       expect(error.toLowerCase()).toContain("not found");
     });
 

@@ -27,7 +27,7 @@ describe("epic command", () => {
     it("should create an epic with title only", () => {
       const epic = ctx.runToon<Epic>('epic create -t "Test Epic"');
 
-      expect(epic.id).toMatch(/^EPIC-\d+$/);
+      expect(epic.id).toMatch(/^TREKKER-EPIC-\d+$/);
       expect(epic.title).toBe("Test Epic");
       expect(epic.description).toBeNull();
       expect(epic.status).toBe("todo");
@@ -110,7 +110,7 @@ describe("epic command", () => {
     });
 
     it("should fail for non-existent epic", () => {
-      const error = ctx.runExpectError("epic show EPIC-999");
+      const error = ctx.runExpectError("epic show TREKKER-EPIC-999");
       expect(error.toLowerCase()).toContain("not found");
     });
   });
@@ -155,7 +155,7 @@ describe("epic command", () => {
     });
 
     it("should fail for non-existent epic", () => {
-      const error = ctx.runExpectError('epic update EPIC-999 -t "Test"');
+      const error = ctx.runExpectError('epic update TREKKER-EPIC-999 -t "Test"');
       expect(error.toLowerCase()).toContain("not found");
     });
 
@@ -184,7 +184,7 @@ describe("epic command", () => {
     });
 
     it("should fail for non-existent epic", () => {
-      const error = ctx.runExpectError("epic delete EPIC-999");
+      const error = ctx.runExpectError("epic delete TREKKER-EPIC-999");
       expect(error.toLowerCase()).toContain("not found");
     });
   });
@@ -222,7 +222,7 @@ describe("epic command", () => {
     });
 
     it("should fail for non-existent epic", () => {
-      const error = ctx.runExpectError("epic complete EPIC-999");
+      const error = ctx.runExpectError("epic complete TREKKER-EPIC-999");
       expect(error.toLowerCase()).toContain("not found");
     });
   });

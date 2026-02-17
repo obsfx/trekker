@@ -1,4 +1,5 @@
-import { requireSqliteInstance } from "../db/client";
+import { requireSqliteInstance, getAllDbNames } from "../db/client";
+import { getCurrentDbName, isDbExplicitlySet } from "../utils/db-context";
 import {
   VALID_SORT_FIELDS,
   PAGINATION_DEFAULTS,
@@ -36,12 +37,19 @@ export interface ListResponse {
   items: ListItem[];
 }
 
-export function listAll(options?: ListOptions): ListResponse {
-  const sqlite = requireSqliteInstance();
-
-  const limit = options?.limit ?? PAGINATION_DEFAULTS.LIST_PAGE_SIZE;
-  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
-  const offset = (page - 1) * limit;
+function queryDbForList(dbName: string, options?: ListOptions): {
+  items: Array<{
+    type: string;
+    id: string;
+    title: string;
+    status: string;
+    priority: number;
+    parent_id: string | null;
+    created_at: number;
+    updated_at: number;
+  }>;
+} {
+  const sqlite = requireSqliteInstance(dbName);
 
   // Build filter conditions
   const conditions: string[] = [];
@@ -77,16 +85,6 @@ export function listAll(options?: ListOptions): ListResponse {
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-  // Build sort clause
-  let orderClause = "ORDER BY created_at DESC";
-  if (options?.sort && options.sort.length > 0) {
-    const sortParts = options.sort.map((s) => {
-      const field = s.field === "created" ? "created_at" : s.field === "updated" ? "updated_at" : s.field;
-      return `${field} ${s.direction.toUpperCase()}`;
-    });
-    orderClause = `ORDER BY ${sortParts.join(", ")}`;
-  }
-
   // Base query using UNION ALL
   const baseQuery = `
     SELECT 'epic' as type, id, title, status, priority, NULL as parent_id, created_at, updated_at FROM epics
@@ -96,20 +94,8 @@ export function listAll(options?: ListOptions): ListResponse {
     SELECT 'subtask' as type, id, title, status, priority, parent_task_id as parent_id, created_at, updated_at FROM tasks WHERE parent_task_id IS NOT NULL
   `;
 
-  // Count total results
-  const countQuery = `SELECT COUNT(*) as total FROM (${baseQuery}) ${whereClause}`;
-  const countResult = sqlite.query(countQuery).get(...params) as { total: number };
-  const total = countResult?.total ?? 0;
-
-  // Get paginated results
-  const selectQuery = `
-    SELECT * FROM (${baseQuery})
-    ${whereClause}
-    ${orderClause}
-    LIMIT ? OFFSET ?
-  `;
-
-  const results = sqlite.query(selectQuery).all(...params, limit, offset) as Array<{
+  const selectQuery = `SELECT * FROM (${baseQuery}) ${whereClause}`;
+  const items = sqlite.query(selectQuery).all(...params) as Array<{
     type: string;
     id: string;
     title: string;
@@ -120,11 +106,67 @@ export function listAll(options?: ListOptions): ListResponse {
     updated_at: number;
   }>;
 
+  return { items };
+}
+
+export function listAll(options?: ListOptions): ListResponse {
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.LIST_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
+  const offset = (page - 1) * limit;
+
+  // Collect items from one or all DBs
+  let allItems: Array<{
+    type: string;
+    id: string;
+    title: string;
+    status: string;
+    priority: number;
+    parent_id: string | null;
+    created_at: number;
+    updated_at: number;
+  }> = [];
+
+  if (isDbExplicitlySet()) {
+    const result = queryDbForList(getCurrentDbName(), options);
+    allItems = result.items;
+  } else {
+    const allDbNames = getAllDbNames();
+    for (const dbName of allDbNames) {
+      const result = queryDbForList(dbName, options);
+      allItems.push(...result.items);
+    }
+  }
+
+  // Sort merged results
+  const sortFields = options?.sort ?? [{ field: "created", direction: "desc" as const }];
+  allItems.sort((a, b) => {
+    for (const s of sortFields) {
+      const field = s.field === "created" ? "created_at" : s.field === "updated" ? "updated_at" : s.field;
+      const aVal = (a as Record<string, unknown>)[field];
+      const bVal = (b as Record<string, unknown>)[field];
+      let cmp = 0;
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        cmp = aVal - bVal;
+      } else if (typeof aVal === "string" && typeof bVal === "string") {
+        cmp = aVal.localeCompare(bVal);
+      }
+      if (cmp !== 0) {
+        return s.direction === "asc" ? cmp : -cmp;
+      }
+    }
+    return 0;
+  });
+
+  const total = allItems.length;
+
+  // Paginate
+  const pageItems = allItems.slice(offset, offset + limit);
+
   return {
     total,
     page,
     limit,
-    items: results.map((row) => ({
+    items: pageItems.map((row) => ({
       type: row.type as ListEntityType,
       id: row.id,
       title: row.title,

@@ -1,19 +1,19 @@
-import { eq, or } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { eq } from "drizzle-orm";
+import { getDb, getDbForEntity, getAllDbNames, parseDbFromId } from "../db/client";
 import { dependencies, tasks } from "../db/schema";
 import { generateUuid } from "../utils/id-generator";
 import type { Dependency } from "../types";
 
 export function addDependency(taskId: string, dependsOnId: string): Dependency {
-  const db = getDb();
-
-  // Validate both tasks exist
-  const task = db.select().from(tasks).where(eq(tasks.id, taskId)).get();
+  // Validate both tasks exist (in their respective DBs)
+  const taskDb = getDbForEntity(taskId);
+  const task = taskDb.select().from(tasks).where(eq(tasks.id, taskId)).get();
   if (!task) {
     throw new Error(`Task not found: ${taskId}`);
   }
 
-  const dependsOnTask = db
+  const dependsOnDb = getDbForEntity(dependsOnId);
+  const dependsOnTask = dependsOnDb
     .select()
     .from(tasks)
     .where(eq(tasks.id, dependsOnId))
@@ -27,13 +27,11 @@ export function addDependency(taskId: string, dependsOnId: string): Dependency {
     throw new Error("A task cannot depend on itself.");
   }
 
-  // Check if dependency already exists
-  const existing = db
+  // Check if dependency already exists (stored in taskId's DB)
+  const existing = taskDb
     .select()
     .from(dependencies)
-    .where(
-      eq(dependencies.taskId, taskId)
-    )
+    .where(eq(dependencies.taskId, taskId))
     .all()
     .find((d) => d.dependsOnId === dependsOnId);
 
@@ -41,7 +39,7 @@ export function addDependency(taskId: string, dependsOnId: string): Dependency {
     throw new Error(`Dependency already exists: ${taskId} → ${dependsOnId}`);
   }
 
-  // Check for cycles
+  // Check for cycles across all DBs
   if (wouldCreateCycle(taskId, dependsOnId)) {
     throw new Error(
       `Adding this dependency would create a cycle. ${dependsOnId} already depends on ${taskId} (directly or transitively).`
@@ -58,13 +56,14 @@ export function addDependency(taskId: string, dependsOnId: string): Dependency {
     createdAt: now,
   };
 
-  db.insert(dependencies).values(dependency).run();
+  // Store dependency in the taskId's DB
+  taskDb.insert(dependencies).values(dependency).run();
 
   return dependency as Dependency;
 }
 
 export function removeDependency(taskId: string, dependsOnId: string): void {
-  const db = getDb();
+  const db = getDbForEntity(taskId);
 
   const existing = db
     .select()
@@ -84,10 +83,11 @@ export function getDependencies(taskId: string): {
   dependsOn: Array<{ taskId: string; dependsOnId: string }>;
   blocks: Array<{ taskId: string; dependsOnId: string }>;
 } {
-  const db = getDb();
+  const taskDbName = parseDbFromId(taskId);
 
-  // Tasks that this task depends on
-  const dependsOn = db
+  // Tasks that this task depends on — query taskId's DB
+  const taskDb = getDb(taskDbName);
+  const dependsOn = taskDb
     .select({
       taskId: dependencies.taskId,
       dependsOnId: dependencies.dependsOnId,
@@ -96,22 +96,31 @@ export function getDependencies(taskId: string): {
     .where(eq(dependencies.taskId, taskId))
     .all();
 
-  // Tasks that are blocked by this task
-  const blocks = db
-    .select({
-      taskId: dependencies.taskId,
-      dependsOnId: dependencies.dependsOnId,
-    })
-    .from(dependencies)
-    .where(eq(dependencies.dependsOnId, taskId))
-    .all();
+  // Tasks that are blocked by this task — scan ALL DBs
+  const blocks: Array<{ taskId: string; dependsOnId: string }> = [];
+  const allDbNames = getAllDbNames();
+  for (const dbName of allDbNames) {
+    const db = getDb(dbName);
+    const dbBlocks = db
+      .select({
+        taskId: dependencies.taskId,
+        dependsOnId: dependencies.dependsOnId,
+      })
+      .from(dependencies)
+      .where(eq(dependencies.dependsOnId, taskId))
+      .all();
+    blocks.push(...dbBlocks);
+  }
 
   return { dependsOn, blocks };
 }
 
+/**
+ * Cross-DB cycle detection using DFS.
+ * For each node, determine its DB from the ID prefix,
+ * then query that DB for dependencies.
+ */
 function wouldCreateCycle(taskId: string, dependsOnId: string): boolean {
-  const db = getDb();
-
   // Use DFS to check if dependsOnId can reach taskId
   // If so, adding taskId → dependsOnId would create a cycle
   const visited = new Set<string>();
@@ -128,6 +137,21 @@ function wouldCreateCycle(taskId: string, dependsOnId: string): boolean {
       continue;
     }
     visited.add(current);
+
+    // Determine which DB this task's dependencies are stored in
+    let currentDbName: string;
+    try {
+      currentDbName = parseDbFromId(current);
+    } catch {
+      continue; // Skip if ID can't be parsed
+    }
+
+    let db;
+    try {
+      db = getDb(currentDbName);
+    } catch {
+      continue; // Skip if DB doesn't exist
+    }
 
     // Get all tasks that `current` depends on
     const deps = db
@@ -150,12 +174,20 @@ export function getAllDependencies(): Array<{
   taskId: string;
   dependsOnId: string;
 }> {
-  const db = getDb();
-  return db
-    .select({
-      taskId: dependencies.taskId,
-      dependsOnId: dependencies.dependsOnId,
-    })
-    .from(dependencies)
-    .all();
+  const allDbNames = getAllDbNames();
+  const allDeps: Array<{ taskId: string; dependsOnId: string }> = [];
+
+  for (const dbName of allDbNames) {
+    const db = getDb(dbName);
+    const deps = db
+      .select({
+        taskId: dependencies.taskId,
+        dependsOnId: dependencies.dependsOnId,
+      })
+      .from(dependencies)
+      .all();
+    allDeps.push(...deps);
+  }
+
+  return allDeps;
 }

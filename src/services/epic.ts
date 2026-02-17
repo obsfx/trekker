@@ -1,7 +1,8 @@
 import { eq, and, isNull, isNotNull } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { getDb, getDbForEntity, getAllDbNames } from "../db/client";
 import { epics, projects, tasks } from "../db/schema";
 import { generateId } from "../utils/id-generator";
+import { getCurrentDbName, isDbExplicitlySet } from "../utils/db-context";
 import type {
   Epic,
   CreateEpicInput,
@@ -14,7 +15,8 @@ import {
 } from "../types";
 
 export function createEpic(input: CreateEpicInput): Epic {
-  const db = getDb();
+  const dbName = getCurrentDbName();
+  const db = getDb(dbName);
 
   const project = db.select().from(projects).get();
   if (!project) {
@@ -41,13 +43,26 @@ export function createEpic(input: CreateEpicInput): Epic {
 }
 
 export function getEpic(id: string): Epic | undefined {
-  const db = getDb();
+  const db = getDbForEntity(id);
   const result = db.select().from(epics).where(eq(epics.id, id)).get();
   return result as Epic | undefined;
 }
 
 export function listEpics(status?: EpicStatus): Epic[] {
-  const db = getDb();
+  if (isDbExplicitlySet()) {
+    return listEpicsFromDb(getCurrentDbName(), status);
+  }
+
+  const allDbNames = getAllDbNames();
+  const allEpics: Epic[] = [];
+  for (const dbName of allDbNames) {
+    allEpics.push(...listEpicsFromDb(dbName, status));
+  }
+  return allEpics;
+}
+
+function listEpicsFromDb(dbName: string, status?: EpicStatus): Epic[] {
+  const db = getDb(dbName);
 
   if (status) {
     return db
@@ -61,9 +76,9 @@ export function listEpics(status?: EpicStatus): Epic[] {
 }
 
 export function updateEpic(id: string, input: UpdateEpicInput): Epic {
-  const db = getDb();
+  const db = getDbForEntity(id);
 
-  const existing = getEpic(id);
+  const existing = db.select().from(epics).where(eq(epics.id, id)).get() as Epic | undefined;
   if (!existing) {
     throw new Error(`Epic not found: ${id}`);
   }
@@ -79,13 +94,13 @@ export function updateEpic(id: string, input: UpdateEpicInput): Epic {
 
   db.update(epics).set(updates).where(eq(epics.id, id)).run();
 
-  return getEpic(id)!;
+  return db.select().from(epics).where(eq(epics.id, id)).get() as Epic;
 }
 
 export function deleteEpic(id: string): void {
-  const db = getDb();
+  const db = getDbForEntity(id);
 
-  const existing = getEpic(id);
+  const existing = db.select().from(epics).where(eq(epics.id, id)).get();
   if (!existing) {
     throw new Error(`Epic not found: ${id}`);
   }
@@ -103,9 +118,9 @@ export interface CompleteEpicResult {
 }
 
 export function completeEpic(id: string): CompleteEpicResult {
-  const db = getDb();
+  const db = getDbForEntity(id);
 
-  const existing = getEpic(id);
+  const existing = db.select().from(epics).where(eq(epics.id, id)).get() as Epic | undefined;
   if (!existing) {
     throw new Error(`Epic not found: ${id}`);
   }

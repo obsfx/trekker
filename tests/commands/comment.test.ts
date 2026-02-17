@@ -33,7 +33,7 @@ describe("comment command", () => {
     it("should add a comment to a task", () => {
       const comment = ctx.runToon<Comment>(`comment add ${task.id} -a "agent" -c "Test comment"`);
 
-      expect(comment.id).toMatch(/^CMT-\d+$/);
+      expect(comment.id).toMatch(/^TREKKER-CMT-\d+$/);
       expect(comment.taskId).toBe(task.id);
       expect(comment.author).toBe("agent");
       expect(comment.content).toBe("Test comment");
@@ -59,7 +59,7 @@ describe("comment command", () => {
     });
 
     it("should fail with non-existent task", () => {
-      const error = ctx.runExpectError('comment add TREK-999 -a "agent" -c "Test"');
+      const error = ctx.runExpectError('comment add TREKKER-TREK-999 -a "agent" -c "Test"');
       expect(error.toLowerCase()).toContain("not found");
     });
 
@@ -113,7 +113,7 @@ describe("comment command", () => {
     });
 
     it("should fail for non-existent comment", () => {
-      const error = ctx.runExpectError('comment update CMT-999 -c "Test"');
+      const error = ctx.runExpectError('comment update TREKKER-CMT-999 -c "Test"');
       expect(error.toLowerCase()).toContain("not found");
     });
   });
@@ -130,7 +130,7 @@ describe("comment command", () => {
     });
 
     it("should fail for non-existent comment", () => {
-      const error = ctx.runExpectError("comment delete CMT-999");
+      const error = ctx.runExpectError("comment delete TREKKER-CMT-999");
       expect(error.toLowerCase()).toContain("not found");
     });
 

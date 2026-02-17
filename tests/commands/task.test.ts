@@ -35,7 +35,7 @@ describe("task command", () => {
     it("should create a task with title only", () => {
       const task = ctx.runToon<Task>('task create -t "Test Task"');
 
-      expect(task.id).toMatch(/^TREK-\d+$/);
+      expect(task.id).toMatch(/^TREKKER-TREK-\d+$/);
       expect(task.title).toBe("Test Task");
       expect(task.description).toBeNull();
       expect(task.status).toBe("todo");
@@ -73,7 +73,7 @@ describe("task command", () => {
     });
 
     it("should fail with non-existent epic", () => {
-      const error = ctx.runExpectError('task create -t "Test" -e EPIC-999');
+      const error = ctx.runExpectError('task create -t "Test" -e TREKKER-EPIC-999');
       expect(error.toLowerCase()).toContain("not found");
     });
 
@@ -152,7 +152,7 @@ describe("task command", () => {
     });
 
     it("should fail for non-existent task", () => {
-      const error = ctx.runExpectError("task show TREK-999");
+      const error = ctx.runExpectError("task show TREKKER-TREK-999");
       expect(error.toLowerCase()).toContain("not found");
     });
   });
@@ -222,7 +222,7 @@ describe("task command", () => {
     });
 
     it("should fail for non-existent task", () => {
-      const error = ctx.runExpectError('task update TREK-999 -t "Test"');
+      const error = ctx.runExpectError('task update TREKKER-TREK-999 -t "Test"');
       expect(error.toLowerCase()).toContain("not found");
     });
 
@@ -251,7 +251,7 @@ describe("task command", () => {
     });
 
     it("should fail for non-existent task", () => {
-      const error = ctx.runExpectError("task delete TREK-999");
+      const error = ctx.runExpectError("task delete TREKKER-TREK-999");
       expect(error.toLowerCase()).toContain("not found");
     });
   });

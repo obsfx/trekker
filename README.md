@@ -66,23 +66,23 @@ trekker epic create -t "User Authentication" -d "JWT-based auth with login and r
 Add tasks to the epic:
 
 ```bash
-trekker task create -t "Create user model" -e EPIC-1
-trekker task create -t "Build login endpoint" -e EPIC-1
-trekker task create -t "Build registration endpoint" -e EPIC-1
+trekker task create -t "Create user model" -e TREKKER-EPIC-1
+trekker task create -t "Build login endpoint" -e TREKKER-EPIC-1
+trekker task create -t "Build registration endpoint" -e TREKKER-EPIC-1
 ```
 
 Set dependencies between tasks:
 
 ```bash
-trekker dep add TREK-2 TREK-1
-trekker dep add TREK-3 TREK-1
+trekker dep add TREKKER-TREK-2 TREKKER-TREK-1
+trekker dep add TREKKER-TREK-3 TREKKER-TREK-1
 ```
 
 Update task status as you work:
 
 ```bash
-trekker task update TREK-1 -s in_progress
-trekker task update TREK-1 -s completed
+trekker task update TREKKER-TREK-1 -s in_progress
+trekker task update TREKKER-TREK-1 -s completed
 ```
 
 ## Commands
@@ -90,8 +90,10 @@ trekker task update TREK-1 -s completed
 ### Project
 
 ```bash
-trekker init              # Initialize in current directory
-trekker wipe              # Delete all data
+trekker init              # Initialize default DB (trekker)
+trekker init db:agent2    # Initialize a named DB
+trekker wipe              # Delete all data (all DBs)
+trekker wipe db:agent2    # Delete only agent2 DB
 trekker quickstart        # Show full documentation
 ```
 
@@ -168,7 +170,7 @@ trekker history [--entity <id>] [--type <types>] [--action <actions>] [--since <
 Examples:
 ```bash
 trekker history                                  # All events
-trekker history --entity TREK-1                  # Events for specific entity
+trekker history --entity TREKKER-TREK-1          # Events for specific entity
 trekker history --type task --action update      # Only task updates
 trekker history --since 2025-01-01 --limit 20    # Events after date
 ```
@@ -198,7 +200,7 @@ npm install -g @obsfx/trekker-dashboard
 trekker-dashboard -p 3000  # Start dashboard on port 3000
 ```
 
-The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
+The dashboard shows tasks grouped by status and reads from the `.trekker/` database files.
 
 ## Claude Code Integration
 
@@ -219,7 +221,7 @@ Add the `--toon` flag to any command for structured output in [TOON format](http
 
 ```bash
 trekker --toon task list
-trekker --toon task show TREK-1
+trekker --toon task show TREKKER-TREK-1
 ```
 
 ## Status Values
@@ -239,13 +241,33 @@ Epics: `todo`, `in_progress`, `completed`, `archived`
 
 ## ID Formats
 
-- Epics: `EPIC-1`, `EPIC-2`
-- Tasks: `TREK-1`, `TREK-2`
-- Comments: `CMT-1`, `CMT-2`
+IDs are prefixed with the database name (uppercase):
+
+- Epics: `TREKKER-EPIC-1`, `AGENT2-EPIC-1`
+- Tasks: `TREKKER-TREK-1`, `AGENT2-TREK-1`
+- Comments: `TREKKER-CMT-1`, `AGENT2-CMT-1`
+
+The DB name prefix ensures IDs are unique across databases. When you reference an ID, the correct database is resolved automatically from the prefix.
+
+## Multi-Database
+
+Multiple AI agents can each have their own database to avoid conflicts:
+
+```bash
+trekker init                    # Creates .trekker/trekker.db
+trekker init db:agent2          # Creates .trekker/agent2.db
+
+trekker task create -t "Task" db:agent2   # Creates AGENT2-TREK-1
+trekker task show AGENT2-TREK-1           # Auto-resolves DB from ID
+trekker task list                         # Lists from ALL databases
+trekker task list db:agent2               # Lists from agent2 only
+```
+
+Use `db:<name>` or `--db <name>` to target a specific database. Default DB name is `trekker`.
 
 ## Data Storage
 
-Trekker creates a `.trekker` directory in your project root containing `trekker.db`. Add `.trekker` to your `.gitignore` if you do not want to track it in version control.
+Trekker creates a `.trekker` directory in your project root containing database files (e.g. `trekker.db`, `agent2.db`). Add `.trekker` to your `.gitignore` if you do not want to track it in version control.
 
 ## For AI Agents
 

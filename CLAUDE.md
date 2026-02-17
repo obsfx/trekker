@@ -41,17 +41,20 @@ The database includes FTS5 virtual tables for full-text search (created in `clie
 ## Data Model
 
 - **Project**: Single project per `.trekker/` directory
-- **Epic**: Groups tasks (EPIC-n format)
-- **Task**: Main work unit (TREK-n format), subtasks use `parentTaskId`
-- **Comment**: Attached to tasks (CMT-n format)
-- **Dependency**: Task-to-task dependencies (prevents circular)
+- **Epic**: Groups tasks (`TREKKER-EPIC-n` format)
+- **Task**: Main work unit (`TREKKER-TREK-n` format), subtasks use `parentTaskId`
+- **Comment**: Attached to tasks (`TREKKER-CMT-n` format)
+- **Dependency**: Task-to-task dependencies (prevents circular, supports cross-DB)
 - **Event**: Audit log for history tracking
 
 ## Key Patterns
 
-- Database stored at `.trekker/trekker.db` in project root
+- Databases stored in `.trekker/` directory (e.g. `trekker.db`, `agent2.db`)
 - `--toon` flag available globally for TOON-formatted output (token-efficient for AI agents)
-- ID generation via `idCounters` table to maintain TREK-n, EPIC-n, CMT-n sequences
+- `--db <name>` or `db:<name>` targets a specific database (default: `trekker`)
+- ID format: `{DBNAME}-{PREFIX}-{N}` (e.g. `TREKKER-TREK-1`, `AGENT2-EPIC-1`)
+- ID generation via `idCounters` table per database
+- Entity IDs auto-resolve to the correct database from the prefix
 - History tracking: all create/update/delete operations log to `events` table
 
 ## Status Values

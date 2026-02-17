@@ -1,11 +1,13 @@
 import { eq } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { getDbForEntity, parseDbFromId } from "../db/client";
 import { comments, tasks } from "../db/schema";
 import { generateId } from "../utils/id-generator";
 import type { Comment, CreateCommentInput, UpdateCommentInput } from "../types";
 
 export function createComment(input: CreateCommentInput): Comment {
-  const db = getDb();
+  // Comment is stored in the same DB as the task it belongs to
+  const taskDbName = parseDbFromId(input.taskId);
+  const db = getDbForEntity(input.taskId);
 
   // Validate task exists
   const task = db.select().from(tasks).where(eq(tasks.id, input.taskId)).get();
@@ -13,7 +15,7 @@ export function createComment(input: CreateCommentInput): Comment {
     throw new Error(`Task not found: ${input.taskId}`);
   }
 
-  const id = generateId("comment");
+  const id = generateId("comment", taskDbName);
   const now = new Date();
 
   const comment = {
@@ -31,13 +33,13 @@ export function createComment(input: CreateCommentInput): Comment {
 }
 
 export function getComment(id: string): Comment | undefined {
-  const db = getDb();
+  const db = getDbForEntity(id);
   const result = db.select().from(comments).where(eq(comments.id, id)).get();
   return result as Comment | undefined;
 }
 
 export function listComments(taskId: string): Comment[] {
-  const db = getDb();
+  const db = getDbForEntity(taskId);
 
   // Validate task exists
   const task = db.select().from(tasks).where(eq(tasks.id, taskId)).get();
@@ -53,9 +55,9 @@ export function listComments(taskId: string): Comment[] {
 }
 
 export function updateComment(id: string, input: UpdateCommentInput): Comment {
-  const db = getDb();
+  const db = getDbForEntity(id);
 
-  const existing = getComment(id);
+  const existing = db.select().from(comments).where(eq(comments.id, id)).get() as Comment | undefined;
   if (!existing) {
     throw new Error(`Comment not found: ${id}`);
   }
@@ -68,13 +70,13 @@ export function updateComment(id: string, input: UpdateCommentInput): Comment {
     .where(eq(comments.id, id))
     .run();
 
-  return getComment(id)!;
+  return db.select().from(comments).where(eq(comments.id, id)).get() as Comment;
 }
 
 export function deleteComment(id: string): void {
-  const db = getDb();
+  const db = getDbForEntity(id);
 
-  const existing = getComment(id);
+  const existing = db.select().from(comments).where(eq(comments.id, id)).get();
   if (!existing) {
     throw new Error(`Comment not found: ${id}`);
   }

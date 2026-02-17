@@ -2,11 +2,13 @@ import { getDb } from "../db/client";
 import { idCounters } from "../db/schema";
 import { eq, sql } from "drizzle-orm";
 import { type EntityType, PREFIX_MAP } from "../types";
+import { getCurrentDbName } from "./db-context";
 
 export type { EntityType };
 
-export function generateId(entityType: EntityType): string {
-  const db = getDb();
+export function generateId(entityType: EntityType, overrideDbName?: string): string {
+  const dbName = overrideDbName ?? getCurrentDbName();
+  const db = getDb(dbName);
   const prefix = PREFIX_MAP[entityType];
 
   // Atomically increment the counter and return the new value
@@ -25,7 +27,7 @@ export function generateId(entityType: EntityType): string {
     throw new Error(`Counter not found for entity type: ${entityType}`);
   }
 
-  return `${prefix}-${result.counter}`;
+  return `${dbName.toUpperCase()}-${prefix}-${result.counter}`;
 }
 
 export function generateUuid(): string {

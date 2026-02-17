@@ -117,6 +117,10 @@ export function createTestContext(): TestContext {
   };
 }
 
-export function initTrekker(ctx: TestContext): void {
-  ctx.run("init");
+export function initTrekker(ctx: TestContext, dbName?: string): void {
+  if (dbName) {
+    ctx.run(`init db:${dbName}`);
+  } else {
+    ctx.run("init");
+  }
 }

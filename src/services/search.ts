@@ -1,4 +1,5 @@
-import { requireSqliteInstance, rebuildSearchIndex } from "../db/client";
+import { requireSqliteInstance, rebuildSearchIndex, getAllDbNames } from "../db/client";
+import { getCurrentDbName, isDbExplicitlySet } from "../utils/db-context";
 import { PAGINATION_DEFAULTS, type SearchEntityType } from "../types";
 
 export type { SearchEntityType };
@@ -28,12 +29,8 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
-export function search(query: string, options?: SearchOptions): SearchResponse {
-  const sqlite = requireSqliteInstance();
-
-  const limit = options?.limit ?? PAGINATION_DEFAULTS.SEARCH_PAGE_SIZE;
-  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
-  const offset = (page - 1) * limit;
+function searchInDb(dbName: string, query: string, options?: SearchOptions): SearchResult[] {
+  const sqlite = requireSqliteInstance(dbName);
 
   const conditions: string[] = ["search_index MATCH ?"];
   const params: (string | number)[] = [query];
@@ -51,14 +48,6 @@ export function search(query: string, options?: SearchOptions): SearchResponse {
 
   const whereClause = conditions.join(" AND ");
 
-  const countQuery = `
-    SELECT COUNT(*) as total
-    FROM search_index
-    WHERE ${whereClause}
-  `;
-  const countResult = sqlite.query(countQuery).get(...params) as { total: number };
-  const total = countResult?.total ?? 0;
-
   const searchQuery = `
     SELECT
       entity_id,
@@ -71,10 +60,9 @@ export function search(query: string, options?: SearchOptions): SearchResponse {
     FROM search_index
     WHERE ${whereClause}
     ORDER BY bm25(search_index)
-    LIMIT ? OFFSET ?
   `;
 
-  const results = sqlite.query(searchQuery).all(...params, limit, offset) as Array<{
+  const results = sqlite.query(searchQuery).all(...params) as Array<{
     entity_id: string;
     entity_type: string;
     title: string | null;
@@ -84,20 +72,45 @@ export function search(query: string, options?: SearchOptions): SearchResponse {
     parent_id: string | null;
   }>;
 
+  return results.map((row) => ({
+    type: row.entity_type as SearchEntityType,
+    id: row.entity_id,
+    title: row.title,
+    snippet: row.snippet,
+    score: Math.abs(row.score),
+    status: row.status || null,
+    parentId: row.parent_id || null,
+  }));
+}
+
+export function search(query: string, options?: SearchOptions): SearchResponse {
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.SEARCH_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
+  const offset = (page - 1) * limit;
+
+  let allResults: SearchResult[] = [];
+
+  if (isDbExplicitlySet()) {
+    allResults = searchInDb(getCurrentDbName(), query, options);
+  } else {
+    const allDbNames = getAllDbNames();
+    for (const dbName of allDbNames) {
+      allResults.push(...searchInDb(dbName, query, options));
+    }
+  }
+
+  // Sort by score (lower BM25 = better match, we already used Math.abs)
+  allResults.sort((a, b) => a.score - b.score);
+
+  const total = allResults.length;
+  const pageResults = allResults.slice(offset, offset + limit);
+
   return {
     query,
     total,
     page,
     limit,
-    results: results.map((row) => ({
-      type: row.entity_type as SearchEntityType,
-      id: row.entity_id,
-      title: row.title,
-      snippet: row.snippet,
-      score: Math.abs(row.score),
-      status: row.status || null,
-      parentId: row.parent_id || null,
-    })),
+    results: pageResults,
   };
 }
 

@@ -1,4 +1,5 @@
-import { requireSqliteInstance } from "../db/client";
+import { requireSqliteInstance, getAllDbNames } from "../db/client";
+import { getCurrentDbName, isDbExplicitlySet } from "../utils/db-context";
 import { PAGINATION_DEFAULTS } from "../types";
 
 export type HistoryEntityType = "epic" | "task" | "subtask" | "comment" | "dependency";
@@ -31,12 +32,16 @@ export interface HistoryResponse {
   events: HistoryEvent[];
 }
 
-export function getHistory(options?: HistoryOptions): HistoryResponse {
-  const sqlite = requireSqliteInstance();
-
-  const limit = options?.limit ?? PAGINATION_DEFAULTS.HISTORY_PAGE_SIZE;
-  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
-  const offset = (page - 1) * limit;
+function queryDbForHistory(dbName: string, options?: HistoryOptions): Array<{
+  id: number;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  snapshot: string | null;
+  changes: string | null;
+  created_at: number;
+}> {
+  const sqlite = requireSqliteInstance(dbName);
 
   // Build WHERE conditions
   const conditions: string[] = [];
@@ -71,21 +76,14 @@ export function getHistory(options?: HistoryOptions): HistoryResponse {
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-  // Count total results
-  const countQuery = `SELECT COUNT(*) as total FROM events ${whereClause}`;
-  const countResult = sqlite.query(countQuery).get(...params) as { total: number };
-  const total = countResult?.total ?? 0;
-
-  // Get paginated results (newest first)
   const selectQuery = `
     SELECT id, action, entity_type, entity_id, snapshot, changes, created_at
     FROM events
     ${whereClause}
     ORDER BY created_at DESC, id DESC
-    LIMIT ? OFFSET ?
   `;
 
-  const results = sqlite.query(selectQuery).all(...params, limit, offset) as Array<{
+  return sqlite.query(selectQuery).all(...params) as Array<{
     id: number;
     action: string;
     entity_type: string;
@@ -94,12 +92,47 @@ export function getHistory(options?: HistoryOptions): HistoryResponse {
     changes: string | null;
     created_at: number;
   }>;
+}
+
+export function getHistory(options?: HistoryOptions): HistoryResponse {
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.HISTORY_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
+  const offset = (page - 1) * limit;
+
+  let allResults: Array<{
+    id: number;
+    action: string;
+    entity_type: string;
+    entity_id: string;
+    snapshot: string | null;
+    changes: string | null;
+    created_at: number;
+  }> = [];
+
+  if (isDbExplicitlySet()) {
+    allResults = queryDbForHistory(getCurrentDbName(), options);
+  } else {
+    const allDbNames = getAllDbNames();
+    for (const dbName of allDbNames) {
+      allResults.push(...queryDbForHistory(dbName, options));
+    }
+  }
+
+  // Sort by timestamp desc, then id desc
+  allResults.sort((a, b) => {
+    const timeDiff = b.created_at - a.created_at;
+    if (timeDiff !== 0) return timeDiff;
+    return b.id - a.id;
+  });
+
+  const total = allResults.length;
+  const pageResults = allResults.slice(offset, offset + limit);
 
   return {
     total,
     page,
     limit,
-    events: results.map((row) => ({
+    events: pageResults.map((row) => ({
       id: row.id,
       action: row.action as HistoryAction,
       entityType: row.entity_type as HistoryEntityType,

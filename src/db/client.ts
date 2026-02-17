@@ -1,22 +1,36 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import * as schema from "./schema";
-import { existsSync, mkdirSync, rmSync } from "fs";
+import { existsSync, mkdirSync, rmSync, readdirSync } from "fs";
 import { join } from "path";
+import { getCurrentDbName } from "../utils/db-context";
 
 const TREKKER_DIR = ".trekker";
-const DB_NAME = "trekker.db";
+
+interface DbInstance {
+  drizzle: ReturnType<typeof drizzle<typeof schema>>;
+  sqlite: Database;
+}
+
+const dbInstances = new Map<string, DbInstance>();
 
 export function getTrekkerDir(cwd: string = process.cwd()): string {
   return join(cwd, TREKKER_DIR);
 }
 
-export function getDbPath(cwd: string = process.cwd()): string {
-  return join(getTrekkerDir(cwd), DB_NAME);
+export function getDbPath(dbName: string = getCurrentDbName(), cwd: string = process.cwd()): string {
+  return join(getTrekkerDir(cwd), `${dbName}.db`);
 }
 
 export function isTrekkerInitialized(cwd: string = process.cwd()): boolean {
-  return existsSync(getDbPath(cwd));
+  const trekkerDir = getTrekkerDir(cwd);
+  if (!existsSync(trekkerDir)) return false;
+  const dbFiles = readdirSync(trekkerDir).filter((f) => f.endsWith(".db"));
+  return dbFiles.length > 0;
+}
+
+export function isDbInitialized(dbName: string, cwd: string = process.cwd()): boolean {
+  return existsSync(getDbPath(dbName, cwd));
 }
 
 export function ensureTrekkerDir(cwd: string = process.cwd()): void {
@@ -26,42 +40,88 @@ export function ensureTrekkerDir(cwd: string = process.cwd()): void {
   }
 }
 
-let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
-let sqliteInstance: Database | null = null;
+export function getAllDbNames(cwd: string = process.cwd()): string[] {
+  const trekkerDir = getTrekkerDir(cwd);
+  if (!existsSync(trekkerDir)) return [];
+  return readdirSync(trekkerDir)
+    .filter((f) => f.endsWith(".db"))
+    .map((f) => f.replace(/\.db$/, ""));
+}
 
-export function getDb(cwd: string = process.cwd()) {
-  if (dbInstance) {
-    return dbInstance;
+/**
+ * Parse DB name from an entity ID.
+ * Format: DBNAME-PREFIX-N where PREFIX is TREK|EPIC|CMT
+ *
+ * Examples:
+ *   TREKKER-TREK-1 → "trekker"
+ *   AGENT2-EPIC-3 → "agent2"
+ *   MY-AGENT-TREK-1 → "my-agent"
+ */
+export function parseDbFromId(entityId: string): string {
+  const parts = entityId.split("-");
+  // Last part is the counter number
+  // Second-to-last is the entity prefix (TREK, EPIC, CMT)
+  // Everything before is the DB name
+  if (parts.length < 3) {
+    throw new Error(`Invalid entity ID format: ${entityId}`);
   }
 
-  const dbPath = getDbPath(cwd);
+  const entityPrefix = parts[parts.length - 2];
+  if (!["TREK", "EPIC", "CMT"].includes(entityPrefix)) {
+    throw new Error(`Invalid entity ID format: ${entityId}. Expected TREK, EPIC, or CMT prefix.`);
+  }
+
+  const dbNameParts = parts.slice(0, parts.length - 2);
+  return dbNameParts.join("-").toLowerCase();
+}
+
+/**
+ * Get a drizzle DB instance for a specific named DB, opening lazily.
+ */
+export function getDb(dbName: string = getCurrentDbName(), cwd: string = process.cwd()) {
+  const key = `${cwd}:${dbName}`;
+  const cached = dbInstances.get(key);
+  if (cached) {
+    return cached.drizzle;
+  }
+
+  const dbPath = getDbPath(dbName, cwd);
   if (!existsSync(dbPath)) {
     throw new Error(
-      "Trekker not initialized. Run 'trekker init' first."
+      `Database '${dbName}' not initialized. Run 'trekker init${dbName !== "trekker" ? ` db:${dbName}` : ""}' first.`
     );
   }
 
-  sqliteInstance = new Database(dbPath);
-  dbInstance = drizzle(sqliteInstance, { schema });
+  const sqlite = new Database(dbPath);
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const drizzleInstance = drizzle(sqlite, { schema });
 
-  // Migrate existing databases to add search index if missing
-  migrateSearchIndex(sqliteInstance);
+  // Migrate existing databases
+  migrateSearchIndex(sqlite);
+  migrateHistoryTable(sqlite);
 
-  // Migrate existing databases to add history table if missing
-  migrateHistoryTable(sqliteInstance);
-
-  return dbInstance;
+  dbInstances.set(key, { drizzle: drizzleInstance, sqlite });
+  return drizzleInstance;
 }
 
-export function createDb(cwd: string = process.cwd()) {
-  ensureTrekkerDir(cwd);
-  const dbPath = getDbPath(cwd);
+/**
+ * Get drizzle DB instance for a given entity ID by parsing the DB name from the ID prefix.
+ */
+export function getDbForEntity(entityId: string, cwd: string = process.cwd()) {
+  const dbName = parseDbFromId(entityId);
+  return getDb(dbName, cwd);
+}
 
-  sqliteInstance = new Database(dbPath);
-  dbInstance = drizzle(sqliteInstance, { schema });
+export function createDb(dbName: string = getCurrentDbName(), cwd: string = process.cwd()) {
+  ensureTrekkerDir(cwd);
+  const dbPath = getDbPath(dbName, cwd);
+
+  const sqlite = new Database(dbPath);
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const drizzleInstance = drizzle(sqlite, { schema });
 
   // Create tables
-  sqliteInstance.exec(`
+  sqlite.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
@@ -106,7 +166,7 @@ export function createDb(cwd: string = process.cwd()) {
     CREATE TABLE IF NOT EXISTS dependencies (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-      depends_on_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      depends_on_id TEXT NOT NULL,
       created_at INTEGER NOT NULL
     );
 
@@ -137,12 +197,15 @@ export function createDb(cwd: string = process.cwd()) {
   `);
 
   // Create FTS5 search index and triggers
-  createSearchIndex(sqliteInstance);
+  createSearchIndex(sqlite);
 
   // Create history event triggers
-  createHistoryTriggers(sqliteInstance);
+  createHistoryTriggers(sqlite);
 
-  return dbInstance;
+  const key = `${cwd}:${dbName}`;
+  dbInstances.set(key, { drizzle: drizzleInstance, sqlite });
+
+  return drizzleInstance;
 }
 
 function createSearchIndex(sqlite: Database): void {
@@ -457,10 +520,10 @@ function migrateHistoryTable(sqlite: Database): void {
   }
 }
 
-export function rebuildSearchIndex(): void {
-  // Ensure database is initialized first
-  getDb();
-  const sqlite = getSqliteInstance();
+export function rebuildSearchIndex(dbName?: string): void {
+  const name = dbName ?? getCurrentDbName();
+  getDb(name);
+  const sqlite = getSqliteInstance(name);
   if (!sqlite) {
     throw new Error("Database not initialized");
   }
@@ -470,23 +533,26 @@ export function rebuildSearchIndex(): void {
   populateSearchIndex(sqlite);
 }
 
-export function getSqliteInstance(): Database | null {
-  return sqliteInstance;
+export function getSqliteInstance(dbName?: string, cwd: string = process.cwd()): Database | null {
+  const name = dbName ?? getCurrentDbName();
+  const key = `${cwd}:${name}`;
+  return dbInstances.get(key)?.sqlite ?? null;
 }
 
-export function requireSqliteInstance(): Database {
-  getDb();
-  if (!sqliteInstance) {
+export function requireSqliteInstance(dbName?: string, cwd: string = process.cwd()): Database {
+  const name = dbName ?? getCurrentDbName();
+  getDb(name, cwd);
+  const sqlite = getSqliteInstance(name, cwd);
+  if (!sqlite) {
     throw new Error("Database not initialized");
   }
-  return sqliteInstance;
+  return sqlite;
 }
 
 export function closeDb(): void {
-  if (sqliteInstance) {
-    sqliteInstance.close();
-    sqliteInstance = null;
-    dbInstance = null;
+  for (const [key, instance] of dbInstances) {
+    instance.sqlite.close();
+    dbInstances.delete(key);
   }
 }
 
@@ -495,5 +561,19 @@ export function deleteDb(cwd: string = process.cwd()): void {
   const trekkerDir = getTrekkerDir(cwd);
   if (existsSync(trekkerDir)) {
     rmSync(trekkerDir, { recursive: true, force: true });
+  }
+}
+
+export function deleteNamedDb(dbName: string, cwd: string = process.cwd()): void {
+  const key = `${cwd}:${dbName}`;
+  const instance = dbInstances.get(key);
+  if (instance) {
+    instance.sqlite.close();
+    dbInstances.delete(key);
+  }
+
+  const dbPath = getDbPath(dbName, cwd);
+  if (existsSync(dbPath)) {
+    rmSync(dbPath);
   }
 }
