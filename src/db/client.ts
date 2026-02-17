@@ -285,6 +285,19 @@ function populateSearchIndex(sqlite: Database): void {
 }
 
 function createHistoryTriggers(sqlite: Database): void {
+  // Drop existing triggers first so they get recreated with updated SQL
+  sqlite.run("DROP TRIGGER IF EXISTS epics_history_insert");
+  sqlite.run("DROP TRIGGER IF EXISTS epics_history_delete");
+  sqlite.run("DROP TRIGGER IF EXISTS epics_history_update");
+  sqlite.run("DROP TRIGGER IF EXISTS tasks_history_insert");
+  sqlite.run("DROP TRIGGER IF EXISTS tasks_history_delete");
+  sqlite.run("DROP TRIGGER IF EXISTS tasks_history_update");
+  sqlite.run("DROP TRIGGER IF EXISTS comments_history_insert");
+  sqlite.run("DROP TRIGGER IF EXISTS comments_history_delete");
+  sqlite.run("DROP TRIGGER IF EXISTS comments_history_update");
+  sqlite.run("DROP TRIGGER IF EXISTS deps_history_insert");
+  sqlite.run("DROP TRIGGER IF EXISTS deps_history_delete");
+
   // Epic triggers
   sqlite.run(`
     CREATE TRIGGER IF NOT EXISTS epics_history_insert AFTER INSERT ON epics BEGIN
@@ -292,7 +305,7 @@ function createHistoryTriggers(sqlite: Database): void {
       VALUES ('create', 'epic', NEW.id,
         json_object('id', NEW.id, 'title', NEW.title, 'description', NEW.description,
           'status', NEW.status, 'priority', NEW.priority),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 
@@ -302,7 +315,7 @@ function createHistoryTriggers(sqlite: Database): void {
       VALUES ('delete', 'epic', OLD.id,
         json_object('id', OLD.id, 'title', OLD.title, 'description', OLD.description,
           'status', OLD.status, 'priority', OLD.priority),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 
@@ -311,7 +324,7 @@ function createHistoryTriggers(sqlite: Database): void {
       INSERT INTO events(action, entity_type, entity_id, changes, created_at)
       SELECT 'update', 'epic', NEW.id,
         json_group_object(key, json_object('from', json_extract(old_json, '$.' || key), 'to', json_extract(new_json, '$.' || key))),
-        unixepoch() * 1000
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000
       FROM (
         SELECT
           json_object('title', OLD.title, 'description', OLD.description, 'status', OLD.status, 'priority', OLD.priority) as old_json,
@@ -329,7 +342,7 @@ function createHistoryTriggers(sqlite: Database): void {
         json_object('id', NEW.id, 'title', NEW.title, 'description', NEW.description,
           'status', NEW.status, 'priority', NEW.priority, 'epic_id', NEW.epic_id,
           'parent_task_id', NEW.parent_task_id, 'tags', NEW.tags),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 
@@ -340,7 +353,7 @@ function createHistoryTriggers(sqlite: Database): void {
         json_object('id', OLD.id, 'title', OLD.title, 'description', OLD.description,
           'status', OLD.status, 'priority', OLD.priority, 'epic_id', OLD.epic_id,
           'parent_task_id', OLD.parent_task_id, 'tags', OLD.tags),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 
@@ -349,7 +362,7 @@ function createHistoryTriggers(sqlite: Database): void {
       INSERT INTO events(action, entity_type, entity_id, changes, created_at)
       SELECT 'update', IIF(NEW.parent_task_id IS NULL, 'task', 'subtask'), NEW.id,
         json_group_object(key, json_object('from', json_extract(old_json, '$.' || key), 'to', json_extract(new_json, '$.' || key))),
-        unixepoch() * 1000
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000
       FROM (
         SELECT
           json_object('title', OLD.title, 'description', OLD.description, 'status', OLD.status,
@@ -367,7 +380,7 @@ function createHistoryTriggers(sqlite: Database): void {
       INSERT INTO events(action, entity_type, entity_id, snapshot, created_at)
       VALUES ('create', 'comment', NEW.id,
         json_object('id', NEW.id, 'task_id', NEW.task_id, 'author', NEW.author, 'content', NEW.content),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 
@@ -376,7 +389,7 @@ function createHistoryTriggers(sqlite: Database): void {
       INSERT INTO events(action, entity_type, entity_id, snapshot, created_at)
       VALUES ('delete', 'comment', OLD.id,
         json_object('id', OLD.id, 'task_id', OLD.task_id, 'author', OLD.author, 'content', OLD.content),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 
@@ -385,7 +398,7 @@ function createHistoryTriggers(sqlite: Database): void {
       INSERT INTO events(action, entity_type, entity_id, changes, created_at)
       SELECT 'update', 'comment', NEW.id,
         json_group_object(key, json_object('from', json_extract(old_json, '$.' || key), 'to', json_extract(new_json, '$.' || key))),
-        unixepoch() * 1000
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000
       FROM (
         SELECT
           json_object('content', OLD.content) as old_json,
@@ -401,7 +414,7 @@ function createHistoryTriggers(sqlite: Database): void {
       INSERT INTO events(action, entity_type, entity_id, snapshot, created_at)
       VALUES ('create', 'dependency', NEW.id,
         json_object('id', NEW.id, 'task_id', NEW.task_id, 'depends_on_id', NEW.depends_on_id),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 
@@ -410,7 +423,7 @@ function createHistoryTriggers(sqlite: Database): void {
       INSERT INTO events(action, entity_type, entity_id, snapshot, created_at)
       VALUES ('delete', 'dependency', OLD.id,
         json_object('id', OLD.id, 'task_id', OLD.task_id, 'depends_on_id', OLD.depends_on_id),
-        unixepoch() * 1000);
+        CAST(strftime('%s', 'now') AS INTEGER) * 1000);
     END
   `);
 }
