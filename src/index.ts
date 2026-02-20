@@ -12,6 +12,7 @@ import { seedCommand } from "./commands/seed";
 import { searchCommand } from "./commands/search";
 import { historyCommand } from "./commands/history";
 import { listCommand } from "./commands/list";
+import { readyCommand } from "./commands/ready";
 import { setToonMode } from "./utils/output";
 import pkg from "../package.json";
 
@@ -42,6 +43,7 @@ program.addCommand(seedCommand);
 program.addCommand(searchCommand);
 program.addCommand(historyCommand);
 program.addCommand(listCommand);
+program.addCommand(readyCommand);
 
 // Parse and execute
 program.parse();

@@ -41,6 +41,7 @@ My concerns about the future and security of that project led me here. Trekker i
 
 What you get:
 - Task and epic tracking with dependencies
+- Ready command to find unblocked tasks and see what they unblock
 - Full-text search across tasks, epics, subtasks, and comments
 - Unified list view with filtering by type, status, priority, and custom sorting
 - Optional kanban board UI available as a [separate package](https://github.com/obsfx/trekker-dashboard)
@@ -76,6 +77,12 @@ Set dependencies between tasks:
 ```bash
 trekker dep add TREK-2 TREK-1
 trekker dep add TREK-3 TREK-1
+```
+
+See what is ready to work on:
+
+```bash
+trekker ready
 ```
 
 Update task status as you work:
@@ -141,6 +148,29 @@ trekker dep add <task-id> <depends-on-id>
 trekker dep remove <task-id> <depends-on-id>
 trekker dep list <task-id>
 ```
+
+### Ready
+
+Show tasks that are ready to work on — unblocked and in `todo` status. For each ready task, shows downstream dependents that will be unblocked once it is completed:
+
+```bash
+trekker ready
+```
+
+Example output:
+```
+2 ready task(s):
+
+TREK-1 | P0 | Setup database
+  -> unblocks TREK-2 | todo        | P1 | Build API layer
+  -> unblocks TREK-3 | todo        | P1 | Build UI layer
+TREK-4 | P2 | Write docs
+```
+
+Tasks are sorted by priority (critical first). A task is considered ready when:
+- Status is `todo`
+- It is a top-level task (not a subtask)
+- All its dependencies are resolved (`completed`, `wont_fix`, or `archived`)
 
 ### Search
 
