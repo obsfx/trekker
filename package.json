@@ -1,6 +1,6 @@
 {
   "name": "@obsfx/trekker",
-  "version": "1.7.2",
+  "version": "1.8.0",
   "description": "A CLI-based issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database.",
   "type": "module",
   "main": "dist/index.js",
