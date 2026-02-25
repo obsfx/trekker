@@ -106,7 +106,7 @@ trekker quickstart        # Show full documentation
 
 ```bash
 trekker epic create -t <title> [-d <desc>] [-p <0-5>] [-s <status>]
-trekker epic list [--status <status>]
+trekker epic list [--status <status>] [--limit <n>] [--page <n>]
 trekker epic show <epic-id>
 trekker epic update <epic-id> [options]
 trekker epic complete <epic-id>  # Complete epic and archive all tasks/subtasks
@@ -117,7 +117,7 @@ trekker epic delete <epic-id>
 
 ```bash
 trekker task create -t <title> [-d <desc>] [-p <0-5>] [-s <status>] [--tags <tags>] [-e <epic-id>]
-trekker task list [--status <status>] [--epic <epic-id>]
+trekker task list [--status <status>] [--epic <epic-id>] [--limit <n>] [--page <n>]
 trekker task show <task-id>
 trekker task update <task-id> [options]
 trekker task delete <task-id>
@@ -127,7 +127,7 @@ trekker task delete <task-id>
 
 ```bash
 trekker subtask create <parent-id> -t <title> [-d <desc>] [-p <0-5>] [-s <status>]
-trekker subtask list <parent-id>
+trekker subtask list <parent-id> [--limit <n>] [--page <n>]
 trekker subtask update <subtask-id> [options]
 trekker subtask delete <subtask-id>
 ```
@@ -136,7 +136,7 @@ trekker subtask delete <subtask-id>
 
 ```bash
 trekker comment add <task-id> -a <author> -c <content>
-trekker comment list <task-id>
+trekker comment list <task-id> [--limit <n>] [--page <n>]
 trekker comment update <comment-id> -c <content>
 trekker comment delete <comment-id>
 ```
@@ -154,7 +154,7 @@ trekker dep list <task-id>
 Show tasks that are ready to work on — unblocked and in `todo` status. For each ready task, shows downstream dependents that will be unblocked once it is completed:
 
 ```bash
-trekker ready
+trekker ready [--limit <n>] [--page <n>]
 ```
 
 Example output:
@@ -272,6 +272,20 @@ Epics: `todo`, `in_progress`, `completed`, `archived`
 - Epics: `EPIC-1`, `EPIC-2`
 - Tasks: `TREK-1`, `TREK-2`
 - Comments: `CMT-1`, `CMT-2`
+
+All list commands default to 50 items per page, sorted by newest first. Use `--limit` and `--page` to paginate through large result sets.
+
+## Development
+
+```bash
+bun install                   # Install dependencies
+bun run dev                   # Run CLI from source
+bun run dev <command>         # Run a specific command
+bun test                      # Run all tests
+bun run lint                  # ESLint check
+bun run format:check          # Prettier check
+bun run check                 # Both lint and format
+```
 
 ## Data Storage
 
