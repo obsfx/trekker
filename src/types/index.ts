@@ -1,20 +1,9 @@
 // Status types
-export const TASK_STATUSES = [
-  "todo",
-  "in_progress",
-  "completed",
-  "wont_fix",
-  "archived",
-] as const;
+export const TASK_STATUSES = ['todo', 'in_progress', 'completed', 'wont_fix', 'archived'] as const;
 
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
-export const EPIC_STATUSES = [
-  "todo",
-  "in_progress",
-  "completed",
-  "archived",
-] as const;
+export const EPIC_STATUSES = ['todo', 'in_progress', 'completed', 'archived'] as const;
 
 export type EpicStatus = (typeof EPIC_STATUSES)[number];
 
@@ -23,8 +12,8 @@ export type Priority = 0 | 1 | 2 | 3 | 4 | 5;
 
 // Default values
 export const DEFAULT_PRIORITY: Priority = 2;
-export const DEFAULT_TASK_STATUS: TaskStatus = "todo";
-export const DEFAULT_EPIC_STATUS: EpicStatus = "todo";
+export const DEFAULT_TASK_STATUS: TaskStatus = 'todo';
+export const DEFAULT_EPIC_STATUS: EpicStatus = 'todo';
 
 // Pagination defaults
 export const PAGINATION_DEFAULTS = {
@@ -34,32 +23,25 @@ export const PAGINATION_DEFAULTS = {
   DEFAULT_PAGE: 1,
 } as const;
 
-// Valid sort fields for list operations
-export const VALID_SORT_FIELDS = [
-  "created",
-  "updated",
-  "title",
-  "priority",
-  "status",
-] as const;
+// Generic paginated response
+export interface PaginatedResponse<T> {
+  total: number;
+  page: number;
+  limit: number;
+  items: T[];
+}
 
-export type SortField = (typeof VALID_SORT_FIELDS)[number];
+// Valid sort fields for list operations
+export const VALID_SORT_FIELDS = ['created', 'updated', 'title', 'priority', 'status'] as const;
 
 // Valid entity types for list/search operations
-export const LIST_ENTITY_TYPES = ["epic", "task", "subtask"] as const;
-export const SEARCH_ENTITY_TYPES = ["epic", "task", "subtask", "comment"] as const;
+export const LIST_ENTITY_TYPES = ['epic', 'task', 'subtask'] as const;
+export const SEARCH_ENTITY_TYPES = ['epic', 'task', 'subtask', 'comment'] as const;
 
 export type ListEntityType = (typeof LIST_ENTITY_TYPES)[number];
 export type SearchEntityType = (typeof SEARCH_ENTITY_TYPES)[number];
 
 // Entity types
-export interface Project {
-  id: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export interface Epic {
   id: string;
   projectId: string;
@@ -145,16 +127,11 @@ export interface UpdateCommentInput {
   content: string;
 }
 
-// Output options
-export interface OutputOptions {
-  json?: boolean;
-}
-
 // ID generation types
-export type EntityType = "task" | "epic" | "comment";
+export type EntityType = 'task' | 'epic' | 'comment';
 
 export const PREFIX_MAP: Record<EntityType, string> = {
-  task: "TREK",
-  epic: "EPIC",
-  comment: "CMT",
+  task: 'TREK',
+  epic: 'EPIC',
+  comment: 'CMT',
 };

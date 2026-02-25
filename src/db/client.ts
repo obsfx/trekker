@@ -1,17 +1,17 @@
-import { Database } from "bun:sqlite";
-import { drizzle } from "drizzle-orm/bun-sqlite";
-import * as schema from "./schema";
-import { existsSync, mkdirSync, rmSync } from "fs";
-import { join } from "path";
+import { Database } from 'bun:sqlite';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
+import * as schema from './schema';
+import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 
-const TREKKER_DIR = ".trekker";
-const DB_NAME = "trekker.db";
+const TREKKER_DIR = '.trekker';
+const DB_NAME = 'trekker.db';
 
-export function getTrekkerDir(cwd: string = process.cwd()): string {
+function getTrekkerDir(cwd: string = process.cwd()): string {
   return join(cwd, TREKKER_DIR);
 }
 
-export function getDbPath(cwd: string = process.cwd()): string {
+function getDbPath(cwd: string = process.cwd()): string {
   return join(getTrekkerDir(cwd), DB_NAME);
 }
 
@@ -19,7 +19,7 @@ export function isTrekkerInitialized(cwd: string = process.cwd()): boolean {
   return existsSync(getDbPath(cwd));
 }
 
-export function ensureTrekkerDir(cwd: string = process.cwd()): void {
+function ensureTrekkerDir(cwd: string = process.cwd()): void {
   const trekkerDir = getTrekkerDir(cwd);
   if (!existsSync(trekkerDir)) {
     mkdirSync(trekkerDir, { recursive: true });
@@ -36,9 +36,7 @@ export function getDb(cwd: string = process.cwd()) {
 
   const dbPath = getDbPath(cwd);
   if (!existsSync(dbPath)) {
-    throw new Error(
-      "Trekker not initialized. Run 'trekker init' first."
-    );
+    throw new Error("Trekker not initialized. Run 'trekker init' first.");
   }
 
   sqliteInstance = new Database(dbPath);
@@ -61,14 +59,16 @@ export function createDb(cwd: string = process.cwd()) {
   dbInstance = drizzle(sqliteInstance, { schema });
 
   // Create tables
-  sqliteInstance.exec(`
+  sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
-    );
+    )
+  `);
 
+  sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS epics (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -78,8 +78,10 @@ export function createDb(cwd: string = process.cwd()) {
       priority INTEGER NOT NULL DEFAULT 2,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
-    );
+    )
+  `);
 
+  sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS tasks (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -92,8 +94,10 @@ export function createDb(cwd: string = process.cwd()) {
       tags TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
-    );
+    )
+  `);
 
+  sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS comments (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
@@ -101,26 +105,34 @@ export function createDb(cwd: string = process.cwd()) {
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
-    );
+    )
+  `);
 
+  sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS dependencies (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
       depends_on_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
       created_at INTEGER NOT NULL
-    );
+    )
+  `);
 
+  sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS id_counters (
       entity_type TEXT PRIMARY KEY,
       counter INTEGER NOT NULL DEFAULT 0
-    );
+    )
+  `);
 
-    -- Initialize counters
-    INSERT OR IGNORE INTO id_counters (entity_type, counter) VALUES ('task', 0);
-    INSERT OR IGNORE INTO id_counters (entity_type, counter) VALUES ('epic', 0);
-    INSERT OR IGNORE INTO id_counters (entity_type, counter) VALUES ('comment', 0);
+  // Initialize counters
+  sqliteInstance.run("INSERT OR IGNORE INTO id_counters (entity_type, counter) VALUES ('task', 0)");
+  sqliteInstance.run("INSERT OR IGNORE INTO id_counters (entity_type, counter) VALUES ('epic', 0)");
+  sqliteInstance.run(
+    "INSERT OR IGNORE INTO id_counters (entity_type, counter) VALUES ('comment', 0)"
+  );
 
-    -- Events table for history/logbook
+  // Events table for history/logbook
+  sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       action TEXT NOT NULL,
@@ -129,12 +141,14 @@ export function createDb(cwd: string = process.cwd()) {
       snapshot TEXT,
       changes TEXT,
       created_at INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_id);
-    CREATE INDEX IF NOT EXISTS idx_events_type_action ON events(entity_type, action);
-    CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
+    )
   `);
+
+  sqliteInstance.run('CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_id)');
+  sqliteInstance.run(
+    'CREATE INDEX IF NOT EXISTS idx_events_type_action ON events(entity_type, action)'
+  );
+  sqliteInstance.run('CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at)');
 
   // Create FTS5 search index and triggers
   createSearchIndex(sqliteInstance);
@@ -435,9 +449,9 @@ function migrateHistoryTable(sqlite: Database): void {
       )
     `);
 
-    sqlite.run("CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_id)");
-    sqlite.run("CREATE INDEX IF NOT EXISTS idx_events_type_action ON events(entity_type, action)");
-    sqlite.run("CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at)");
+    sqlite.run('CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_id)');
+    sqlite.run('CREATE INDEX IF NOT EXISTS idx_events_type_action ON events(entity_type, action)');
+    sqlite.run('CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at)');
 
     // Create the triggers
     createHistoryTriggers(sqlite);
@@ -449,27 +463,27 @@ export function rebuildSearchIndex(): void {
   getDb();
   const sqlite = getSqliteInstance();
   if (!sqlite) {
-    throw new Error("Database not initialized");
+    throw new Error('Database not initialized');
   }
 
   // Clear and repopulate the search index
-  sqlite.run("DELETE FROM search_index");
+  sqlite.run('DELETE FROM search_index');
   populateSearchIndex(sqlite);
 }
 
-export function getSqliteInstance(): Database | null {
+function getSqliteInstance(): Database | null {
   return sqliteInstance;
 }
 
 export function requireSqliteInstance(): Database {
   getDb();
   if (!sqliteInstance) {
-    throw new Error("Database not initialized");
+    throw new Error('Database not initialized');
   }
   return sqliteInstance;
 }
 
-export function closeDb(): void {
+function closeDb(): void {
   if (sqliteInstance) {
     sqliteInstance.close();
     sqliteInstance = null;

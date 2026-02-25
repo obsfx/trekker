@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command } from 'commander';
 
 const QUICKSTART_TEXT = `# Trekker Quickstart
 
@@ -130,8 +130,8 @@ Good: "Implement JWT auth for API.
 - Protect: /api/users, /api/tasks"
 `;
 
-export const quickstartCommand = new Command("quickstart")
-  .description("Show quick reference for AI agents")
+export const quickstartCommand = new Command('quickstart')
+  .description('Show quick reference for AI agents')
   .action(() => {
     console.log(QUICKSTART_TEXT);
   });

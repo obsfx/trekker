@@ -1,8 +1,8 @@
-import { eq, or } from "drizzle-orm";
-import { getDb } from "../db/client";
-import { dependencies, tasks } from "../db/schema";
-import { generateUuid } from "../utils/id-generator";
-import type { Dependency } from "../types";
+import { eq } from 'drizzle-orm';
+import { getDb } from '../db/client';
+import { dependencies, tasks } from '../db/schema';
+import { generateUuid } from '../utils/id-generator';
+import type { Dependency } from '../types';
 
 export function addDependency(taskId: string, dependsOnId: string): Dependency {
   const db = getDb();
@@ -13,27 +13,21 @@ export function addDependency(taskId: string, dependsOnId: string): Dependency {
     throw new Error(`Task not found: ${taskId}`);
   }
 
-  const dependsOnTask = db
-    .select()
-    .from(tasks)
-    .where(eq(tasks.id, dependsOnId))
-    .get();
+  const dependsOnTask = db.select().from(tasks).where(eq(tasks.id, dependsOnId)).get();
   if (!dependsOnTask) {
     throw new Error(`Task not found: ${dependsOnId}`);
   }
 
   // Can't depend on itself
   if (taskId === dependsOnId) {
-    throw new Error("A task cannot depend on itself.");
+    throw new Error('A task cannot depend on itself.');
   }
 
   // Check if dependency already exists
   const existing = db
     .select()
     .from(dependencies)
-    .where(
-      eq(dependencies.taskId, taskId)
-    )
+    .where(eq(dependencies.taskId, taskId))
     .all()
     .find((d) => d.dependsOnId === dependsOnId);
 
@@ -60,7 +54,7 @@ export function addDependency(taskId: string, dependsOnId: string): Dependency {
 
   db.insert(dependencies).values(dependency).run();
 
-  return dependency as Dependency;
+  return dependency;
 }
 
 export function removeDependency(taskId: string, dependsOnId: string): void {
@@ -81,8 +75,8 @@ export function removeDependency(taskId: string, dependsOnId: string): void {
 }
 
 export function getDependencies(taskId: string): {
-  dependsOn: Array<{ taskId: string; dependsOnId: string }>;
-  blocks: Array<{ taskId: string; dependsOnId: string }>;
+  dependsOn: { taskId: string; dependsOnId: string }[];
+  blocks: { taskId: string; dependsOnId: string }[];
 } {
   const db = getDb();
 
@@ -118,7 +112,10 @@ function wouldCreateCycle(taskId: string, dependsOnId: string): boolean {
   const stack = [dependsOnId];
 
   while (stack.length > 0) {
-    const current = stack.pop()!;
+    const current = stack.pop();
+    if (current === undefined) {
+      continue;
+    }
 
     if (current === taskId) {
       return true; // Found a path from dependsOnId to taskId
@@ -144,18 +141,4 @@ function wouldCreateCycle(taskId: string, dependsOnId: string): boolean {
   }
 
   return false;
-}
-
-export function getAllDependencies(): Array<{
-  taskId: string;
-  dependsOnId: string;
-}> {
-  const db = getDb();
-  return db
-    .select({
-      taskId: dependencies.taskId,
-      dependsOnId: dependencies.dependsOnId,
-    })
-    .from(dependencies)
-    .all();
 }

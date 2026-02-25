@@ -1,9 +1,7 @@
-import { getDb } from "../db/client";
-import { idCounters } from "../db/schema";
-import { eq, sql } from "drizzle-orm";
-import { type EntityType, PREFIX_MAP } from "../types";
-
-export type { EntityType };
+import { getDb } from '../db/client';
+import { idCounters } from '../db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { type EntityType, PREFIX_MAP } from '../types';
 
 export function generateId(entityType: EntityType): string {
   const db = getDb();

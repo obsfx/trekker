@@ -1,228 +1,259 @@
-import { Command } from "commander";
-import { isTrekkerInitialized } from "../services/project";
-import { createEpic } from "../services/epic";
-import { createTask } from "../services/task";
-import { addDependency } from "../services/dependency";
-import { success, error, info } from "../utils/output";
-import type { Priority } from "../types";
+import { Command } from 'commander';
+import { isTrekkerInitialized } from '../services/project';
+import { createEpic } from '../services/epic';
+import { createTask } from '../services/task';
+import { addDependency } from '../services/dependency';
+import { success, error, info, handleCommandError } from '../utils/output';
+import type { EpicStatus, Priority, TaskStatus } from '../types';
+import type { SeedCommandOptions } from '../types/options';
 
-const SAMPLE_EPICS: Array<{ title: string; description: string; priority: Priority; status: string }> = [
+const SAMPLE_EPICS: {
+  title: string;
+  description: string;
+  priority: Priority;
+  status: EpicStatus;
+}[] = [
   {
-    title: "User Authentication",
-    description: "Implement user authentication and authorization system",
+    title: 'User Authentication',
+    description: 'Implement user authentication and authorization system',
     priority: 0,
-    status: "in_progress",
+    status: 'in_progress',
   },
   {
-    title: "Dashboard",
-    description: "Build the main dashboard with analytics and metrics",
+    title: 'Dashboard',
+    description: 'Build the main dashboard with analytics and metrics',
     priority: 1,
-    status: "todo",
+    status: 'todo',
   },
   {
-    title: "API Development",
-    description: "Design and implement RESTful API endpoints",
+    title: 'API Development',
+    description: 'Design and implement RESTful API endpoints',
     priority: 1,
-    status: "in_progress",
+    status: 'in_progress',
   },
   {
-    title: "Testing & QA",
-    description: "Set up testing infrastructure and write tests",
+    title: 'Testing & QA',
+    description: 'Set up testing infrastructure and write tests',
     priority: 2,
-    status: "todo",
+    status: 'todo',
   },
 ];
 
-const SAMPLE_TASKS: Array<{ epicIndex: number | null; title: string; description: string; priority: Priority; status: string; tags: string }> = [
+const SAMPLE_TASKS: {
+  epicIndex: number | null;
+  title: string;
+  description: string;
+  priority: Priority;
+  status: TaskStatus;
+  tags: string;
+}[] = [
   // Auth tasks
   {
     epicIndex: 0,
-    title: "Set up OAuth 2.0 provider",
-    description: "Configure OAuth 2.0 with Google and GitHub providers",
+    title: 'Set up OAuth 2.0 provider',
+    description: 'Configure OAuth 2.0 with Google and GitHub providers',
     priority: 0,
-    status: "completed",
-    tags: "backend,security",
+    status: 'completed',
+    tags: 'backend,security',
   },
   {
     epicIndex: 0,
-    title: "Implement JWT token handling",
-    description: "Create JWT generation, validation, and refresh logic",
+    title: 'Implement JWT token handling',
+    description: 'Create JWT generation, validation, and refresh logic',
     priority: 1,
-    status: "in_progress",
-    tags: "backend,security",
+    status: 'in_progress',
+    tags: 'backend,security',
   },
   {
     epicIndex: 0,
-    title: "Build login page",
-    description: "Create responsive login page with social login buttons",
+    title: 'Build login page',
+    description: 'Create responsive login page with social login buttons',
     priority: 1,
-    status: "todo",
-    tags: "frontend,ui",
+    status: 'todo',
+    tags: 'frontend,ui',
   },
   {
     epicIndex: 0,
-    title: "Add password reset flow",
-    description: "Implement forgot password and reset password functionality",
+    title: 'Add password reset flow',
+    description: 'Implement forgot password and reset password functionality',
     priority: 2,
-    status: "todo",
-    tags: "backend,frontend",
+    status: 'todo',
+    tags: 'backend,frontend',
   },
   // Dashboard tasks
   {
     epicIndex: 1,
-    title: "Design dashboard layout",
-    description: "Create wireframes and mockups for the main dashboard",
+    title: 'Design dashboard layout',
+    description: 'Create wireframes and mockups for the main dashboard',
     priority: 1,
-    status: "completed",
-    tags: "design,ui",
+    status: 'completed',
+    tags: 'design,ui',
   },
   {
     epicIndex: 1,
-    title: "Implement chart components",
-    description: "Build reusable chart components using Chart.js",
+    title: 'Implement chart components',
+    description: 'Build reusable chart components using Chart.js',
     priority: 2,
-    status: "in_progress",
-    tags: "frontend,ui",
+    status: 'in_progress',
+    tags: 'frontend,ui',
   },
   {
     epicIndex: 1,
-    title: "Add real-time data updates",
-    description: "Implement WebSocket connection for live dashboard updates",
+    title: 'Add real-time data updates',
+    description: 'Implement WebSocket connection for live dashboard updates',
     priority: 2,
-    status: "todo",
-    tags: "frontend,backend",
+    status: 'todo',
+    tags: 'frontend,backend',
   },
   // API tasks
   {
     epicIndex: 2,
-    title: "Define API schema",
-    description: "Document API endpoints using OpenAPI specification",
+    title: 'Define API schema',
+    description: 'Document API endpoints using OpenAPI specification',
     priority: 1,
-    status: "completed",
-    tags: "backend,docs",
+    status: 'completed',
+    tags: 'backend,docs',
   },
   {
     epicIndex: 2,
-    title: "Implement user endpoints",
-    description: "Create CRUD endpoints for user management",
+    title: 'Implement user endpoints',
+    description: 'Create CRUD endpoints for user management',
     priority: 1,
-    status: "completed",
-    tags: "backend",
+    status: 'completed',
+    tags: 'backend',
   },
   {
     epicIndex: 2,
-    title: "Add rate limiting",
-    description: "Implement rate limiting middleware for API protection",
+    title: 'Add rate limiting',
+    description: 'Implement rate limiting middleware for API protection',
     priority: 2,
-    status: "in_progress",
-    tags: "backend,security",
+    status: 'in_progress',
+    tags: 'backend,security',
   },
   {
     epicIndex: 2,
-    title: "Set up API versioning",
-    description: "Implement v1/v2 API versioning strategy",
+    title: 'Set up API versioning',
+    description: 'Implement v1/v2 API versioning strategy',
     priority: 3,
-    status: "todo",
-    tags: "backend",
+    status: 'todo',
+    tags: 'backend',
   },
   // Testing tasks
   {
     epicIndex: 3,
-    title: "Set up Jest testing framework",
-    description: "Configure Jest with TypeScript support",
+    title: 'Set up Jest testing framework',
+    description: 'Configure Jest with TypeScript support',
     priority: 1,
-    status: "completed",
-    tags: "testing,devops",
+    status: 'completed',
+    tags: 'testing,devops',
   },
   {
     epicIndex: 3,
-    title: "Write unit tests for auth module",
-    description: "Create comprehensive unit tests for authentication logic",
+    title: 'Write unit tests for auth module',
+    description: 'Create comprehensive unit tests for authentication logic',
     priority: 2,
-    status: "todo",
-    tags: "testing",
+    status: 'todo',
+    tags: 'testing',
   },
   {
     epicIndex: 3,
-    title: "Set up E2E testing with Playwright",
-    description: "Configure Playwright for end-to-end testing",
+    title: 'Set up E2E testing with Playwright',
+    description: 'Configure Playwright for end-to-end testing',
     priority: 3,
-    status: "todo",
-    tags: "testing,devops",
+    status: 'todo',
+    tags: 'testing,devops',
   },
   // Tasks without epic
   {
     epicIndex: null,
-    title: "Update README documentation",
-    description: "Add installation instructions and usage examples",
+    title: 'Update README documentation',
+    description: 'Add installation instructions and usage examples',
     priority: 3,
-    status: "todo",
-    tags: "docs",
+    status: 'todo',
+    tags: 'docs',
   },
   {
     epicIndex: null,
-    title: "Configure CI/CD pipeline",
-    description: "Set up GitHub Actions for automated testing and deployment",
+    title: 'Configure CI/CD pipeline',
+    description: 'Set up GitHub Actions for automated testing and deployment',
     priority: 2,
-    status: "in_progress",
-    tags: "devops",
+    status: 'in_progress',
+    tags: 'devops',
   },
 ];
 
-const SAMPLE_SUBTASKS: Array<{ parentIndex: number; title: string; status: string; priority: Priority }> = [
+const SAMPLE_SUBTASKS: {
+  parentIndex: number;
+  title: string;
+  status: TaskStatus;
+  priority: Priority;
+}[] = [
   {
     parentIndex: 1, // JWT token handling
-    title: "Implement access token generation",
-    status: "completed",
+    title: 'Implement access token generation',
+    status: 'completed',
     priority: 1,
   },
   {
     parentIndex: 1,
-    title: "Implement refresh token logic",
-    status: "in_progress",
+    title: 'Implement refresh token logic',
+    status: 'in_progress',
     priority: 1,
   },
   {
     parentIndex: 1,
-    title: "Add token blacklisting",
-    status: "todo",
+    title: 'Add token blacklisting',
+    status: 'todo',
     priority: 2,
   },
   {
     parentIndex: 5, // Chart components
-    title: "Create bar chart component",
-    status: "completed",
+    title: 'Create bar chart component',
+    status: 'completed',
     priority: 2,
   },
   {
     parentIndex: 5,
-    title: "Create line chart component",
-    status: "in_progress",
+    title: 'Create line chart component',
+    status: 'in_progress',
     priority: 2,
   },
   {
     parentIndex: 5,
-    title: "Create pie chart component",
-    status: "todo",
+    title: 'Create pie chart component',
+    status: 'todo',
     priority: 3,
   },
 ];
 
+// Task indices for dependency references
+const TASK_JWT = 1;
+const TASK_LOGIN = 2;
+const TASK_PASSWORD_RESET = 3;
+const TASK_DASHBOARD_LAYOUT = 4;
+const TASK_CHART_COMPONENTS = 5;
+const TASK_REALTIME = 6;
+const TASK_USER_ENDPOINTS = 8;
+const TASK_RATE_LIMITING = 9;
+const TASK_JEST_SETUP = 11;
+const TASK_UNIT_TESTS_AUTH = 12;
+const TASK_E2E_TESTING = 13;
+
 // Dependencies: [taskIndex, dependsOnTaskIndex]
 const SAMPLE_DEPENDENCIES = [
-  [2, 1], // Login page depends on JWT handling
-  [3, 1], // Password reset depends on JWT handling
-  [6, 5], // Real-time updates depends on chart components
-  [6, 4], // Real-time updates depends on dashboard layout
-  [9, 8], // Rate limiting depends on user endpoints
-  [12, 11], // Unit tests for auth depends on Jest setup
-  [13, 11], // E2E testing depends on Jest setup
+  [TASK_LOGIN, TASK_JWT],
+  [TASK_PASSWORD_RESET, TASK_JWT],
+  [TASK_REALTIME, TASK_CHART_COMPONENTS],
+  [TASK_REALTIME, TASK_DASHBOARD_LAYOUT],
+  [TASK_RATE_LIMITING, TASK_USER_ENDPOINTS],
+  [TASK_UNIT_TESTS_AUTH, TASK_JEST_SETUP],
+  [TASK_E2E_TESTING, TASK_JEST_SETUP],
 ];
 
-export const seedCommand = new Command("seed")
-  .description("Seed the database with sample data (development only)")
-  .option("--force", "Skip confirmation prompt")
-  .action((options) => {
+export const seedCommand = new Command('seed')
+  .description('Seed the database with sample data (development only)')
+  .option('--force', 'Skip confirmation prompt')
+  .action((options: SeedCommandOptions) => {
     try {
       if (!isTrekkerInitialized()) {
         error("Trekker is not initialized. Run 'trekker init' first.");
@@ -230,55 +261,61 @@ export const seedCommand = new Command("seed")
       }
 
       if (!options.force) {
-        info("This will create sample epics, tasks, and dependencies.");
-        info("Use --force to skip this confirmation.\n");
+        info('This will create sample epics, tasks, and dependencies.');
+        info('Use --force to skip this confirmation.\n');
       }
 
       const epicIds: string[] = [];
       const taskIds: string[] = [];
 
       // Create epics
-      info("Creating epics...");
+      info('Creating epics...');
       for (const epicData of SAMPLE_EPICS) {
         const epic = createEpic({
           title: epicData.title,
           description: epicData.description,
           priority: epicData.priority,
-          status: epicData.status as "todo" | "in_progress" | "completed",
+          status: epicData.status,
         });
         epicIds.push(epic.id);
         info(`  Created ${epic.id}: ${epic.title}`);
       }
 
       // Create tasks
-      info("\nCreating tasks...");
+      info('\nCreating tasks...');
       for (const taskData of SAMPLE_TASKS) {
+        let epicId: string | undefined;
+        if (taskData.epicIndex !== null) {
+          epicId = epicIds[taskData.epicIndex];
+        }
         const task = createTask({
           title: taskData.title,
           description: taskData.description,
           priority: taskData.priority,
-          status: taskData.status as "todo" | "in_progress" | "completed",
+          status: taskData.status,
           tags: taskData.tags,
-          epicId: taskData.epicIndex !== null ? epicIds[taskData.epicIndex] : undefined,
+          epicId,
         });
         taskIds.push(task.id);
         info(`  Created ${task.id}: ${task.title}`);
       }
 
       // Create subtasks
-      info("\nCreating subtasks...");
+      info('\nCreating subtasks...');
       for (const subtaskData of SAMPLE_SUBTASKS) {
         const subtask = createTask({
           title: subtaskData.title,
           priority: subtaskData.priority,
-          status: subtaskData.status as "todo" | "in_progress" | "completed",
+          status: subtaskData.status,
           parentTaskId: taskIds[subtaskData.parentIndex],
         });
-        info(`  Created ${subtask.id}: ${subtask.title} (subtask of ${taskIds[subtaskData.parentIndex]})`);
+        info(
+          `  Created ${subtask.id}: ${subtask.title} (subtask of ${taskIds[subtaskData.parentIndex]})`
+        );
       }
 
       // Create dependencies
-      info("\nCreating dependencies...");
+      info('\nCreating dependencies...');
       for (const [taskIndex, dependsOnIndex] of SAMPLE_DEPENDENCIES) {
         const taskId = taskIds[taskIndex];
         const dependsOnId = taskIds[dependsOnIndex];
@@ -286,9 +323,10 @@ export const seedCommand = new Command("seed")
         info(`  ${taskId} depends on ${dependsOnId}`);
       }
 
-      success(`\nSeed complete! Created ${epicIds.length} epics, ${taskIds.length} tasks, ${SAMPLE_SUBTASKS.length} subtasks, and ${SAMPLE_DEPENDENCIES.length} dependencies.`);
+      success(
+        `\nSeed complete! Created ${epicIds.length} epics, ${taskIds.length} tasks, ${SAMPLE_SUBTASKS.length} subtasks, and ${SAMPLE_DEPENDENCIES.length} dependencies.`
+      );
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });

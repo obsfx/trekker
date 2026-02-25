@@ -1,68 +1,77 @@
-import { Command } from "commander";
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
-import { listAll, parseSort } from "../services/list";
-import type { ListEntityType, ListResponse, ListItem } from "../services/list";
-import { handleCommandError, outputResult } from "../utils/output";
+import { Command } from 'commander';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { listAll, parseSort } from '../services/list';
+import type { ListEntityType, ListResponse, ListItem } from '../services/list';
+import { handleCommandError, outputResult } from '../utils/output';
 import {
-  validatePagination,
+  parsePaginationOptions,
   validateListEntityTypes,
   validatePriorities,
-} from "../utils/validator";
+  parseCommaSeparated,
+} from '../utils/validator';
+import { STATUS_PAD_WIDTH, TYPE_PAD_WIDTH, RADIX_DECIMAL } from '../utils/constants';
+import type { ListCommandOptions } from '../types/options';
 
 dayjs.extend(customParseFormat);
 
-export const listCommand = new Command("list")
-  .description("List all epics, tasks, and subtasks")
-  .option("--type <types>", "Filter by type: epic,task,subtask (comma-separated)")
-  .option("--status <statuses>", "Filter by status (comma-separated)")
-  .option("--priority <levels>", "Filter by priority: 0-5 (comma-separated)")
-  .option("--since <date>", "Created after date (YYYY-MM-DD)")
-  .option("--until <date>", "Created before date (YYYY-MM-DD)")
-  .option("--sort <fields>", "Sort by fields (field:direction, comma-separated)", "created:desc")
-  .option("--limit <n>", "Results per page (default: 50)", "50")
-  .option("--page <n>", "Page number (default: 1)", "1")
-  .action((options) => {
+export const listCommand = new Command('list')
+  .description('List all epics, tasks, and subtasks')
+  .option('--type <types>', 'Filter by type: epic,task,subtask (comma-separated)')
+  .option('--status <statuses>', 'Filter by status (comma-separated)')
+  .option('--priority <levels>', 'Filter by priority: 0-5 (comma-separated)')
+  .option('--since <date>', 'Created after date (YYYY-MM-DD)')
+  .option('--until <date>', 'Created before date (YYYY-MM-DD)')
+  .option('--sort <fields>', 'Sort by fields (field:direction, comma-separated)', 'created:desc')
+  .option('--limit <n>', 'Results per page (default: 50)', '50')
+  .option('--page <n>', 'Page number (default: 1)', '1')
+  .action((options: ListCommandOptions) => {
     try {
-      const limit = parseInt(options.limit, 10);
-      const page = parseInt(options.page, 10);
-      validatePagination(limit, page);
+      const { limit, page } = parsePaginationOptions(options);
 
-      const types = options.type
-        ? options.type.split(",").map((t: string) => t.trim())
-        : undefined;
+      const rawTypes = parseCommaSeparated(options.type);
+      let types: ListEntityType[] | undefined;
 
-      if (types) validateListEntityTypes(types);
+      if (rawTypes) {
+        validateListEntityTypes(rawTypes);
+        types = rawTypes;
+      }
 
-      const statuses = options.status
-        ? options.status.split(",").map((s: string) => s.trim())
-        : undefined;
+      const statuses = parseCommaSeparated(options.status);
 
-      const priorities = options.priority
-        ? options.priority.split(",").map((p: string) => parseInt(p.trim(), 10))
-        : undefined;
+      let priorities: number[] | undefined;
+      if (options.priority) {
+        priorities = options.priority
+          .split(',')
+          .map((p) => Number.parseInt(p.trim(), RADIX_DECIMAL));
+      }
 
-      if (priorities) validatePriorities(priorities);
+      if (priorities) {
+        validatePriorities(priorities);
+      }
 
       let sort;
       try {
         sort = parseSort(options.sort);
       } catch (err) {
-        throw new Error(`Invalid sort: ${err instanceof Error ? err.message : String(err)}`);
+        if (err instanceof Error) {
+          throw new Error(`Invalid sort: ${err.message}`);
+        }
+        throw new Error(`Invalid sort: ${String(err)}`);
       }
 
       const since = parseDate(options.since);
       if (options.since && !since) {
-        throw new Error("Invalid since date. Use YYYY-MM-DD format.");
+        throw new Error('Invalid since date. Use YYYY-MM-DD format.');
       }
 
       const until = parseUntilDate(options.until);
       if (options.until && !until) {
-        throw new Error("Invalid until date. Use YYYY-MM-DD format.");
+        throw new Error('Invalid until date. Use YYYY-MM-DD format.');
       }
 
       const result = listAll({
-        types: types as ListEntityType[] | undefined,
+        types,
         statuses,
         priorities,
         since,
@@ -79,26 +88,36 @@ export const listCommand = new Command("list")
   });
 
 function parseDate(dateStr: string | undefined): Date | undefined {
-  if (!dateStr) return undefined;
-  const parsed = dayjs(dateStr, "YYYY-MM-DD", true);
-  return parsed.isValid() ? parsed.toDate() : undefined;
+  if (!dateStr) {
+    return undefined;
+  }
+  const parsed = dayjs(dateStr, 'YYYY-MM-DD', true);
+  if (parsed.isValid()) {
+    return parsed.toDate();
+  }
+  return undefined;
 }
 
 function parseUntilDate(dateStr: string | undefined): Date | undefined {
-  if (!dateStr) return undefined;
-  const parsed = dayjs(dateStr, "YYYY-MM-DD", true);
-  return parsed.isValid() ? parsed.endOf("day").toDate() : undefined;
+  if (!dateStr) {
+    return undefined;
+  }
+  const parsed = dayjs(dateStr, 'YYYY-MM-DD', true);
+  if (parsed.isValid()) {
+    return parsed.endOf('day').toDate();
+  }
+  return undefined;
 }
 
 function formatListResults(result: ListResponse): string {
   const lines: string[] = [];
 
   lines.push(`Found ${result.total} items (page ${result.page}, ${result.limit} per page)`);
-  lines.push("");
+  lines.push('');
 
   if (result.items.length === 0) {
-    lines.push("No items found.");
-    return lines.join("\n");
+    lines.push('No items found.');
+    return lines.join('\n');
   }
 
   for (const item of result.items) {
@@ -107,18 +126,21 @@ function formatListResults(result: ListResponse): string {
 
   const totalPages = Math.ceil(result.total / result.limit);
   if (totalPages > 1) {
-    lines.push("");
+    lines.push('');
     lines.push(`Page ${result.page} of ${totalPages}`);
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 function formatItem(item: ListItem): string {
-  const typeLabel = item.type.toUpperCase().padEnd(7);
-  const statusLabel = item.status.padEnd(11);
+  const typeLabel = item.type.toUpperCase().padEnd(TYPE_PAD_WIDTH);
+  const statusLabel = item.status.padEnd(STATUS_PAD_WIDTH);
   const priorityLabel = `P${item.priority}`;
-  const parentLabel = item.parentId ? ` (${item.parentId})` : "";
+  let parentLabel = '';
+  if (item.parentId) {
+    parentLabel = ` (${item.parentId})`;
+  }
 
   return `${typeLabel} ${item.id} | ${statusLabel} | ${priorityLabel} | ${item.title}${parentLabel}`;
 }

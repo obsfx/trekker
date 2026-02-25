@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { createTestContext, initTrekker, type TestContext } from "../helpers/test-context";
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
 
 interface Task {
   id: string;
@@ -24,7 +24,7 @@ interface DependencyList {
   blocks: DependencyItem[];
 }
 
-describe("dep command", () => {
+describe('dep command', () => {
   let ctx: TestContext;
   let task1: Task;
   let task2: Task;
@@ -42,15 +42,15 @@ describe("dep command", () => {
     ctx?.cleanup();
   });
 
-  describe("add", () => {
-    it("should add a dependency between tasks", () => {
+  describe('add', () => {
+    it('should add a dependency between tasks', () => {
       const dep = ctx.runToon<Dependency>(`dep add ${task2.id} ${task1.id}`);
 
       expect(dep.taskId).toBe(task2.id);
       expect(dep.dependsOnId).toBe(task1.id);
     });
 
-    it("should allow multiple dependencies on a task", () => {
+    it('should allow multiple dependencies on a task', () => {
       ctx.run(`dep add ${task3.id} ${task1.id}`);
       ctx.run(`dep add ${task3.id} ${task2.id}`);
 
@@ -58,58 +58,58 @@ describe("dep command", () => {
       expect(deps.dependsOn).toHaveLength(2);
     });
 
-    it("should fail when task depends on itself", () => {
+    it('should fail when task depends on itself', () => {
       const error = ctx.runExpectError(`dep add ${task1.id} ${task1.id}`);
       expect(error.toLowerCase()).toMatch(/cannot depend on itself|circular|self/);
     });
 
-    it("should fail with circular dependency", () => {
+    it('should fail with circular dependency', () => {
       ctx.run(`dep add ${task2.id} ${task1.id}`); // task2 depends on task1
       const error = ctx.runExpectError(`dep add ${task1.id} ${task2.id}`); // task1 depends on task2 - circular!
-      expect(error.toLowerCase()).toContain("cycle");
+      expect(error.toLowerCase()).toContain('cycle');
     });
 
-    it("should fail with longer circular dependency chain", () => {
+    it('should fail with longer circular dependency chain', () => {
       ctx.run(`dep add ${task2.id} ${task1.id}`); // task2 depends on task1
       ctx.run(`dep add ${task3.id} ${task2.id}`); // task3 depends on task2
       const error = ctx.runExpectError(`dep add ${task1.id} ${task3.id}`); // task1 depends on task3 - circular!
-      expect(error.toLowerCase()).toContain("cycle");
+      expect(error.toLowerCase()).toContain('cycle');
     });
 
-    it("should fail with non-existent task", () => {
+    it('should fail with non-existent task', () => {
       const error = ctx.runExpectError(`dep add TREK-999 ${task1.id}`);
-      expect(error.toLowerCase()).toContain("not found");
+      expect(error.toLowerCase()).toContain('not found');
     });
 
-    it("should fail with non-existent dependency task", () => {
+    it('should fail with non-existent dependency task', () => {
       const error = ctx.runExpectError(`dep add ${task1.id} TREK-999`);
-      expect(error.toLowerCase()).toContain("not found");
+      expect(error.toLowerCase()).toContain('not found');
     });
 
-    it("should fail when dependency already exists", () => {
+    it('should fail when dependency already exists', () => {
       ctx.run(`dep add ${task2.id} ${task1.id}`);
       const error = ctx.runExpectError(`dep add ${task2.id} ${task1.id}`);
       expect(error.toLowerCase()).toMatch(/already exists|duplicate/);
     });
   });
 
-  describe("remove", () => {
-    it("should remove a dependency", () => {
+  describe('remove', () => {
+    it('should remove a dependency', () => {
       ctx.run(`dep add ${task2.id} ${task1.id}`);
       const output = ctx.run(`dep remove ${task2.id} ${task1.id}`);
 
-      expect(output.toLowerCase()).toContain("removed");
+      expect(output.toLowerCase()).toContain('removed');
 
       const deps = ctx.runToon<DependencyList>(`dep list ${task2.id}`);
       expect(deps.dependsOn).toHaveLength(0);
     });
 
-    it("should fail when dependency does not exist", () => {
+    it('should fail when dependency does not exist', () => {
       const error = ctx.runExpectError(`dep remove ${task2.id} ${task1.id}`);
-      expect(error.toLowerCase()).toContain("not found");
+      expect(error.toLowerCase()).toContain('not found');
     });
 
-    it("should only remove specified dependency", () => {
+    it('should only remove specified dependency', () => {
       ctx.run(`dep add ${task3.id} ${task1.id}`);
       ctx.run(`dep add ${task3.id} ${task2.id}`);
 
@@ -121,8 +121,8 @@ describe("dep command", () => {
     });
   });
 
-  describe("list", () => {
-    it("should list dependencies and blockers", () => {
+  describe('list', () => {
+    it('should list dependencies and blockers', () => {
       ctx.run(`dep add ${task2.id} ${task1.id}`); // task2 depends on task1
       ctx.run(`dep add ${task3.id} ${task2.id}`); // task3 depends on task2
 
@@ -133,13 +133,13 @@ describe("dep command", () => {
       expect(deps2.blocks[0].taskId).toBe(task3.id);
     });
 
-    it("should return empty arrays when no dependencies", () => {
+    it('should return empty arrays when no dependencies', () => {
       const deps = ctx.runToon<DependencyList>(`dep list ${task1.id}`);
       expect(deps.dependsOn).toHaveLength(0);
       expect(deps.blocks).toHaveLength(0);
     });
 
-    it("should show multiple dependencies", () => {
+    it('should show multiple dependencies', () => {
       ctx.run(`dep add ${task3.id} ${task1.id}`);
       ctx.run(`dep add ${task3.id} ${task2.id}`);
 
@@ -147,7 +147,7 @@ describe("dep command", () => {
       expect(deps.dependsOn).toHaveLength(2);
     });
 
-    it("should show multiple blockers", () => {
+    it('should show multiple blockers', () => {
       ctx.run(`dep add ${task2.id} ${task1.id}`);
       ctx.run(`dep add ${task3.id} ${task1.id}`);
 

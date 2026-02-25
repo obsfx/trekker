@@ -1,23 +1,19 @@
-import { Command } from "commander";
-import {
-  addDependency,
-  removeDependency,
-  getDependencies,
-} from "../services/dependency";
+import { Command } from 'commander';
+import { addDependency, removeDependency, getDependencies } from '../services/dependency';
 import {
   success,
   formatDependencyList,
   handleCommandError,
   isToonMode,
   output,
-} from "../utils/output";
+} from '../utils/output';
 
-export const depCommand = new Command("dep").description("Manage task dependencies");
+export const depCommand = new Command('dep').description('Manage task dependencies');
 
 depCommand
-  .command("add <task-id> <depends-on-id>")
-  .description("Add a dependency (task-id depends on depends-on-id)")
-  .action((taskId, dependsOnId) => {
+  .command('add <task-id> <depends-on-id>')
+  .description('Add a dependency (task-id depends on depends-on-id)')
+  .action((taskId: string, dependsOnId: string) => {
     try {
       const dependency = addDependency(taskId, dependsOnId);
 
@@ -32,9 +28,9 @@ depCommand
   });
 
 depCommand
-  .command("remove <task-id> <depends-on-id>")
-  .description("Remove a dependency")
-  .action((taskId, dependsOnId) => {
+  .command('remove <task-id> <depends-on-id>')
+  .description('Remove a dependency')
+  .action((taskId: string, dependsOnId: string) => {
     try {
       removeDependency(taskId, dependsOnId);
       success(`Dependency removed: ${taskId} → ${dependsOnId}`);
@@ -44,9 +40,9 @@ depCommand
   });
 
 depCommand
-  .command("list <task-id>")
-  .description("List dependencies for a task")
-  .action((taskId) => {
+  .command('list <task-id>')
+  .description('List dependencies for a task')
+  .action((taskId: string) => {
     try {
       const { dependsOn, blocks } = getDependencies(taskId);
 
@@ -54,10 +50,10 @@ depCommand
         output({ taskId, dependsOn, blocks });
       } else {
         console.log(`Dependencies for ${taskId}:`);
-        console.log("\nDepends on:");
-        console.log(formatDependencyList(dependsOn, "depends_on"));
-        console.log("\nBlocks:");
-        console.log(formatDependencyList(blocks, "blocks"));
+        console.log('\nDepends on:');
+        console.log(formatDependencyList(dependsOn, 'depends_on'));
+        console.log('\nBlocks:');
+        console.log(formatDependencyList(blocks, 'blocks'));
       }
     } catch (err) {
       handleCommandError(err);

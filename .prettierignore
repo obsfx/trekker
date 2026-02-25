@@ -1,0 +1,6 @@
+node_modules
+dist
+site
+*.db
+drizzle
+bun.lock

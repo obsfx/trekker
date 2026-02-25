@@ -1,17 +1,15 @@
-import { eq, and, isNull } from "drizzle-orm";
-import { getDb } from "../db/client";
-import { tasks, projects, epics } from "../db/schema";
-import { generateId } from "../utils/id-generator";
+import { eq, and, isNull, desc, sql } from 'drizzle-orm';
+import { getDb } from '../db/client';
+import { tasks, projects, epics } from '../db/schema';
+import { generateId } from '../utils/id-generator';
 import type {
   Task,
   CreateTaskInput,
   UpdateTaskInput,
   TaskStatus,
-} from "../types";
-import {
-  DEFAULT_PRIORITY,
-  DEFAULT_TASK_STATUS,
-} from "../types";
+  PaginatedResponse,
+} from '../types';
+import { DEFAULT_PRIORITY, DEFAULT_TASK_STATUS, PAGINATION_DEFAULTS } from '../types';
 
 export function createTask(input: CreateTaskInput): Task {
   const db = getDb();
@@ -31,17 +29,13 @@ export function createTask(input: CreateTaskInput): Task {
 
   // Validate parent task exists if provided
   if (input.parentTaskId) {
-    const parent = db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, input.parentTaskId))
-      .get();
+    const parent = db.select().from(tasks).where(eq(tasks.id, input.parentTaskId)).get();
     if (!parent) {
       throw new Error(`Parent task not found: ${input.parentTaskId}`);
     }
   }
 
-  const id = generateId("task");
+  const id = generateId('task');
   const now = new Date();
 
   const task = {
@@ -60,21 +54,26 @@ export function createTask(input: CreateTaskInput): Task {
 
   db.insert(tasks).values(task).run();
 
-  return task as Task;
+  return task;
 }
 
 export function getTask(id: string): Task | undefined {
   const db = getDb();
-  const result = db.select().from(tasks).where(eq(tasks.id, id)).get();
-  return result as Task | undefined;
+  return db.select().from(tasks).where(eq(tasks.id, id)).get();
 }
 
 export function listTasks(options?: {
   status?: TaskStatus;
   epicId?: string;
   parentTaskId?: string | null;
-}): Task[] {
+  limit?: number;
+  page?: number;
+}): PaginatedResponse<Task> {
   const db = getDb();
+
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.LIST_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
+  const offset = (page - 1) * limit;
 
   const conditions = [];
 
@@ -93,24 +92,62 @@ export function listTasks(options?: {
     conditions.push(eq(tasks.parentTaskId, options.parentTaskId));
   }
 
+  let where;
   if (conditions.length > 0) {
-    return db
-      .select()
-      .from(tasks)
-      .where(and(...conditions))
-      .all() as Task[];
+    where = and(...conditions);
   }
 
-  return db.select().from(tasks).all() as Task[];
-}
+  const countRow = db
+    .select({ count: sql<number>`count(*)` })
+    .from(tasks)
+    .where(where)
+    .get();
+  const total = countRow?.count ?? 0;
 
-export function listSubtasks(parentTaskId: string): Task[] {
-  const db = getDb();
-  return db
+  const items = db
     .select()
     .from(tasks)
-    .where(eq(tasks.parentTaskId, parentTaskId))
-    .all() as Task[];
+    .where(where)
+    .orderBy(desc(tasks.createdAt))
+    .limit(limit)
+    .offset(offset)
+    .all();
+
+  return { total, page, limit, items };
+}
+
+export function listSubtasks(
+  parentTaskId: string,
+  options?: {
+    limit?: number;
+    page?: number;
+  }
+): PaginatedResponse<Task> {
+  const db = getDb();
+
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.LIST_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
+  const offset = (page - 1) * limit;
+
+  const where = eq(tasks.parentTaskId, parentTaskId);
+
+  const countRow = db
+    .select({ count: sql<number>`count(*)` })
+    .from(tasks)
+    .where(where)
+    .get();
+  const total = countRow?.count ?? 0;
+
+  const items = db
+    .select()
+    .from(tasks)
+    .where(where)
+    .orderBy(desc(tasks.createdAt))
+    .limit(limit)
+    .offset(offset)
+    .all();
+
+  return { total, page, limit, items };
 }
 
 export function updateTask(id: string, input: UpdateTaskInput): Task {
@@ -133,16 +170,32 @@ export function updateTask(id: string, input: UpdateTaskInput): Task {
     updatedAt: new Date(),
   };
 
-  if (input.title !== undefined) updates.title = input.title;
-  if (input.description !== undefined) updates.description = input.description;
-  if (input.priority !== undefined) updates.priority = input.priority;
-  if (input.status !== undefined) updates.status = input.status;
-  if (input.tags !== undefined) updates.tags = input.tags;
-  if (input.epicId !== undefined) updates.epicId = input.epicId;
+  if (input.title !== undefined) {
+    updates.title = input.title;
+  }
+  if (input.description !== undefined) {
+    updates.description = input.description;
+  }
+  if (input.priority !== undefined) {
+    updates.priority = input.priority;
+  }
+  if (input.status !== undefined) {
+    updates.status = input.status;
+  }
+  if (input.tags !== undefined) {
+    updates.tags = input.tags;
+  }
+  if (input.epicId !== undefined) {
+    updates.epicId = input.epicId;
+  }
 
   db.update(tasks).set(updates).where(eq(tasks.id, id)).run();
 
-  return getTask(id)!;
+  const updated = getTask(id);
+  if (!updated) {
+    throw new Error(`Task not found after update: ${id}`);
+  }
+  return updated;
 }
 
 export function deleteTask(id: string): void {

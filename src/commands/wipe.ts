@@ -1,33 +1,33 @@
-import { Command } from "commander";
-import { wipeProject, isTrekkerInitialized } from "../services/project";
-import { success, error } from "../utils/output";
-import * as readline from "readline";
+import { Command } from 'commander';
+import { wipeProject, isTrekkerInitialized } from '../services/project';
+import { success, error, handleCommandError } from '../utils/output';
+import * as readline from 'node:readline';
+import type { WipeCommandOptions } from '../types/options';
 
-export const wipeCommand = new Command("wipe")
-  .description("Delete all Trekker data in the current directory")
-  .option("-y, --yes", "Skip confirmation prompt")
-  .action(async (options) => {
+export const wipeCommand = new Command('wipe')
+  .description('Delete all Trekker data in the current directory')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (options: WipeCommandOptions) => {
     try {
       if (!isTrekkerInitialized()) {
-        error("Trekker is not initialized in this directory.");
+        error('Trekker is not initialized in this directory.');
         process.exit(1);
       }
 
       if (!options.yes) {
         const confirmed = await confirm(
-          "Are you sure you want to delete all Trekker data? This cannot be undone. (y/N): "
+          'Are you sure you want to delete all Trekker data? This cannot be undone. (y/N): '
         );
         if (!confirmed) {
-          console.log("Aborted.");
+          console.log('Aborted.');
           return;
         }
       }
 
       wipeProject();
-      success("Trekker data deleted successfully.");
+      success('Trekker data deleted successfully.');
     } catch (err) {
-      error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
+      handleCommandError(err);
     }
   });
 
@@ -40,7 +40,7 @@ function confirm(prompt: string): Promise<boolean> {
 
     rl.question(prompt, (answer) => {
       rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
+      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
     });
   });
 }

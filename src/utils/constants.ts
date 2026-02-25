@@ -1,0 +1,11 @@
+export const STATUS_PAD_WIDTH = 11;
+export const TYPE_PAD_WIDTH = 7;
+export const JSON_INDENT = 2;
+export const MS_PER_SECOND = 1000;
+export const MAX_PRIORITY = 5;
+export const ACTION_PAD_WIDTH = 6;
+export const RADIX_DECIMAL = 10;
+export const TRUNCATE_OFFSET = 3;
+export const TIMESTAMP_SLICE_END = 19;
+export const TRUNCATE_DEFAULT = 40;
+export const TRUNCATE_CONTENT = 60;

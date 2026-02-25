@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
-import { getDb } from "../db/client";
-import { comments, tasks } from "../db/schema";
-import { generateId } from "../utils/id-generator";
-import type { Comment, CreateCommentInput, UpdateCommentInput } from "../types";
+import { eq, desc, sql } from 'drizzle-orm';
+import { getDb } from '../db/client';
+import { comments, tasks } from '../db/schema';
+import { generateId } from '../utils/id-generator';
+import type { Comment, CreateCommentInput, UpdateCommentInput, PaginatedResponse } from '../types';
+import { PAGINATION_DEFAULTS } from '../types';
 
 export function createComment(input: CreateCommentInput): Comment {
   const db = getDb();
@@ -13,7 +14,7 @@ export function createComment(input: CreateCommentInput): Comment {
     throw new Error(`Task not found: ${input.taskId}`);
   }
 
-  const id = generateId("comment");
+  const id = generateId('comment');
   const now = new Date();
 
   const comment = {
@@ -27,17 +28,26 @@ export function createComment(input: CreateCommentInput): Comment {
 
   db.insert(comments).values(comment).run();
 
-  return comment as Comment;
+  return comment;
 }
 
-export function getComment(id: string): Comment | undefined {
+function getComment(id: string): Comment | undefined {
   const db = getDb();
-  const result = db.select().from(comments).where(eq(comments.id, id)).get();
-  return result as Comment | undefined;
+  return db.select().from(comments).where(eq(comments.id, id)).get();
 }
 
-export function listComments(taskId: string): Comment[] {
+export function listComments(
+  taskId: string,
+  options?: {
+    limit?: number;
+    page?: number;
+  }
+): PaginatedResponse<Comment> {
   const db = getDb();
+
+  const limit = options?.limit ?? PAGINATION_DEFAULTS.LIST_PAGE_SIZE;
+  const page = options?.page ?? PAGINATION_DEFAULTS.DEFAULT_PAGE;
+  const offset = (page - 1) * limit;
 
   // Validate task exists
   const task = db.select().from(tasks).where(eq(tasks.id, taskId)).get();
@@ -45,11 +55,25 @@ export function listComments(taskId: string): Comment[] {
     throw new Error(`Task not found: ${taskId}`);
   }
 
-  return db
+  const where = eq(comments.taskId, taskId);
+
+  const countRow = db
+    .select({ count: sql<number>`count(*)` })
+    .from(comments)
+    .where(where)
+    .get();
+  const total = countRow?.count ?? 0;
+
+  const items = db
     .select()
     .from(comments)
-    .where(eq(comments.taskId, taskId))
-    .all() as Comment[];
+    .where(where)
+    .orderBy(desc(comments.createdAt))
+    .limit(limit)
+    .offset(offset)
+    .all();
+
+  return { total, page, limit, items };
 }
 
 export function updateComment(id: string, input: UpdateCommentInput): Comment {
@@ -68,7 +92,11 @@ export function updateComment(id: string, input: UpdateCommentInput): Comment {
     .where(eq(comments.id, id))
     .run();
 
-  return getComment(id)!;
+  const updated = getComment(id);
+  if (!updated) {
+    throw new Error(`Comment not found after update: ${id}`);
+  }
+  return updated;
 }
 
 export function deleteComment(id: string): void {

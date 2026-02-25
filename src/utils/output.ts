@@ -1,5 +1,6 @@
-import { encode } from "@toon-format/toon";
-import type { Epic, Task, Comment } from "../types";
+import { encode } from '@toon-format/toon';
+import type { Epic, Task, Comment, PaginatedResponse } from '../types';
+import { STATUS_PAD_WIDTH, JSON_INDENT } from './constants';
 
 let toonMode = false;
 
@@ -14,10 +15,10 @@ export function isToonMode(): boolean {
 export function output(data: unknown): void {
   if (toonMode) {
     console.log(encode(data));
-  } else if (typeof data === "string") {
+  } else if (typeof data === 'string') {
     console.log(data);
   } else {
-    console.log(JSON.stringify(data, null, 2));
+    console.log(JSON.stringify(data, null, JSON_INDENT));
   }
 }
 
@@ -48,7 +49,11 @@ export function error(message: string, details?: unknown): void {
  * Use in catch blocks to replace duplicate error handling patterns.
  */
 export function handleCommandError(err: unknown): never {
-  error(err instanceof Error ? err.message : String(err));
+  if (err instanceof Error) {
+    error(err.message);
+  } else {
+    error(String(err));
+  }
   process.exit(1);
 }
 
@@ -71,12 +76,12 @@ export function outputResult<T>(
 ): void {
   if (isToonMode()) {
     output(data);
-  } else {
-    if (successMessage) {
-      success(successMessage);
-    }
-    console.log(formatter(data));
+    return;
   }
+  if (successMessage) {
+    success(successMessage);
+  }
+  console.log(formatter(data));
 }
 
 export function info(message: string): void {
@@ -108,7 +113,7 @@ export function formatTask(task: Task): string {
   lines.push(`Created:     ${task.createdAt.toISOString()}`);
   lines.push(`Updated:     ${task.updatedAt.toISOString()}`);
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 export function formatEpic(epic: Epic): string {
@@ -125,7 +130,7 @@ export function formatEpic(epic: Epic): string {
   lines.push(`Created:     ${epic.createdAt.toISOString()}`);
   lines.push(`Updated:     ${epic.updatedAt.toISOString()}`);
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 export function formatComment(comment: Comment): string {
@@ -136,58 +141,93 @@ export function formatComment(comment: Comment): string {
     `Created: ${comment.createdAt.toISOString()}`,
   ];
 
-  return lines.join("\n");
-}
-
-export function formatTaskList(tasks: Task[]): string {
-  if (tasks.length === 0) {
-    return "No tasks found.";
-  }
-
-  const lines = tasks.map((task) => {
-    const tags = task.tags ? ` [${task.tags}]` : "";
-    const parent = task.parentTaskId ? ` (subtask of ${task.parentTaskId})` : "";
-    return `${task.id} | ${task.status.padEnd(11)} | P${task.priority} | ${task.title}${tags}${parent}`;
-  });
-
-  return lines.join("\n");
-}
-
-export function formatEpicList(epics: Epic[]): string {
-  if (epics.length === 0) {
-    return "No epics found.";
-  }
-
-  const lines = epics.map((epic) => {
-    return `${epic.id} | ${epic.status.padEnd(11)} | P${epic.priority} | ${epic.title}`;
-  });
-
-  return lines.join("\n");
-}
-
-export function formatCommentList(comments: Comment[]): string {
-  if (comments.length === 0) {
-    return "No comments found.";
-  }
-
-  return comments
-    .map((c) => `[${c.id}] ${c.author}: ${c.content}`)
-    .join("\n");
+  return lines.join('\n');
 }
 
 export function formatDependencyList(
-  dependencies: Array<{ taskId: string; dependsOnId: string }>,
-  direction: "depends_on" | "blocks"
+  dependencies: { taskId: string; dependsOnId: string }[],
+  direction: 'depends_on' | 'blocks'
 ): string {
   if (dependencies.length === 0) {
-    return direction === "depends_on"
-      ? "No dependencies."
-      : "Does not block any tasks.";
+    if (direction === 'depends_on') {
+      return 'No dependencies.';
+    }
+    return 'Does not block any tasks.';
   }
 
-  if (direction === "depends_on") {
-    return dependencies.map((d) => `  → depends on ${d.dependsOnId}`).join("\n");
-  } else {
-    return dependencies.map((d) => `  → blocks ${d.taskId}`).join("\n");
+  if (direction === 'depends_on') {
+    return dependencies.map((d) => `  → depends on ${d.dependsOnId}`).join('\n');
   }
+  return dependencies.map((d) => `  → blocks ${d.taskId}`).join('\n');
+}
+
+function formatPaginationFooter(total: number, page: number, limit: number): string {
+  const totalPages = Math.ceil(total / limit);
+  if (totalPages > 1) {
+    return `\nPage ${page} of ${totalPages}`;
+  }
+  return '';
+}
+
+export function formatPaginatedTaskList(result: PaginatedResponse<Task>): string {
+  const lines: string[] = [];
+  lines.push(`${result.total} task(s) (page ${result.page}, ${result.limit} per page)\n`);
+
+  if (result.items.length === 0) {
+    lines.push('No tasks found.');
+    return lines.join('\n');
+  }
+
+  for (const task of result.items) {
+    let tags = '';
+    if (task.tags) {
+      tags = ` [${task.tags}]`;
+    }
+    let parent = '';
+    if (task.parentTaskId) {
+      parent = ` (subtask of ${task.parentTaskId})`;
+    }
+    lines.push(
+      `${task.id} | ${task.status.padEnd(STATUS_PAD_WIDTH)} | P${task.priority} | ${task.title}${tags}${parent}`
+    );
+  }
+
+  lines.push(formatPaginationFooter(result.total, result.page, result.limit));
+  return lines.join('\n');
+}
+
+export function formatPaginatedEpicList(result: PaginatedResponse<Epic>): string {
+  const lines: string[] = [];
+  lines.push(`${result.total} epic(s) (page ${result.page}, ${result.limit} per page)\n`);
+
+  if (result.items.length === 0) {
+    lines.push('No epics found.');
+    return lines.join('\n');
+  }
+
+  for (const epic of result.items) {
+    lines.push(
+      `${epic.id} | ${epic.status.padEnd(STATUS_PAD_WIDTH)} | P${epic.priority} | ${epic.title}`
+    );
+  }
+
+  lines.push(formatPaginationFooter(result.total, result.page, result.limit));
+  return lines.join('\n');
+}
+
+export function formatPaginatedCommentList(result: PaginatedResponse<Comment>): string {
+  const lines: string[] = [];
+  lines.push(`${result.total} comment(s) (page ${result.page}, ${result.limit} per page)\n`);
+
+  if (result.items.length === 0) {
+    lines.push('No comments found.');
+    return lines.join('\n');
+  }
+
+  for (const c of result.items) {
+    lines.push(`[${c.id}] ${c.author}: ${c.content}`);
+  }
+
+  lines.push(formatPaginationFooter(result.total, result.page, result.limit));
+  return lines.join('\n');
 }

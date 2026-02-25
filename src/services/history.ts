@@ -1,10 +1,10 @@
-import { requireSqliteInstance } from "../db/client";
-import { PAGINATION_DEFAULTS } from "../types";
+import { requireSqliteInstance } from '../db/client';
+import { PAGINATION_DEFAULTS } from '../types';
 
-export type HistoryEntityType = "epic" | "task" | "subtask" | "comment" | "dependency";
-export type HistoryAction = "create" | "update" | "delete";
+export type HistoryEntityType = 'epic' | 'task' | 'subtask' | 'comment' | 'dependency';
+export type HistoryAction = 'create' | 'update' | 'delete';
 
-export interface HistoryOptions {
+interface HistoryOptions {
   entityId?: string;
   types?: HistoryEntityType[];
   actions?: HistoryAction[];
@@ -31,6 +31,24 @@ export interface HistoryResponse {
   events: HistoryEvent[];
 }
 
+interface HistoryCountRow {
+  total: number;
+}
+
+interface HistoryRow {
+  id: number;
+  action: HistoryAction;
+  entity_type: HistoryEntityType;
+  entity_id: string;
+  snapshot: string | null;
+  changes: string | null;
+  created_at: number;
+}
+
+const parseJsonRecord: (json: string) => Record<string, unknown> = JSON.parse;
+const parseJsonChanges: (json: string) => Record<string, { from: unknown; to: unknown }> =
+  JSON.parse;
+
 export function getHistory(options?: HistoryOptions): HistoryResponse {
   const sqlite = requireSqliteInstance();
 
@@ -43,37 +61,40 @@ export function getHistory(options?: HistoryOptions): HistoryResponse {
   const params: (string | number)[] = [];
 
   if (options?.entityId) {
-    conditions.push("entity_id = ?");
+    conditions.push('entity_id = ?');
     params.push(options.entityId);
   }
 
   if (options?.types && options.types.length > 0) {
-    const placeholders = options.types.map(() => "?").join(", ");
+    const placeholders = options.types.map(() => '?').join(', ');
     conditions.push(`entity_type IN (${placeholders})`);
     params.push(...options.types);
   }
 
   if (options?.actions && options.actions.length > 0) {
-    const placeholders = options.actions.map(() => "?").join(", ");
+    const placeholders = options.actions.map(() => '?').join(', ');
     conditions.push(`action IN (${placeholders})`);
     params.push(...options.actions);
   }
 
   if (options?.since) {
-    conditions.push("created_at >= ?");
+    conditions.push('created_at >= ?');
     params.push(options.since.getTime());
   }
 
   if (options?.until) {
-    conditions.push("created_at <= ?");
+    conditions.push('created_at <= ?');
     params.push(options.until.getTime());
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  let whereClause = '';
+  if (conditions.length > 0) {
+    whereClause = `WHERE ${conditions.join(' AND ')}`;
+  }
 
   // Count total results
   const countQuery = `SELECT COUNT(*) as total FROM events ${whereClause}`;
-  const countResult = sqlite.query(countQuery).get(...params) as { total: number };
+  const countResult = sqlite.query<HistoryCountRow, (string | number)[]>(countQuery).get(...params);
   const total = countResult?.total ?? 0;
 
   // Get paginated results (newest first)
@@ -85,28 +106,34 @@ export function getHistory(options?: HistoryOptions): HistoryResponse {
     LIMIT ? OFFSET ?
   `;
 
-  const results = sqlite.query(selectQuery).all(...params, limit, offset) as Array<{
-    id: number;
-    action: string;
-    entity_type: string;
-    entity_id: string;
-    snapshot: string | null;
-    changes: string | null;
-    created_at: number;
-  }>;
+  const results = sqlite
+    .query<HistoryRow, (string | number)[]>(selectQuery)
+    .all(...params, limit, offset);
 
   return {
     total,
     page,
     limit,
-    events: results.map((row) => ({
-      id: row.id,
-      action: row.action as HistoryAction,
-      entityType: row.entity_type as HistoryEntityType,
-      entityId: row.entity_id,
-      snapshot: row.snapshot ? JSON.parse(row.snapshot) : null,
-      changes: row.changes ? JSON.parse(row.changes) : null,
-      timestamp: new Date(row.created_at),
-    })),
+    events: results.map((row) => {
+      let snapshot: Record<string, unknown> | null = null;
+      if (row.snapshot) {
+        snapshot = parseJsonRecord(row.snapshot);
+      }
+
+      let changes: Record<string, { from: unknown; to: unknown }> | null = null;
+      if (row.changes) {
+        changes = parseJsonChanges(row.changes);
+      }
+
+      return {
+        id: row.id,
+        action: row.action,
+        entityType: row.entity_type,
+        entityId: row.entity_id,
+        snapshot,
+        changes,
+        timestamp: new Date(row.created_at),
+      };
+    }),
   };
 }
