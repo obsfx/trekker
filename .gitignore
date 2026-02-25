@@ -22,6 +22,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Lint cache
+.eslintcache
+
 # Logs
 *.log
 npm-debug.log*
