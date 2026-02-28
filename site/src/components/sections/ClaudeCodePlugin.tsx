@@ -5,6 +5,7 @@ import { CheckList } from "../ListItems";
 const KEY_FEATURES = [
   "Persistent task memory across sessions via SQLite",
   "Search-first workflow to restore context",
+  "7 skills for guided workflows and best practices",
   "5 lifecycle hooks for automatic state management",
   "Autonomous task agent for discovery and completion",
   "Blocks internal TaskCreate/TodoWrite — enforces Trekker",
@@ -35,20 +36,30 @@ const HOOKS = [
   { name: "SubagentStop", desc: "Captures subagent work back into trekker" },
 ];
 
+const SKILLS = [
+  { name: "trekker", desc: "Persistent task memory for AI agents across sessions" },
+  { name: "planning", desc: "Plan and track multi-step tasks before implementation" },
+  { name: "search", desc: "Search-first context gathering before any action" },
+  { name: "smart-query", desc: "Natural language task querying with FTS5 search" },
+  { name: "find-duplicates", desc: "Detect and prevent duplicate tasks before creation" },
+  { name: "task-sync", desc: "Synchronize Trekker with Claude's built-in TodoWrite" },
+  { name: "issue-tracking", desc: "Auto-suggest Trekker when issues or bugs are mentioned" },
+];
+
 export function ClaudeCodePlugin() {
   return (
     <Section title="Claude Code Plugin">
       <div className="flex items-center gap-3 mb-4">
-        <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/claude-color.png" alt="Claude" className="w-8 h-8" />
+        <img src="/trekker/images/claude-color.png" alt="Claude" className="w-8 h-8" />
         <p className="text-fluid-base text-white/70">
-          Give Claude Code direct access to Trekker with 25 MCP tools, 13 slash commands, and an autonomous task agent.
+          Give Claude Code direct access to Trekker with 26 MCP tools, 13 slash commands, 7 skills, and an autonomous task agent.
         </p>
       </div>
 
       <SubSection title="Install">
         <div className="space-y-2">
-          <CodeBlock>{`claude /plugin marketplace add obsfx/trekker-claude-code`}</CodeBlock>
-          <CodeBlock>{`claude /plugin install trekker`}</CodeBlock>
+          <CodeBlock>{`claude plugin marketplace add obsfx/trekker-claude-code`}</CodeBlock>
+          <CodeBlock>{`claude plugin install trekker`}</CodeBlock>
         </div>
       </SubSection>
 
@@ -78,6 +89,21 @@ export function ClaudeCodePlugin() {
               <InlineCode>{hook.name}</InlineCode>
               <span className="text-white/50">-</span>
               <span>{hook.desc}</span>
+            </div>
+          ))}
+        </div>
+      </SubSection>
+
+      <SubSection title="Skills">
+        <p className="text-fluid-base text-white/70 mb-3 leading-relaxed">
+          7 skills guide the agent through workflows and best practices.
+        </p>
+        <div className="space-y-2 text-fluid-sm">
+          {SKILLS.map((skill, index) => (
+            <div key={index} className="flex items-start gap-2 text-white/70">
+              <InlineCode>{skill.name}</InlineCode>
+              <span className="text-white/50">-</span>
+              <span>{skill.desc}</span>
             </div>
           ))}
         </div>

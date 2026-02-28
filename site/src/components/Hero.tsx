@@ -62,7 +62,7 @@ export function Hero() {
               href="https://github.com/obsfx/trekker-claude-code"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-colors text-sm"
             >
-              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/claude-color.png" alt="Claude" className="w-4 h-4" />
+              <img src="/trekker/images/claude-color.png" alt="Claude" className="w-4 h-4" />
               Claude Code
             </a>
           </div>
