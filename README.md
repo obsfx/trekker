@@ -31,7 +31,9 @@ Or with npm:
 npm install -g @obsfx/trekker
 ```
 
-## <img src="https://omercan.io/trekker/images/claude-color.png" width="24" height="24" alt="Claude" style="vertical-align: middle;" /> Claude Code Plugin
+## Claude Code Plugin
+
+<img src="https://omercan.io/trekker/images/claude-color.png" width="24" height="24" alt="Claude" style="vertical-align: middle;" />
 
 Install the [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) plugin for seamless integration with [Claude Code](https://claude.ai/code):
 
@@ -43,6 +45,7 @@ claude plugin install trekker
 This gives Claude Code native access to Trekker through **26 MCP tools**, **13 slash commands**, **7 skills**, **5 lifecycle hooks**, and an **autonomous task agent**.
 
 **Key features:**
+
 - Persistent task memory across sessions via SQLite
 - Search-first workflow to restore context
 - 7 skills for guided workflows and best practices
@@ -62,6 +65,7 @@ I built this after using beads for a while. Beads does the job, but its codebase
 My concerns about the future and security of that project led me here. Trekker is my simplified alternative.
 
 What you get:
+
 - Task and epic tracking with dependencies
 - Ready command to find unblocked tasks and see what they unblock
 - Full-text search across tasks, epics, subtasks, and comments
@@ -180,6 +184,7 @@ trekker ready [--limit <n>] [--page <n>]
 ```
 
 Example output:
+
 ```
 2 ready task(s):
 
@@ -190,6 +195,7 @@ TREK-4 | P2 | Write docs
 ```
 
 Tasks are sorted by priority (critical first). A task is considered ready when:
+
 - Status is `todo`
 - It is a top-level task (not a subtask)
 - All its dependencies are resolved (`completed`, `wont_fix`, or `archived`)
@@ -203,6 +209,7 @@ trekker search <query> [--type <types>] [--status <status>] [--limit <n>] [--pag
 ```
 
 Examples:
+
 ```bash
 trekker search "authentication"                          # Search all entities
 trekker search "bug fix" --type task,subtask             # Search only tasks and subtasks
@@ -218,6 +225,7 @@ trekker history [--entity <id>] [--type <types>] [--action <actions>] [--since <
 ```
 
 Examples:
+
 ```bash
 trekker history                                  # All events
 trekker history --entity TREK-1                  # Events for specific entity
@@ -234,6 +242,7 @@ trekker list [--type <types>] [--status <statuses>] [--priority <levels>] [--sor
 ```
 
 Examples:
+
 ```bash
 trekker list                                     # All items, newest first
 trekker list --type task --status in_progress    # Active tasks only
@@ -317,6 +326,7 @@ This is my personal workflow for getting the most out of Trekker with AI agents:
 - **Use the dashboard for visibility.** I run [trekker-dashboard](https://github.com/obsfx/trekker-dashboard) to visually track what the agent is doing. It shows tasks on a kanban board and auto-refreshes, so I can monitor progress in real-time.
 
 Example prompt snippet:
+
 ```
 Use trekker to track your work. Run `trekker quickstart` if you need to learn how it works.
 ```
