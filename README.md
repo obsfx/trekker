@@ -31,6 +31,28 @@ Or with npm:
 npm install -g @obsfx/trekker
 ```
 
+## <img src="https://omercan.io/trekker/images/claude-color.png" width="24" height="24" alt="Claude" style="vertical-align: middle;" /> Claude Code Plugin
+
+Install the [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) plugin for seamless integration with [Claude Code](https://claude.ai/code):
+
+```bash
+claude plugin marketplace add obsfx/trekker-claude-code
+claude plugin install trekker
+```
+
+This gives Claude Code native access to Trekker through **26 MCP tools**, **13 slash commands**, **7 skills**, **5 lifecycle hooks**, and an **autonomous task agent**.
+
+**Key features:**
+- Persistent task memory across sessions via SQLite
+- Search-first workflow to restore context
+- 7 skills for guided workflows and best practices
+- 5 lifecycle hooks for automatic state management
+- Autonomous task agent for discovery and completion
+- Blocks internal TaskCreate/TodoWrite — enforces Trekker
+- Multi-instance safe with conflict handling
+
+See the [plugin repository](https://github.com/obsfx/trekker-claude-code) for the full list of slash commands, hooks, skills, and agent details.
+
 ## Why Trekker
 
 AI coding agents work better when they can track their own progress. A simple CLI-based task manager keeps them on the right path across sessions.
@@ -229,19 +251,6 @@ trekker-dashboard -p 3000  # Start dashboard on port 3000
 ```
 
 The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
-
-## Claude Code Integration
-
-For seamless integration with [Claude Code](https://claude.ai/code), install the Trekker plugin:
-
-```bash
-claude /plugin marketplace add obsfx/trekker-claude-code
-claude /plugin install trekker
-```
-
-This gives Claude Code native access to Trekker commands through MCP. The agent can create tasks, update status, and manage dependencies without running CLI commands directly.
-
-See [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) for more details.
 
 ## TOON Output
 
