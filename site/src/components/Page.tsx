@@ -1,35 +1,25 @@
-import { Header, Hero } from "./Hero";
-import { GettingStarted } from "./sections/GettingStarted";
-import { FeaturesSection } from "./sections/FeaturesSection";
-import { ClaudeCodePlugin } from "./sections/ClaudeCodePlugin";
-import { CommandReference } from "./sections/CommandReference";
-import { StatusAndPriority } from "./sections/StatusAndPriority";
-import { AdditionalFeatures } from "./sections/AdditionalFeatures";
-import { WorkflowAndFooter } from "./sections/WorkflowAndFooter";
+import { Hero } from "./hero/Hero";
+import { AgentsSection } from "./page/AgentsSection";
+import { CommandsSection } from "./page/CommandsSection";
+import { DashboardSection } from "./page/DashboardSection";
+import { FeaturesSection } from "./page/FeaturesSection";
+import { HowAgentsUseItSection } from "./page/HowAgentsUseItSection";
+import { InstallSection } from "./page/InstallSection";
 
 export function Page() {
   return (
-    <>
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-
-      <Header />
-
-      <div className="px-4 md:px-6 max-w-4xl mx-auto pb-8">
+    <main id="main-content" className="main-content">
+      <div className="h-8 bg-gradient-to-t from-transparent to-indigo-600/10" />
+      <article className="article">
         <Hero />
-
-        <main id="main-content">
-          <div className="border-t border-white/20 my-4" />
-          <GettingStarted />
-          <FeaturesSection />
-          <ClaudeCodePlugin />
-          <CommandReference />
-          <StatusAndPriority />
-          <AdditionalFeatures />
-          <WorkflowAndFooter />
-        </main>
-      </div>
-    </>
+        <HowAgentsUseItSection />
+        <InstallSection />
+        <FeaturesSection />
+        <AgentsSection />
+        <CommandsSection />
+        <DashboardSection />
+      </article>
+      <div className="h-32 bg-gradient-to-b from-transparent to-indigo-600/10" />
+    </main>
   );
 }
