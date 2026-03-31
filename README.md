@@ -56,6 +56,13 @@ This gives Claude Code native access to Trekker through **26 MCP tools**, **13 s
 
 See the [plugin repository](https://github.com/obsfx/trekker-claude-code) for the full list of slash commands, hooks, skills, and agent details.
 
+## Codex Plugin
+
+<img width="36" height="36" alt="OpenAI-black-monoblossom" src="https://github.com/user-attachments/assets/e761c75d-6012-44b0-bfbe-c6cc235b54b4" />
+
+
+Support for the **Codex** plugin is still in a *very early stage* and is continuing to evolve. However, we already have a plugin for **Trekker** that you can install locally. Please follow the [plugin repository](https://github.com/obsfx/trekker-codex) and the instructions at https://developers.openai.com/codex/plugins/build#how-codex-uses-marketplaces, and you can get features similar to those available in the *Claude Code* plugin.
+
 ## Why Trekker
 
 AI coding agents work better when they can track their own progress. A simple CLI-based task manager keeps them on the right path across sessions.
