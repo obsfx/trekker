@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as schema from './schema';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { PROJECT_CONFIG_DEFAULTS } from '../types';
 
 const TREKKER_DIR = '.trekker';
 const DB_NAME = 'trekker.db';
@@ -48,6 +49,9 @@ export function getDb(cwd: string = process.cwd()) {
   // Migrate existing databases to add history table if missing
   migrateHistoryTable(sqliteInstance);
 
+  // Migrate existing databases to add project config if missing
+  migrateProjectConfigTable(sqliteInstance);
+
   return dbInstance;
 }
 
@@ -65,6 +69,13 @@ export function createDb(cwd: string = process.cwd()) {
       name TEXT NOT NULL UNIQUE,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
+    )
+  `);
+
+  sqliteInstance.run(`
+    CREATE TABLE IF NOT EXISTS project_config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
     )
   `);
 
@@ -130,6 +141,8 @@ export function createDb(cwd: string = process.cwd()) {
   sqliteInstance.run(
     "INSERT OR IGNORE INTO id_counters (entity_type, counter) VALUES ('comment', 0)"
   );
+
+  seedProjectConfig(sqliteInstance);
 
   // Events table for history/logbook
   sqliteInstance.run(`
@@ -456,6 +469,23 @@ function migrateHistoryTable(sqlite: Database): void {
     // Create the triggers
     createHistoryTriggers(sqlite);
   }
+}
+
+function seedProjectConfig(sqlite: Database): void {
+  for (const [key, value] of Object.entries(PROJECT_CONFIG_DEFAULTS)) {
+    sqlite.query('INSERT OR IGNORE INTO project_config (key, value) VALUES (?, ?)').run(key, value);
+  }
+}
+
+function migrateProjectConfigTable(sqlite: Database): void {
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS project_config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+
+  seedProjectConfig(sqlite);
 }
 
 export function rebuildSearchIndex(): void {

@@ -89,6 +89,8 @@ Initialize Trekker in your project:
 
 ```bash
 trekker init
+# or set custom prefixes up front
+trekker init --issue-prefix FEAT --epic-prefix PLAN --comment-prefix NOTE
 ```
 
 Create an epic for your feature:
@@ -100,16 +102,16 @@ trekker epic create -t "User Authentication" -d "JWT-based auth with login and r
 Add tasks to the epic:
 
 ```bash
-trekker task create -t "Create user model" -e EPIC-1
-trekker task create -t "Build login endpoint" -e EPIC-1
-trekker task create -t "Build registration endpoint" -e EPIC-1
+trekker task create -t "Create user model" -e <epic-id>
+trekker task create -t "Build login endpoint" -e <epic-id>
+trekker task create -t "Build registration endpoint" -e <epic-id>
 ```
 
 Set dependencies between tasks:
 
 ```bash
-trekker dep add TREK-2 TREK-1
-trekker dep add TREK-3 TREK-1
+trekker dep add <task-id> <depends-on-id>
+trekker dep add <task-id> <depends-on-id>
 ```
 
 See what is ready to work on:
@@ -121,8 +123,8 @@ trekker ready
 Update task status as you work:
 
 ```bash
-trekker task update TREK-1 -s in_progress
-trekker task update TREK-1 -s completed
+trekker task update <task-id> -s in_progress
+trekker task update <task-id> -s completed
 ```
 
 ## Commands
@@ -131,9 +133,29 @@ trekker task update TREK-1 -s completed
 
 ```bash
 trekker init              # Initialize in current directory
+trekker init --issue-prefix FEAT --epic-prefix PLAN --comment-prefix NOTE
 trekker wipe              # Delete all data
 trekker quickstart        # Show full documentation
 ```
+
+### Project Config
+
+```bash
+trekker config list
+trekker config get issue_prefix
+trekker config set issue_prefix FEAT
+trekker config set epic_prefix PLAN
+trekker config set comment_prefix NOTE
+trekker config unset issue_prefix
+```
+
+Supported keys:
+
+- `issue_prefix` for tasks and subtasks
+- `epic_prefix` for epics
+- `comment_prefix` for comments
+
+Prefix values are normalized to uppercase, must start with a letter, may contain numbers, and must be unique across the three families. Changing a prefix affects only newly created IDs. Existing IDs are never rewritten.
 
 ### Epics
 
@@ -235,7 +257,7 @@ Examples:
 
 ```bash
 trekker history                                  # All events
-trekker history --entity TREK-1                  # Events for specific entity
+trekker history --entity <entity-id>             # Events for specific entity
 trekker history --type task --action update      # Only task updates
 trekker history --since 2025-01-01 --limit 20    # Events after date
 ```
@@ -267,6 +289,7 @@ trekker-dashboard -p 3000  # Start dashboard on port 3000
 ```
 
 The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
+It also lets you update issue, epic, and comment prefixes from the UI. Those changes affect only newly created IDs.
 
 ## TOON Output
 
@@ -274,7 +297,7 @@ Add the `--toon` flag to any command for structured output in [TOON format](http
 
 ```bash
 trekker --toon task list
-trekker --toon task show TREK-1
+trekker --toon task show <task-id>
 ```
 
 ## Status Values
@@ -292,11 +315,15 @@ Epics: `todo`, `in_progress`, `completed`, `archived`
 - 4: Backlog
 - 5: Someday
 
-## ID Formats
+## ID Prefixes
+
+Default prefixes:
 
 - Epics: `EPIC-1`, `EPIC-2`
-- Tasks: `TREK-1`, `TREK-2`
+- Tasks and subtasks: `TREK-1`, `TREK-2`
 - Comments: `CMT-1`, `CMT-2`
+
+These defaults are project-scoped and configurable through `trekker init --*-prefix` or `trekker config set`. Prefix changes affect only new entities and existing IDs keep their original values.
 
 All list commands default to 50 items per page, sorted by newest first. Use `--limit` and `--page` to paginate through large result sets.
 

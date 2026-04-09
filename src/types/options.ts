@@ -103,3 +103,9 @@ export interface WipeCommandOptions {
 export interface ProgramOptions {
   toon?: boolean;
 }
+
+export interface InitCommandOptions {
+  issuePrefix?: string;
+  epicPrefix?: string;
+  commentPrefix?: string;
+}

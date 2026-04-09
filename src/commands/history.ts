@@ -23,7 +23,7 @@ import type { HistoryCommandOptions } from '../types/options';
 
 export const historyCommand = new Command('history')
   .description('View history of all changes (creates, updates, deletes)')
-  .option('--entity <id>', 'Filter by entity ID (e.g., TREK-1, EPIC-1)')
+  .option('--entity <id>', 'Filter by entity ID')
   .option(
     '--type <types>',
     'Filter by type: epic,task,subtask,comment,dependency (comma-separated)'

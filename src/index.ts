@@ -13,6 +13,7 @@ import { searchCommand } from './commands/search';
 import { historyCommand } from './commands/history';
 import { listCommand } from './commands/list';
 import { readyCommand } from './commands/ready';
+import { configCommand } from './commands/config';
 import { setToonMode } from './utils/output';
 import pkg from '../package.json';
 import type { ProgramOptions } from './types/options';
@@ -45,6 +46,7 @@ program.addCommand(searchCommand);
 program.addCommand(historyCommand);
 program.addCommand(listCommand);
 program.addCommand(readyCommand);
+program.addCommand(configCommand);
 
 // Parse and execute
 program.parse();

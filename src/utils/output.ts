@@ -1,5 +1,5 @@
 import { encode } from '@toon-format/toon';
-import type { Epic, Task, Comment, PaginatedResponse } from '../types';
+import type { Epic, Task, Comment, PaginatedResponse, ProjectConfigEntry } from '../types';
 import { STATUS_PAD_WIDTH, JSON_INDENT } from './constants';
 
 let toonMode = false;
@@ -58,7 +58,7 @@ export function handleCommandError(err: unknown): never {
 }
 
 /**
- * Handles entity not found with error message and exits with code 1.
+ * Handles entity not found with an error message and exits with code 1.
  */
 export function handleNotFound(entityType: string, id: string): never {
   error(`${entityType} not found: ${id}`);
@@ -66,7 +66,7 @@ export function handleNotFound(entityType: string, id: string): never {
 }
 
 /**
- * Outputs result in appropriate format (toon or standard).
+ * Outputs result in the appropriate format (toon or standard).
  * Reduces duplicate if/else branching in commands.
  */
 export function outputResult<T>(
@@ -230,4 +230,12 @@ export function formatPaginatedCommentList(result: PaginatedResponse<Comment>): 
 
   lines.push(formatPaginationFooter(result.total, result.page, result.limit));
   return lines.join('\n');
+}
+
+export function formatProjectConfigList(entries: ProjectConfigEntry[]): string {
+  if (entries.length === 0) {
+    return 'No config values found.';
+  }
+
+  return entries.map((entry) => `${entry.key}=${entry.value}`).join('\n');
 }
