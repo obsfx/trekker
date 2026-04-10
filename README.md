@@ -2,6 +2,8 @@
 
 A CLI issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database. No server required.
 
+[](https://omercan.io/trekker/images/dashboard-kanban.png)
+
 ## Prerequisites
 
 Trekker requires [Bun](https://bun.sh) runtime. It uses `bun:sqlite` for database operations. This is a deliberate choice: `bun:sqlite` is significantly faster than Node.js SQLite drivers, making CLI operations feel instant.
@@ -62,6 +64,17 @@ See the [plugin repository](https://github.com/obsfx/trekker-claude-code) for th
 
 
 Support for the **Codex** plugin is still in a *very early stage* and is continuing to evolve. However, we already have a plugin for **Trekker** that you can install locally. Please follow the [plugin repository](https://github.com/obsfx/trekker-codex) and the instructions at https://developers.openai.com/codex/plugins/build#how-codex-uses-marketplaces, and you can get features similar to those available in the *Claude Code* plugin.
+
+### Web Interface
+
+For a visual kanban board, install the separate dashboard package:
+
+```bash
+npm install -g @obsfx/trekker-dashboard
+trekker-dashboard -p 3000  # Start dashboard on port 3000
+```
+
+You can find the detail in its [trekker-dashboard](https://github.com/obsfx/trekker-dashboard) repository.
 
 ## Why Trekker
 
@@ -281,14 +294,6 @@ trekker list --priority 0,1 --sort priority:asc  # Critical/high priority first
 trekker list --sort title:asc,created:desc       # Sort by title, then by date
 ```
 
-### Web Interface
-
-For a visual kanban board, install the separate dashboard package:
-
-```bash
-npm install -g @obsfx/trekker-dashboard
-trekker-dashboard -p 3000  # Start dashboard on port 3000
-```
 
 The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
 It also lets you update issue, epic, and comment prefixes from the UI. Those changes affect only newly created IDs.
