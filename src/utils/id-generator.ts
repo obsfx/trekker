@@ -1,11 +1,12 @@
 import { getDb } from '../db/client';
 import { idCounters } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { type EntityType, PREFIX_MAP } from '../types';
+import { type EntityType, ENTITY_CONFIG_KEY_MAP } from '../types';
+import { getProjectConfigValue } from '../services/config';
 
 export function generateId(entityType: EntityType): string {
   const db = getDb();
-  const prefix = PREFIX_MAP[entityType];
+  const prefix = getProjectConfigValue(ENTITY_CONFIG_KEY_MAP[entityType]);
 
   // Atomically increment the counter and return the new value
   db.update(idCounters)

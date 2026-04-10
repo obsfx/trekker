@@ -12,7 +12,7 @@ trekker wipe -y                 # Remove all data
 1. Set status to \`in_progress\` when starting, \`completed\` when done
 2. Add summary comment before marking task complete
 3. Use \`--toon\` flag for token-efficient output
-4. When epic is done, use \`trekker epic complete EPIC-n\` to archive all tasks
+4. When an epic is done, use \`trekker epic complete <epic-id>\` to archive all tasks
 5. Write detailed descriptions with implementation plans - future agents need this context
 6. Comments are your external memory - add summaries before context resets
 
@@ -21,41 +21,47 @@ trekker wipe -y                 # Remove all data
 ### Epics (features/milestones)
 trekker epic create -t "Title" [-d "desc"] [-p 0-5]
 trekker epic list [--status <status>]
-trekker epic show EPIC-1
-trekker epic update EPIC-1 [-t "Title"] [-d "desc"] [-p 0-5] [-s <status>]
-trekker epic complete EPIC-1   # Complete and archive all tasks
-trekker epic delete EPIC-1
+trekker epic show <epic-id>
+trekker epic update <epic-id> [-t "Title"] [-d "desc"] [-p 0-5] [-s <status>]
+trekker epic complete <epic-id>   # Complete and archive all tasks
+trekker epic delete <epic-id>
 
 ### Tasks
-trekker task create -t "Title" [-d "desc"] [-p 0-5] [-e EPIC-1] [--tags "a,b"]
-trekker task list [--status <status>] [--epic EPIC-1]
-trekker task show TREK-1
-trekker task update TREK-1 [-t "Title"] [-d "desc"] [-p 0-5] [-s <status>] [--tags "a,b"] [-e EPIC-1] [--no-epic]
-trekker task delete TREK-1
+trekker task create -t "Title" [-d "desc"] [-p 0-5] [-e <epic-id>] [--tags "a,b"]
+trekker task list [--status <status>] [--epic <epic-id>]
+trekker task show <task-id>
+trekker task update <task-id> [-t "Title"] [-d "desc"] [-p 0-5] [-s <status>] [--tags "a,b"] [-e <epic-id>] [--no-epic]
+trekker task delete <task-id>
 
 ### Subtasks
-trekker subtask create TREK-1 -t "Title" [-d "desc"] [-p 0-5]
-trekker subtask list TREK-1
-trekker subtask update TREK-2 [-t "Title"] [-d "desc"] [-p 0-5] [-s <status>]
-trekker subtask delete TREK-2
+trekker subtask create <task-id> -t "Title" [-d "desc"] [-p 0-5]
+trekker subtask list <task-id>
+trekker subtask update <subtask-id> [-t "Title"] [-d "desc"] [-p 0-5] [-s <status>]
+trekker subtask delete <subtask-id>
 
 ### Comments (external memory)
-trekker comment add TREK-1 -a "agent" -c "content"
-trekker comment list TREK-1
-trekker comment update CMT-1 -c "new content"
-trekker comment delete CMT-1
+trekker comment add <task-id> -a "agent" -c "content"
+trekker comment list <task-id>
+trekker comment update <comment-id> -c "new content"
+trekker comment delete <comment-id>
 
 ### Dependencies
-trekker dep add TREK-2 TREK-1   # TREK-2 depends on TREK-1
-trekker dep remove TREK-2 TREK-1
-trekker dep list TREK-1
+trekker dep add <task-id> <depends-on-id>
+trekker dep remove <task-id> <depends-on-id>
+trekker dep list <task-id>
+
+### Project Config
+trekker config list
+trekker config get issue_prefix
+trekker config set issue_prefix ABC
+trekker config unset issue_prefix
 
 ### Search (full-text across all entities)
 trekker search "query" [--type epic,task,subtask,comment] [--status <status>]
 trekker search "auth bug" --type task --limit 10
 
 ### History (audit log of all changes)
-trekker history [--entity TREK-1] [--type task] [--action create,update,delete]
+trekker history [--entity <entity-id>] [--type task] [--action create,update,delete]
 trekker history --since 2025-01-01 --limit 20
 
 ### List (unified view of all items)
@@ -94,17 +100,17 @@ flowchart TD
 
 ## Session Start
 trekker --toon task list --status in_progress
-trekker --toon comment list TREK-1
+trekker --toon comment list <task-id>
 
 ## Working
-trekker task update TREK-1 -s in_progress
-trekker comment add TREK-1 -a "agent" -c "Analysis: ..."
+trekker task update <task-id> -s in_progress
+trekker comment add <task-id> -a "agent" -c "Analysis: ..."
 # ... do work ...
-trekker comment add TREK-1 -a "agent" -c "Summary: implemented X in files A, B"
-trekker task update TREK-1 -s completed
+trekker comment add <task-id> -a "agent" -c "Summary: implemented X in files A, B"
+trekker task update <task-id> -s completed
 
 ## Before Context Reset
-trekker comment add TREK-1 -a "agent" -c "Checkpoint: done A,B. Next: C. Files: x.ts, y.ts"
+trekker comment add <task-id> -a "agent" -c "Checkpoint: done A,B. Next: C. Files: x.ts, y.ts"
 
 ## Writing Effective Descriptions
 

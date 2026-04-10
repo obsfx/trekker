@@ -14,10 +14,9 @@ export interface TestContext {
 
 const CLI_PATH = join(import.meta.dir, '../../src/index.ts');
 
-// Typed decode wrapper — function type annotation (not assertion) satisfies assertionStyle: 'never'
+// TOON values are JSON-compatible; round-tripping through JSON keeps the unsafe cast inside test code.
 function typedDecode<T>(input: string): T {
-  const result: T = decode(input);
-  return result;
+  return JSON.parse(JSON.stringify(decode(input)));
 }
 
 export function createTestContext(): TestContext {
@@ -104,8 +103,8 @@ export function createTestContext(): TestContext {
 
       // Try to parse TOON error format, otherwise return raw output
       try {
-        const parsed = typedDecode<Record<string, unknown>>(result.stderr || result.stdout);
-        if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+        const parsed = decode(result.stderr || result.stdout);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && 'error' in parsed) {
           return String(parsed.error);
         }
       } catch {

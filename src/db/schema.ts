@@ -10,6 +10,11 @@ export const projects = sqliteTable('projects', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const projectConfig = sqliteTable('project_config', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
 // Epic table
 export const epics = sqliteTable('epics', {
   id: text('id').primaryKey(),
@@ -55,7 +60,7 @@ export const dependencies = sqliteTable('dependencies', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-// ID counter table for TREK-n format
+// ID counter table for per-entity sequential ID generation
 export const idCounters = sqliteTable('id_counters', {
   entityType: text('entity_type').primaryKey(),
   counter: integer('counter').notNull().default(0),
