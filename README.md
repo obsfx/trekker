@@ -155,6 +155,8 @@ Supported keys:
 - `epic_prefix` for epics
 - `comment_prefix` for comments
 
+Use `issue_prefix` when you want task IDs to match your project naming scheme. For example, `trekker init --issue-prefix FEAT` starts new task and subtask IDs as `FEAT-1`, `FEAT-2`, and so on. You can also change it later with `trekker config set issue_prefix BUG`, which only affects newly created tasks and subtasks.
+
 Prefix values are normalized to uppercase, must start with a letter, may contain numbers, and must be unique across the three families. Changing a prefix affects only newly created IDs. Existing IDs are never rewritten.
 
 ### Epics
