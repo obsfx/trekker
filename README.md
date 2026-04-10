@@ -2,8 +2,6 @@
 
 A CLI issue tracker built for AI coding agents. Stores tasks, epics, and dependencies in a local SQLite database. No server required.
 
-[](https://omercan.io/trekker/images/dashboard-kanban.png)
-
 ## Prerequisites
 
 Trekker requires [Bun](https://bun.sh) runtime. It uses `bun:sqlite` for database operations. This is a deliberate choice: `bun:sqlite` is significantly faster than Node.js SQLite drivers, making CLI operations feel instant.
@@ -65,7 +63,9 @@ See the [plugin repository](https://github.com/obsfx/trekker-claude-code) for th
 
 Support for the **Codex** plugin is still in a *very early stage* and is continuing to evolve. However, we already have a plugin for **Trekker** that you can install locally. Please follow the [plugin repository](https://github.com/obsfx/trekker-codex) and the instructions at https://developers.openai.com/codex/plugins/build#how-codex-uses-marketplaces, and you can get features similar to those available in the *Claude Code* plugin.
 
-### Web Interface
+## Web Interface
+
+<img src="https://omercan.io/trekker/images/dashboard-kanban.png" width="480" alt="trekker dashboard" style="vertical-align: middle;" />
 
 For a visual kanban board, install the separate dashboard package:
 
