@@ -1,6 +1,4 @@
 import { describe, it, expect, afterEach } from 'bun:test';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
 
 describe('wipe command', () => {
@@ -14,11 +12,11 @@ describe('wipe command', () => {
     ctx = createTestContext();
     initTrekker(ctx);
 
-    expect(existsSync(join(ctx.cwd, '.trekker'))).toBe(true);
+    expect(ctx.exists('.trekker')).toBe(true);
 
     const output = ctx.run('wipe -y');
     expect(output).toContain('deleted successfully');
-    expect(existsSync(join(ctx.cwd, '.trekker'))).toBe(false);
+    expect(ctx.exists('.trekker')).toBe(false);
   });
 
   it('should fail if not initialized', () => {
@@ -26,5 +24,33 @@ describe('wipe command', () => {
 
     const error = ctx.runExpectError('wipe -y');
     expect(error).toContain('not initialized');
+  });
+
+  describe('interactive confirmation', () => {
+    for (const answer of ['y', 'Y', 'yes', 'YES']) {
+      it(`deletes data when confirmed with "${answer}"`, () => {
+        ctx = createTestContext();
+        initTrekker(ctx);
+
+        const result = ctx.runRaw('wipe', { input: `${answer}\n` });
+
+        expect(result.status).toBe(0);
+        expect(result.stdout).toContain('Are you sure');
+        expect(ctx.exists('.trekker')).toBe(false);
+      });
+    }
+
+    for (const answer of ['n', 'no', '', 'maybe']) {
+      it(`aborts when answered with "${answer}"`, () => {
+        ctx = createTestContext();
+        initTrekker(ctx);
+
+        const result = ctx.runRaw('wipe', { input: `${answer}\n` });
+
+        expect(result.status).toBe(0);
+        expect(result.stdout).toContain('Aborted.');
+        expect(ctx.exists('.trekker/trekker.db')).toBe(true);
+      });
+    }
   });
 });

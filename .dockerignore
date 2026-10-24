@@ -1,0 +1,8 @@
+*
+!package.json
+!bun.lock
+!tsconfig.json
+!bin
+!src
+!README.md
+!LICENSE

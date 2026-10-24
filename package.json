@@ -16,6 +16,8 @@
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
+    "test:container": "bun tests/container/run.ts",
+    "test:release": "bun run check && bun test && bun run test:container",
     "lint": "eslint . --cache",
     "lint:fix": "eslint . --fix --cache",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -23,9 +25,9 @@
     "check": "bun run lint && bun run format:check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "release:patch": "npm version patch && npm run build && npm publish --access public",
-    "release:minor": "npm version minor && npm run build && npm publish --access public",
-    "release:major": "npm version major && npm run build && npm publish --access public"
+    "release:patch": "bun run test:release && npm version patch && npm run build && npm publish --access public",
+    "release:minor": "bun run test:release && npm version minor && npm run build && npm publish --access public",
+    "release:major": "bun run test:release && npm version major && npm run build && npm publish --access public"
   },
   "keywords": [
     "cli",
@@ -60,6 +62,7 @@
     "drizzle-orm": "0.38.4"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@types/bun": "1.2.2",
     "drizzle-kit": "0.30.4",
     "eslint": "10.0.2",
@@ -67,6 +70,7 @@
     "eslint-plugin-unicorn": "63.0.0",
     "knip": "6.3.1",
     "prettier": "3.8.1",
+    "testcontainers": "12.2.0",
     "typescript": "5.7.3",
     "typescript-eslint": "8.56.1"
   }

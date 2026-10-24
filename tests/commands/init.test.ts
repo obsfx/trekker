@@ -1,6 +1,4 @@
 import { describe, it, expect, afterEach } from 'bun:test';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { createTestContext, type TestContext } from '../helpers/test-context';
 
 describe('init command', () => {
@@ -15,8 +13,8 @@ describe('init command', () => {
     const output = ctx.run('init');
 
     expect(output).toContain('initialized successfully');
-    expect(existsSync(join(ctx.cwd, '.trekker'))).toBe(true);
-    expect(existsSync(join(ctx.cwd, '.trekker', 'trekker.db'))).toBe(true);
+    expect(ctx.exists('.trekker')).toBe(true);
+    expect(ctx.exists('.trekker/trekker.db')).toBe(true);
   });
 
   it('should fail if already initialized', () => {

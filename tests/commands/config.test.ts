@@ -1,7 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { Database } from 'bun:sqlite';
 import { createTestContext, type TestContext } from '../helpers/test-context';
 
 interface ConfigMap {
@@ -72,7 +69,7 @@ describe('config command', () => {
     const error = ctx.runExpectError('init --issue-prefix feat --epic-prefix feat');
 
     expect(error).toContain('must be unique');
-    expect(existsSync(join(ctx.cwd, '.trekker', 'trekker.db'))).toBe(false);
+    expect(ctx.exists('.trekker/trekker.db')).toBe(false);
   });
 
   it('supports get, set, and unset with TOON output', () => {
@@ -146,9 +143,7 @@ describe('config command', () => {
   it('migrates databases that are missing the project_config table', () => {
     ctx.run('init');
 
-    const db = new Database(join(ctx.cwd, '.trekker', 'trekker.db'));
-    db.run('DROP TABLE project_config');
-    db.close();
+    ctx.query('DROP TABLE project_config');
 
     const config = ctx.runToon<ConfigMap>('config list');
     expect(config).toEqual({
