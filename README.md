@@ -42,16 +42,16 @@ claude plugin marketplace add obsfx/trekker-claude-code
 claude plugin install trekker
 ```
 
-This gives Claude Code native access to Trekker through **26 MCP tools**, **13 slash commands**, **7 skills**, **5 lifecycle hooks**, and an **autonomous task agent**.
+This gives Claude Code **13 slash commands**, **7 skills**, **4 lifecycle hooks**, and an **autonomous task agent**, all of which drive the `trekker` CLI directly. There is no MCP server to run or configure.
 
 **Key features:**
 
 - Persistent task memory across sessions via SQLite
 - Search-first workflow to restore context
 - 7 skills for guided workflows and best practices
-- 5 lifecycle hooks for automatic state management
+- 4 lifecycle hooks for automatic state management
 - Autonomous task agent for discovery and completion
-- Blocks internal TaskCreate/TodoWrite — enforces Trekker
+- Steers the agent to Trekker instead of the built-in TaskCreate/TodoWrite
 - Multi-instance safe with conflict handling
 
 See the [plugin repository](https://github.com/obsfx/trekker-claude-code) for the full list of slash commands, hooks, skills, and agent details.
@@ -60,8 +60,18 @@ See the [plugin repository](https://github.com/obsfx/trekker-claude-code) for th
 
 <img width="36" height="36" alt="OpenAI-black-monoblossom" src="https://github.com/user-attachments/assets/e761c75d-6012-44b0-bfbe-c6cc235b54b4" />
 
+Install the [trekker-codex](https://github.com/obsfx/trekker-codex) plugin for [Codex](https://developers.openai.com/codex):
 
-Support for the **Codex** plugin is still in a *very early stage* and is continuing to evolve. However, we already have a plugin for **Trekker** that you can install locally. Please follow the [plugin repository](https://github.com/obsfx/trekker-codex) and the instructions at https://developers.openai.com/codex/plugins/build#how-codex-uses-marketplaces, and you can get features similar to those available in the *Claude Code* plugin.
+```bash
+codex plugin marketplace add obsfx/trekker-codex
+codex plugin add trekker-codex@trekker
+```
+
+It adds **10 skills** for search, planning, starting, and completing tracked work, plus a **SessionStart hook** that surfaces in-progress or ready tasks. Like the Claude Code plugin, it runs the `trekker` CLI directly. Trust the hook with `/hooks` after installing so Codex runs it.
+
+### Upgrading the plugins from 1.x
+
+Both plugins dropped their bundled MCP servers in 2.0.0. Agents now call the `trekker` CLI, so make sure `trekker --version` works in the shell your agent uses. See each plugin's README for upgrade steps.
 
 ## Web Interface
 
@@ -73,6 +83,9 @@ For a visual kanban board, install the separate dashboard package:
 npm install -g @obsfx/trekker-dashboard
 trekker-dashboard -p 3000  # Start dashboard on port 3000
 ```
+
+The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
+It also lets you update issue, epic, and comment prefixes from the UI. Those changes affect only newly created IDs.
 
 You can find the detail in its [trekker-dashboard](https://github.com/obsfx/trekker-dashboard) repository.
 
@@ -257,8 +270,10 @@ Examples:
 ```bash
 trekker search "authentication"                          # Search all entities
 trekker search "bug fix" --type task,subtask             # Search only tasks and subtasks
-trekker search "login" --type comment --status completed # Search comments in completed items
+trekker search "login" --type task --status completed    # Search completed tasks
 ```
+
+`--status` takes a single status. Search is FTS5 full-text, not semantic: every word in a multi-word query must match, so one distinctive keyword usually finds more. To filter by several statuses at once, use `trekker list`.
 
 ### History
 
@@ -293,10 +308,6 @@ trekker list --type task --status in_progress    # Active tasks only
 trekker list --priority 0,1 --sort priority:asc  # Critical/high priority first
 trekker list --sort title:asc,created:desc       # Sort by title, then by date
 ```
-
-
-The dashboard shows tasks grouped by status and reads from the same `.trekker/trekker.db` database.
-It also lets you update issue, epic, and comment prefixes from the UI. Those changes affect only newly created IDs.
 
 ## TOON Output
 
@@ -344,7 +355,33 @@ bun test                      # Run all tests
 bun run lint                  # ESLint check
 bun run format:check          # Prettier check
 bun run check                 # Both lint and format
+bun run typecheck             # TypeScript check for src, tests, and scripts
+bun run test:container        # Release suite in Docker: packaging, upgrades, dashboard contract
+bun run test:release          # check + typecheck + tests + container suite
 ```
+
+## Releasing
+
+```bash
+bun run release <patch|minor|major> --dry-run   # Rehearse: everything except publish, commit, and tag
+bun run release <patch|minor|major>             # Publish to npm
+```
+
+The release script:
+
+1. Refuses to run with uncommitted changes, an existing tag for the new version, or without `npm login` (the dry run skips the git and login checks)
+2. Installs dependencies with `--frozen-lockfile` and runs `bun run test:release`, which needs Docker for the container suite
+3. Writes the new version to `package.json`, builds a clean `dist/`, and checks that the built CLI reports the new version and that the package contains `bin/` and `dist/`
+4. Publishes `@obsfx/trekker` to npm, skipping the step if that version is already published
+5. Commits `package.json` and creates the `vX.Y.Z` tag locally
+
+A dry run or a failed step restores `package.json`. Push the release when it is done:
+
+```bash
+git push --atomic origin HEAD vX.Y.Z
+```
+
+The tag push runs the CI release suite again.
 
 ## Data Storage
 
@@ -358,7 +395,7 @@ Run `trekker quickstart` to see the full guide with best practices for creating 
 
 This is my personal workflow for getting the most out of Trekker with AI agents:
 
-- **Install the Claude Code plugin.** I use [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) to give Claude Code direct access to Trekker through MCP. This way, the agent manages tasks natively without running CLI commands.
+- **Install the agent plugin.** I use [trekker-claude-code](https://github.com/obsfx/trekker-claude-code) with Claude Code and [trekker-codex](https://github.com/obsfx/trekker-codex) with Codex. Their skills and hooks teach the agent the search-first workflow and have it run the `trekker` CLI directly, so it uses exactly the commands documented here.
 
 - **Always mention Trekker in prompts.** I include "use trekker" in my instructions so the agent knows to track its work.
 
