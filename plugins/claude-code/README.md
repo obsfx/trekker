@@ -1,235 +1,130 @@
-# Trekker Claude Code Plugin
+# Trekker for Claude Code
 
-A Claude Code plugin for [trekker](https://github.com/obsfx/trekker), the AI-optimized issue tracker. Provides slash commands, an agent, skills, and hooks that teach Claude to drive the `trekker` CLI directly for seamless task management in Claude Code.
+A Claude Code plugin that makes [Trekker](../../README.md) Claude's task tracker. Slash commands, skills, hooks, and an autonomous agent teach Claude a search-first workflow and have it run the `trekker` CLI directly, so tasks, decisions, and progress survive across sessions and context resets.
 
-## Prerequisites
+> This plugin used to live in [obsfx/trekker-claude-code](https://github.com/obsfx/trekker-claude-code). That repository is archived; this directory is its continuation, history included.
 
-- [trekker](https://github.com/obsfx/trekker) CLI installed globally (`trekker --version` should work)
-- [Bun](https://bun.sh), the runtime trekker uses
-- Claude Code CLI
+## Install
 
-## Installation
-
-### Step 1: Install Trekker CLI
+You need the `trekker` CLI on your PATH, which in turn needs [Bun](https://bun.sh):
 
 ```bash
 npm install -g @obsfx/trekker
 ```
 
-### Step 2: Install the Plugin
-
-#### Option A: Via Plugin Marketplace (Recommended)
+Then add the marketplace from the Trekker repository and install the plugin:
 
 ```bash
-# Add the trekker marketplace
-claude plugin marketplace add obsfx/trekker-claude-code
-
-# Install the plugin
-claude plugin install trekker
+claude plugin marketplace add obsfx/trekker
+claude plugin install trekker@trekker
 ```
 
-Or in Claude Code interactive mode:
+Inside Claude Code the same thing is `/plugin marketplace add obsfx/trekker` followed by `/plugin install trekker@trekker`.
 
-```
-/plugin marketplace add obsfx/trekker-claude-code
-/plugin install trekker
-```
-
-There is nothing else to configure: the plugin calls the `trekker` CLI on your PATH.
-
-#### Option B: Manual Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/obsfx/trekker-claude-code.git
-
-# Symlink to Claude plugins directory
-ln -s $(pwd)/trekker-claude-code ~/.claude/plugins/trekker
-```
-
-### Step 3: Initialize Trekker in Your Project
+Finally, initialize Trekker in a project:
 
 ```bash
 cd your-project
 trekker init
 ```
 
-## Features
+To skip permission prompts for Trekker commands, allow `Bash(trekker:*)` in your Claude Code settings.
 
-### CLI-First
+### Moving from obsfx/trekker-claude-code
 
-The plugin has no MCP server. Skills, commands, the agent, and hooks all run the `trekker` CLI through Bash, so the commands Claude runs are the same ones you would type, and every CLI feature is available the day it ships.
+The old marketplace keeps working, but it no longer receives updates. Switch to the new one:
 
-- `trekker --toon <command>` returns compact structured output for the agent
-- `trekker quickstart` and `trekker <command> --help` are the reference the skills point to
+```bash
+claude plugin uninstall trekker@trekker-marketplace
+claude plugin marketplace remove trekker-marketplace
+claude plugin marketplace add obsfx/trekker
+claude plugin install trekker@trekker
+```
 
-#### Upgrading from 1.x
+Versions before 2.0 bundled an MCP server with `trekker_*` tools. The plugin no longer has one, so you can delete any `mcp__plugin_trekker_trekker__*` entries from your permission allowlists.
 
-Version 2.0.0 removed the bundled MCP server and its `trekker_*` tools. After updating, you can delete any `mcp__plugin_trekker_trekker__*` entries from your Claude Code permission allowlists. To skip permission prompts for the CLI instead, allow `Bash(trekker:*)`.
+## What it adds
 
-### Slash Commands (13 commands)
+### Slash commands
 
-| Command | Description |
-|---------|-------------|
-| `/trekker:prime` | Load workflow context |
-| `/trekker:create` | Interactive task creation |
+| Command | What it does |
+|---------|--------------|
+| `/trekker:prime` | Load the Trekker workflow into the session |
+| `/trekker:create` | Create a task interactively, after a duplicate search |
 | `/trekker:list` | List tasks with filters |
-| `/trekker:show` | Show task details |
+| `/trekker:show` | Show a task with its comments and dependencies |
 | `/trekker:ready` | Find unblocked work |
-| `/trekker:start` | Begin working on a task |
-| `/trekker:done` | Complete task with summary |
-| `/trekker:blocked` | Mark task as blocked |
+| `/trekker:start` | Restore a task's context and mark it in progress |
+| `/trekker:done` | Add a summary comment and complete a task |
+| `/trekker:blocked` | Record a blocker on a task |
 | `/trekker:epic` | Manage epics |
-| `/trekker:comment` | Add comment to task |
+| `/trekker:comment` | Add a comment to a task |
 | `/trekker:deps` | Manage dependencies |
-| `/trekker:history` | View audit trail of changes |
-| `/trekker:task-agent` | Run autonomous task agent |
+| `/trekker:history` | Show the audit trail |
+| `/trekker:task-agent` | Run the autonomous task agent |
 
-### Task Agent
+### Skills
 
-The task agent (`/trekker:task-agent`) provides autonomous task completion:
+| Skill | When Claude uses it |
+|-------|---------------------|
+| `trekker` | Core workflow: search first, one task in progress, summaries before completion |
+| `planning` | Breaking multi-step work into an epic, tasks, and dependencies before coding |
+| `task-sync` | Keeping Trekker as the source of truth while mirroring it in TodoWrite |
+| `issue-tracking` | Offering to track bugs, features, and backlog items the user mentions |
+| `search` | Recovering context with full-text search |
+| `find-duplicates` | Checking for existing tasks before creating one |
+| `smart-query` | Turning questions like "what is blocked?" into Trekker queries |
 
-1. **Discovery** - Find ready tasks
-2. **Engagement** - Select and start a task
-3. **Execution** - Complete the work
-4. **Documentation** - Track progress and discoveries
-5. **Closure** - Add summary and mark complete
-6. **Iteration** - Move to next task
+### Task agent
 
-Invoke with `/trekker:task-agent` to let Claude work through tasks autonomously.
+`/trekker:task-agent` works through the backlog on its own: it recovers context, picks a ready task, marks it in progress, does the work, leaves progress and summary comments, completes the task, and moves to the next one.
 
-### Skills (7 skills)
+### Hooks
 
-| Skill | Description |
-|-------|-------------|
-| `trekker` | Core workflow guide for task management |
-| `planning` | Plan and track multi-step tasks before implementation |
-| `task-sync` | Synchronize Trekker with Claude's built-in TodoWrite |
-| `issue-tracking` | Suggest Trekker when user mentions issues, bugs, or tasks |
-| `search` | Search-first workflow for finding existing tasks |
-| `find-duplicates` | Detect duplicate tasks before creating new ones |
-| `smart-query` | Intelligent task querying |
+| Event | Behavior |
+|-------|----------|
+| `SessionStart` | Reports a missing `trekker` CLI, then shows in-progress tasks with their latest comments and dependencies, or the ready queue when nothing is in progress, plus recent activity |
+| `PreCompact` | Prints the same state before compaction so in-progress work and checkpoints survive it |
+| `Stop`, `SubagentStop` | Best effort: when the hook input names a finished task (`task_subject`), finds the matching in-progress Trekker task, comments, completes it, and shows what is ready next. Needs `jq` |
 
-### Hooks (4 hooks)
+All hooks exit quietly in projects without a `.trekker` directory.
 
-The plugin includes hooks for context management and workflow automation:
+## How Claude talks to Trekker
 
-**SessionStart** - When Claude Code starts:
-- Reports when the `trekker` CLI is missing from PATH
-- Shows in-progress tasks with recent comments (resume context)
-- If no work in progress, shows ready tasks
-- Provides workflow reminder
+There is no MCP server and nothing to configure. Every skill and command runs ordinary `trekker` commands through Bash: the same commands you would type, documented in the [main README](../../README.md). The skills point Claude at `trekker quickstart` and `trekker <command> --help` for exact flags, and at `--toon` for compact structured output.
 
-**PreCompact** - Before context compaction:
-- Reminds to save checkpoint comments
-- Lists all in-progress tasks with details
-- Shows recent comments for context preservation
-- Provides checkpoint comment template
+## Layout
 
-**Stop / SubagentStop** - When a task completes:
-- Scans the assistant's final message for completed task references
-- Automatically marks matching tasks as completed in Trekker
-- Shows next ready task to continue the workflow
-
-## Usage
-
-### Basic Workflow
-
-```bash
-# Create a task
-trekker task create -t "Implement feature X" -p 1
-
-# Start working
-trekker task update TREK-1 -s in_progress
-
-# Add progress notes
-trekker comment add TREK-1 -a "claude" -c "Progress: completed step 1"
-
-# Complete with summary
-trekker comment add TREK-1 -a "claude" -c "Summary: implemented X in files A, B"
-trekker task update TREK-1 -s completed
+```text
+plugins/claude-code/
+├── .claude-plugin/plugin.json   # Plugin manifest
+├── agents/task-agent.md         # Autonomous task agent
+├── commands/                    # 13 slash commands
+├── hooks/
+│   ├── hooks.json
+│   ├── lib/utils.sh
+│   ├── session-start.sh
+│   ├── pre-compact.sh
+│   └── task-completed.sh
+└── skills/                      # 7 skills
 ```
 
-### Using Slash Commands
-
-In Claude Code:
-
-```
-/trekker:ready          # Find tasks to work on
-/trekker:start TREK-1   # Start a task
-/trekker:done TREK-1    # Complete with summary
-/trekker:history        # View recent changes
-```
-
-### Context Preservation
-
-Before ending a session or when prompted by PreCompact hook:
-
-```bash
-trekker comment add TREK-1 -a "claude" -c "Checkpoint: done X. Next: Y. Files: a.ts, b.ts"
-```
-
-## Project Structure
-
-```
-trekker-claude-code/
-├── .claude-plugin/
-│   ├── plugin.json           # Plugin metadata
-│   └── marketplace.json      # Marketplace distribution config
-├── .githooks/
-│   └── post-commit           # Bumps the plugin version on every commit
-├── commands/                 # Slash command definitions (13 commands)
-├── agents/
-│   └── task-agent.md         # Autonomous task completion agent
-├── skills/                   # 7 skills for workflow automation
-│   ├── trekker/              # Core workflow skill
-│   ├── planning/             # Multi-step task planning
-│   ├── task-sync/            # TodoWrite synchronization
-│   ├── issue-tracking/       # Issue tracking suggestions
-│   ├── search/               # Search-first workflow
-│   ├── find-duplicates/      # Duplicate detection
-│   └── smart-query/          # Intelligent querying
-└── hooks/
-    ├── hooks.json            # Hook configuration
-    ├── lib/utils.sh          # Shared hook helpers
-    ├── session-start.sh      # SessionStart hook
-    ├── pre-compact.sh        # PreCompact hook
-    └── task-completed.sh     # Stop/SubagentStop hook
-```
+The marketplace that lists this plugin is [`.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json) at the repository root.
 
 ## Development
 
-There is no build step. Skills, commands, and hooks are plain Markdown and shell.
+There is no build step: everything here is Markdown, JSON, and shell. Load a working copy into a session with:
 
 ```bash
-git clone https://github.com/obsfx/trekker-claude-code.git
-cd trekker-claude-code
-
-# Enable the version-bump hook so Claude Code picks up each change
-git config core.hooksPath .githooks
-
-# Load the working copy in Claude Code
-claude --plugin-dir .
+claude --plugin-dir plugins/claude-code
 ```
+
+Check the manifests with `claude plugin validate .` from the repository root.
+
+The plugin version follows the CLI version: `bun run release` bumps `plugin.json` and the marketplace entry together with `package.json`, so a released plugin always matches a released CLI.
 
 ## Troubleshooting
 
-### Plugin not loading
-
-1. Verify trekker CLI is installed: `trekker --version`
-2. Check plugin is in correct location: `ls ~/.claude/plugins/trekker`
-
-### Trekker commands fail
-
-1. Confirm the CLI resolves in the same shell Claude uses: `command -v trekker`
-2. Confirm Bun is installed: `bun --version`
-3. Check the flags for the failing command: `trekker <command> --help`
-
-### Hooks not running
-
-1. Ensure hook scripts are executable: `chmod +x hooks/*.sh`
-2. Verify trekker is initialized in project: `ls .trekker`
-
-## License
-
-MIT
+- **Trekker commands fail.** Run `command -v trekker` and `bun --version` in the shell Claude uses, then check the failing command's flags with `trekker <command> --help`.
+- **No session context appears.** Make sure the project has a `.trekker` directory (`trekker init`).
+- **The Stop hook never completes tasks.** It needs `jq` on PATH and a task subject in the hook input; otherwise it does nothing.

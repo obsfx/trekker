@@ -3,7 +3,13 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(import.meta.dir, '..');
-const PACKAGE_JSON = join(ROOT, 'package.json');
+const PACKAGE_JSON = 'package.json';
+const VERSIONED_FILES = [
+  PACKAGE_JSON,
+  '.claude-plugin/marketplace.json',
+  'plugins/claude-code/.claude-plugin/plugin.json',
+  'plugins/codex/plugin.json',
+];
 const BUMPS = ['patch', 'minor', 'major'] as const;
 const BUMP_NAMES: ReadonlySet<string> = new Set(BUMPS);
 const FIRST_CLI_ARGUMENT = 2;
@@ -54,12 +60,34 @@ function isBump(value: string | undefined): value is Bump {
   return value !== undefined && BUMP_NAMES.has(value);
 }
 
-function readManifestText(): string {
-  return readFileSync(PACKAGE_JSON, 'utf8');
+function readRootFile(path: string): string {
+  return readFileSync(join(ROOT, path), 'utf8');
 }
 
 function readManifest(): PackageManifest {
-  return parseManifest(readManifestText());
+  return parseManifest(readRootFile(PACKAGE_JSON));
+}
+
+function versionField(version: string): string {
+  return `"version": "${version}"`;
+}
+
+function snapshotVersionedFiles(current: string): Map<string, string> {
+  const snapshot = new Map<string, string>();
+  for (const path of VERSIONED_FILES) {
+    const text = readRootFile(path);
+    if (!text.includes(versionField(current))) {
+      fail(`${path} is not at version ${current}; plugin versions must match package.json`);
+    }
+    snapshot.set(path, text);
+  }
+  return snapshot;
+}
+
+function restoreVersionedFiles(snapshot: Map<string, string>): void {
+  for (const [path, text] of snapshot) {
+    writeFileSync(join(ROOT, path), text);
+  }
 }
 
 function nextVersion(current: string, bump: Bump): string {
@@ -93,11 +121,10 @@ function checkReady(tag: string, dryRun: boolean): void {
   }
 }
 
-function writeVersion(manifestText: string, current: string, version: string): void {
-  writeFileSync(
-    PACKAGE_JSON,
-    manifestText.replace(`"version": "${current}"`, `"version": "${version}"`)
-  );
+function writeVersion(snapshot: Map<string, string>, current: string, version: string): void {
+  for (const [path, text] of snapshot) {
+    writeFileSync(join(ROOT, path), text.replaceAll(versionField(current), versionField(version)));
+  }
   if (readManifest().version !== version) {
     fail(`could not write version ${version} to package.json`);
   }
@@ -143,11 +170,11 @@ if (!isBump(bump)) {
   fail(`usage: bun run release <${BUMPS.join('|')}> [--dry-run]`);
 }
 
-const manifestText = readManifestText();
 const { name, version: current } = readManifest();
 const version = nextVersion(current, bump);
 const tag = `v${version}`;
 checkReady(tag, dryRun);
+const snapshot = snapshotVersionedFiles(current);
 let dryRunSuffix = '';
 if (dryRun) {
   dryRunSuffix = ' (dry run)';
@@ -157,25 +184,25 @@ console.log(`releasing ${name} ${current} -> ${version}${dryRunSuffix}`);
 run('bun', ['install', '--frozen-lockfile']);
 run('bun', ['run', 'test:release']);
 
-writeVersion(manifestText, current, version);
+writeVersion(snapshot, current, version);
 try {
   build();
   verifyPackage(version);
   publish(name, version, dryRun);
 } catch (error) {
-  writeFileSync(PACKAGE_JSON, manifestText);
+  restoreVersionedFiles(snapshot);
   throw error;
 }
 
 if (dryRun) {
-  writeFileSync(PACKAGE_JSON, manifestText);
+  restoreVersionedFiles(snapshot);
   console.log(
     `\ndry run done: ${version} built and checked, nothing published, committed or tagged`
   );
   process.exit(0);
 }
 
-run('git', ['commit', '--message', version, '--', 'package.json']);
+run('git', ['commit', '--message', version, '--', ...VERSIONED_FILES]);
 run('git', ['tag', '--annotate', tag, '--message', version]);
 
 console.log(`

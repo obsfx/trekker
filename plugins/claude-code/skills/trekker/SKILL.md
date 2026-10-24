@@ -182,7 +182,7 @@ trekker comment list <task-id>
 **Why context recovery is mandatory:**
 - You don't remember previous sessions - CLI commands restore that context
 - Search reveals past decisions you would otherwise lose
-- History shows WHO changed WHAT and WHEN
+- History shows WHAT changed and WHEN
 - Prevents duplicate work and conflicting changes
 - **If context is unclear: STOP → SEARCH → RESUME**
 
@@ -381,7 +381,7 @@ trekker task create -t "Fix login failure when password contains special chars" 
 
 ## Multi-Instance Safety
 
-Trekker uses SQLite with Write-Ahead Logging (WAL) for concurrent access.
+Trekker uses SQLite with a 5-second busy timeout: concurrent writers wait for each other instead of failing, and IDs are allocated atomically.
 
 **Best practices:**
 - Always fetch latest state before updates: `trekker task show <id>`
