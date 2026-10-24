@@ -95,9 +95,12 @@ IDs look like `EPIC-1`, `TREK-1`, and `CMT-1`. You can change the prefixes with 
 
 ## Dashboard
 
-<img src="https://omercan.io/trekker/images/dashboard-kanban.png" width="480" alt="Trekker dashboard" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/dark-kanban.webp">
+  <img alt="Trekker dashboard kanban board" src="assets/screenshots/light-kanban.webp">
+</picture>
 
-A kanban board that reads the same database and updates live:
+A kanban board that reads the same database and updates live, so you can watch agents work:
 
 ```bash
 npm install -g @obsfx/trekker-dashboard
