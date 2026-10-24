@@ -3,12 +3,11 @@ import { spawnSync } from 'node:child_process';
 import {
   DB_RELATIVE_PATH,
   Workspace,
-  spawnAsync,
-  toCommandResult,
   type CommandOptions,
   type CommandResult,
   type SqlRow,
-} from './workspace';
+  WorkspaceProcesses,
+} from '@/tests/helpers/workspace/workspace';
 
 const QUERY_SCRIPT = `
 import { Database } from 'bun:sqlite';
@@ -33,7 +32,9 @@ export class ContainerWorkspace extends Workspace {
   }
 
   execAsync(command: readonly string[], options: CommandOptions = {}): Promise<CommandResult> {
-    return spawnAsync(this.dockerExecArgs(command, options, this.cwd), { input: options.input });
+    return WorkspaceProcesses.spawnAsync(this.dockerExecArgs(command, options, this.cwd), {
+      input: options.input,
+    });
   }
 
   exists(relativePath: string): boolean {
@@ -61,7 +62,7 @@ export class ContainerWorkspace extends Workspace {
     workdir: string
   ): CommandResult {
     const [program, ...args] = this.dockerExecArgs(command, options, workdir);
-    return toCommandResult(
+    return WorkspaceProcesses.toCommandResult(
       spawnSync(program, args, { encoding: 'utf-8', input: options.input ?? '' })
     );
   }
@@ -71,10 +72,9 @@ export class ContainerWorkspace extends Workspace {
     options: CommandOptions,
     workdir: string
   ): string[] {
-    const envFlags = Object.entries({ NO_COLOR: '1', ...options.env }).flatMap(([key, value]) => [
-      '-e',
-      `${key}=${value}`,
-    ]);
+    const envFlags = Object.entries({ NO_COLOR: '1', ...options.env }).flatMap(([key, value]) => {
+      return ['-e', `${key}=${value}`];
+    });
     return ['docker', 'exec', '-i', '-w', workdir, ...envFlags, this.containerId, ...command];
   }
 }

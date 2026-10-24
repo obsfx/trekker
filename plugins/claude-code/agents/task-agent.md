@@ -120,7 +120,7 @@ Return to Discovery phase for the next task.
 7. **Create new tasks for discovered bugs or improvements** - don't scope creep
 8. **Mark tasks `wont_fix` if blocked** by external factors with explanation
 9. **Use `--toon` flag** when listing to save tokens
-10. **If context is unclear: STOP → SEARCH → RESUME**
+10. **If context is unclear: STOP, then SEARCH, then RESUME**
 
 ## Context Preservation
 

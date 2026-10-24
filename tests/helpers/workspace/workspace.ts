@@ -1,3 +1,42 @@
+interface SpawnOptions {
+  cwd?: string;
+  input?: string;
+  env?: Record<string, string | undefined>;
+}
+
+interface SpawnOutput {
+  stdout: string | null;
+  stderr: string | null;
+  status: number | null;
+}
+export abstract class WorkspaceProcesses {
+  static async spawnAsync(
+    command: readonly string[],
+    options: SpawnOptions
+  ): Promise<CommandResult> {
+    const child = Bun.spawn([...command], {
+      cwd: options.cwd,
+      env: options.env,
+      stdin: new Blob([options.input ?? '']),
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    const [stdout, stderr, status] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    return WorkspaceProcesses.toCommandResult({ stdout, stderr, status });
+  }
+
+  static toCommandResult(result: SpawnOutput): CommandResult {
+    return {
+      stdout: result.stdout?.trim() ?? '',
+      stderr: result.stderr?.trim() ?? '',
+      status: result.status ?? 1,
+    };
+  }
+}
 export interface CommandResult {
   stdout: string;
   stderr: string;
@@ -30,35 +69,4 @@ export abstract class Workspace {
   trekkerAsync(args: readonly string[], options?: CommandOptions): Promise<CommandResult> {
     return this.execAsync([...this.trekkerCommand, ...args], options);
   }
-}
-
-export async function spawnAsync(
-  command: readonly string[],
-  options: { cwd?: string; input?: string; env?: Record<string, string | undefined> }
-): Promise<CommandResult> {
-  const child = Bun.spawn([...command], {
-    cwd: options.cwd,
-    env: options.env,
-    stdin: new Blob([options.input ?? '']),
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  const [stdout, stderr, status] = await Promise.all([
-    new Response(child.stdout).text(),
-    new Response(child.stderr).text(),
-    child.exited,
-  ]);
-  return toCommandResult({ stdout, stderr, status });
-}
-
-export function toCommandResult(result: {
-  stdout: string | null;
-  stderr: string | null;
-  status: number | null;
-}): CommandResult {
-  return {
-    stdout: result.stdout?.trim() ?? '',
-    stderr: result.stderr?.trim() ?? '',
-    status: result.status ?? 1,
-  };
 }

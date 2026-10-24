@@ -97,16 +97,16 @@ There is no MCP server and nothing to configure. Every skill and command runs or
 
 ```text
 plugins/claude-code/
-├── .claude-plugin/plugin.json   # Plugin manifest
-├── agents/task-agent.md         # Autonomous task agent
-├── commands/                    # 13 slash commands
-├── hooks/
-│   ├── hooks.json
-│   ├── lib/utils.sh
-│   ├── session-start.sh
-│   ├── pre-compact.sh
-│   └── task-completed.sh
-└── skills/                      # 7 skills
+|-- .claude-plugin/plugin.json   # Plugin manifest
+|-- agents/task-agent.md         # Autonomous task agent
+|-- commands/                    # 13 slash commands
+|-- hooks/
+|   |-- hooks.json
+|   |-- lib/utils.sh
+|   |-- session-start.sh
+|   |-- pre-compact.sh
+|   `-- task-completed.sh
+`-- skills/                      # 7 skills
 ```
 
 The marketplace that lists this plugin is [`.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json) at the repository root.

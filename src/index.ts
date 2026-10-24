@@ -1,22 +1,23 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
-import { initCommand } from './commands/init';
-import { wipeCommand } from './commands/wipe';
-import { epicCommand } from './commands/epic';
-import { taskCommand } from './commands/task';
-import { subtaskCommand } from './commands/subtask';
-import { commentCommand } from './commands/comment';
-import { depCommand } from './commands/dep';
-import { quickstartCommand } from './commands/quickstart';
-import { seedCommand } from './commands/seed';
-import { searchCommand } from './commands/search';
-import { historyCommand } from './commands/history';
-import { listCommand } from './commands/list';
-import { readyCommand } from './commands/ready';
-import { configCommand } from './commands/config';
-import { setToonMode } from './utils/output';
-import pkg from '../package.json';
-import type { ProgramOptions } from './types/options';
+import { initCommand } from '@/src/commands/init';
+import { wipeCommand } from '@/src/commands/wipe';
+import { epicCommand } from '@/src/commands/epic';
+import { taskCommand } from '@/src/commands/task';
+import { subtaskCommand } from '@/src/commands/subtask';
+import { commentCommand } from '@/src/commands/comment';
+import { depCommand } from '@/src/commands/dep';
+import { quickstartCommand } from '@/src/commands/quickstart';
+import { seedCommand } from '@/src/commands/seed';
+import { searchCommand } from '@/src/commands/search';
+import { historyCommand } from '@/src/commands/history';
+import { listCommand } from '@/src/commands/list';
+import { readyCommand } from '@/src/commands/ready';
+import { configCommand } from '@/src/commands/config';
+import { serveCommand } from '@/src/commands/serve';
+import { Output } from '@/src/utils/output';
+import pkg from '@/package.json';
+import type { ProgramOptions } from '@/src/types/options';
 
 const program = new Command();
 
@@ -28,7 +29,7 @@ program
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts<ProgramOptions>();
     if (opts.toon) {
-      setToonMode(true);
+      Output.setToonMode(true);
     }
   });
 
@@ -47,6 +48,7 @@ program.addCommand(historyCommand);
 program.addCommand(listCommand);
 program.addCommand(readyCommand);
 program.addCommand(configCommand);
+program.addCommand(serveCommand);
 
 // Parse and execute
-program.parse();
+await program.parseAsync();

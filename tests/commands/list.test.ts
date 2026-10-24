@@ -1,5 +1,6 @@
+import dayjs from 'dayjs';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 interface Task {
   id: string;
@@ -32,8 +33,8 @@ describe('list command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
   });
 
   afterEach(() => {
@@ -48,9 +49,21 @@ describe('list command', () => {
 
       const result = ctx.runToon<ListResponse>('list');
       expect(result.total).toBe(3);
-      expect(result.items.some((i) => i.type === 'epic')).toBe(true);
-      expect(result.items.some((i) => i.type === 'task')).toBe(true);
-      expect(result.items.some((i) => i.type === 'subtask')).toBe(true);
+      expect(
+        result.items.some((i) => {
+          return i.type === 'epic';
+        })
+      ).toBe(true);
+      expect(
+        result.items.some((i) => {
+          return i.type === 'task';
+        })
+      ).toBe(true);
+      expect(
+        result.items.some((i) => {
+          return i.type === 'subtask';
+        })
+      ).toBe(true);
     });
 
     it('should return empty list when no items', () => {
@@ -69,22 +82,38 @@ describe('list command', () => {
 
     it('should filter by epic type', () => {
       const result = ctx.runToon<ListResponse>('list --type epic');
-      expect(result.items.every((i) => i.type === 'epic')).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.type === 'epic';
+        })
+      ).toBe(true);
     });
 
     it('should filter by task type', () => {
       const result = ctx.runToon<ListResponse>('list --type task');
-      expect(result.items.every((i) => i.type === 'task')).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.type === 'task';
+        })
+      ).toBe(true);
     });
 
     it('should filter by subtask type', () => {
       const result = ctx.runToon<ListResponse>('list --type subtask');
-      expect(result.items.every((i) => i.type === 'subtask')).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.type === 'subtask';
+        })
+      ).toBe(true);
     });
 
     it('should filter by multiple types', () => {
       const result = ctx.runToon<ListResponse>('list --type epic,task');
-      expect(result.items.every((i) => i.type === 'epic' || i.type === 'task')).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.type === 'epic' || i.type === 'task';
+        })
+      ).toBe(true);
     });
 
     it('should fail with invalid type', () => {
@@ -102,14 +131,20 @@ describe('list command', () => {
 
     it('should filter by single status', () => {
       const result = ctx.runToon<ListResponse>('list --status todo');
-      expect(result.items.every((i) => i.status === 'todo')).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.status === 'todo';
+        })
+      ).toBe(true);
     });
 
     it('should filter by multiple statuses', () => {
       const result = ctx.runToon<ListResponse>('list --status todo,in_progress');
-      expect(result.items.every((i) => i.status === 'todo' || i.status === 'in_progress')).toBe(
-        true
-      );
+      expect(
+        result.items.every((i) => {
+          return i.status === 'todo' || i.status === 'in_progress';
+        })
+      ).toBe(true);
     });
   });
 
@@ -123,12 +158,20 @@ describe('list command', () => {
 
     it('should filter by single priority', () => {
       const result = ctx.runToon<ListResponse>('list --priority 0');
-      expect(result.items.every((i) => i.priority === 0)).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.priority === 0;
+        })
+      ).toBe(true);
     });
 
     it('should filter by multiple priorities', () => {
       const result = ctx.runToon<ListResponse>('list --priority 0,1');
-      expect(result.items.every((i) => i.priority === 0 || i.priority === 1)).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.priority === 0 || i.priority === 1;
+        })
+      ).toBe(true);
     });
 
     it('should fail with invalid priority', () => {
@@ -141,7 +184,7 @@ describe('list command', () => {
     it('should filter by since date', () => {
       ctx.run('task create -t "Test Task"');
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = dayjs().toISOString().split('T')[0];
       const result = ctx.runToon<ListResponse>(`list --since ${today}`);
       expect(result.items.length).toBeGreaterThanOrEqual(1);
     });
@@ -149,7 +192,7 @@ describe('list command', () => {
     it('should filter by until date', () => {
       ctx.run('task create -t "Test Task"');
 
-      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const tomorrow = dayjs().add(1, 'day').toISOString().split('T')[0];
       const result = ctx.runToon<ListResponse>(`list --until ${tomorrow}`);
       expect(result.items.length).toBeGreaterThanOrEqual(1);
     });
@@ -174,7 +217,9 @@ describe('list command', () => {
 
     it('should sort by priority ascending', () => {
       const result = ctx.runToon<ListResponse>('list --sort priority:asc --type task');
-      const priorities = result.items.map((i) => i.priority);
+      const priorities = result.items.map((i) => {
+        return i.priority;
+      });
 
       for (let i = 1; i < priorities.length; i++) {
         expect(priorities[i]).toBeGreaterThanOrEqual(priorities[i - 1]);
@@ -183,7 +228,9 @@ describe('list command', () => {
 
     it('should sort by priority descending', () => {
       const result = ctx.runToon<ListResponse>('list --sort priority:desc --type task');
-      const priorities = result.items.map((i) => i.priority);
+      const priorities = result.items.map((i) => {
+        return i.priority;
+      });
 
       for (let i = 1; i < priorities.length; i++) {
         expect(priorities[i]).toBeLessThanOrEqual(priorities[i - 1]);
@@ -192,7 +239,9 @@ describe('list command', () => {
 
     it('should sort by created date descending (default)', () => {
       const result = ctx.runToon<ListResponse>('list --sort created:desc --type task');
-      const dates = result.items.map((i) => new Date(i.createdAt).getTime());
+      const dates = result.items.map((i) => {
+        return dayjs(i.createdAt).valueOf();
+      });
 
       for (let i = 1; i < dates.length; i++) {
         expect(dates[i]).toBeLessThanOrEqual(dates[i - 1]);
@@ -220,7 +269,11 @@ describe('list command', () => {
       ctx.run('epic create -t "Todo Epic" -s todo');
 
       const result = ctx.runToon<ListResponse>('list --type task --status todo');
-      expect(result.items.every((i) => i.type === 'task' && i.status === 'todo')).toBe(true);
+      expect(
+        result.items.every((i) => {
+          return i.type === 'task' && i.status === 'todo';
+        })
+      ).toBe(true);
       expect(result.total).toBe(1);
     });
 
@@ -240,8 +293,8 @@ describe('list command pagination', () => {
   let ctx: TestContext;
 
   beforeAll(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
     for (let i = 1; i <= 12; i++) {
       ctx.run(`task create -t "Task ${i}"`);
     }

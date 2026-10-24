@@ -1,20 +1,6 @@
 import { Command } from 'commander';
-import {
-  assertProjectConfigKey,
-  getProjectConfigValue,
-  listProjectConfigEntries,
-  listProjectConfig,
-  setProjectConfigValues,
-  unsetProjectConfigValue,
-} from '../services/config';
-import {
-  handleCommandError,
-  output,
-  outputResult,
-  formatProjectConfigList,
-  success,
-  isToonMode,
-} from '../utils/output';
+import { ConfigService } from '@/src/services/config';
+import { Output } from '@/src/utils/output';
 
 export const configCommand = new Command('config').description('Manage project configuration');
 
@@ -23,14 +9,14 @@ configCommand
   .description('List supported project config values')
   .action(() => {
     try {
-      if (isToonMode()) {
-        output(listProjectConfig());
+      if (Output.isToonMode()) {
+        Output.print(ConfigService.listProjectConfig());
         return;
       }
 
-      outputResult(listProjectConfigEntries(), formatProjectConfigList);
+      Output.outputResult(ConfigService.listProjectConfigEntries(), Output.formatProjectConfigList);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -39,17 +25,17 @@ configCommand
   .description('Get a project config value')
   .action((key: string) => {
     try {
-      assertProjectConfigKey(key);
-      const value = getProjectConfigValue(key);
+      ConfigService.assertProjectConfigKey(key);
+      const value = ConfigService.getProjectConfigValue(key);
 
-      if (isToonMode()) {
-        output({ key, value });
+      if (Output.isToonMode()) {
+        Output.print({ key, value });
         return;
       }
 
       console.log(value);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -58,11 +44,11 @@ configCommand
   .description('Set a project config value')
   .action((key: string, value: string) => {
     try {
-      assertProjectConfigKey(key);
-      const config = setProjectConfigValues({ [key]: value });
-      success(`Config updated: ${key}=${config[key]}`, { key, value: config[key] });
+      ConfigService.assertProjectConfigKey(key);
+      const config = ConfigService.setProjectConfigValues({ [key]: value });
+      Output.success(`Config updated: ${key}=${config[key]}`, { key, value: config[key] });
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -71,10 +57,10 @@ configCommand
   .description('Reset a project config value to its default')
   .action((key: string) => {
     try {
-      assertProjectConfigKey(key);
-      const value = unsetProjectConfigValue(key);
-      success(`Config reset: ${key}=${value}`, { key, value });
+      ConfigService.assertProjectConfigKey(key);
+      const value = ConfigService.unsetProjectConfigValue(key);
+      Output.success(`Config reset: ${key}=${value}`, { key, value });
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });

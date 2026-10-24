@@ -185,7 +185,7 @@ trekker comment list <task-id>
 - Search reveals past decisions you would otherwise lose
 - History shows WHAT changed and WHEN
 - Prevents duplicate work and conflicting changes
-- **If context is unclear: STOP → SEARCH → RESUME**
+- **If context is unclear: STOP, then SEARCH, then RESUME**
 
 ### Before ANY New Work - Search First (MANDATORY)
 

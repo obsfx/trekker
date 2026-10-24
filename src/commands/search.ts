@@ -1,15 +1,53 @@
+import plur from 'plur';
 import { Command } from 'commander';
-import { search, rebuildSearchIndex } from '../services/search';
-import type { SearchResponse } from '../services/search';
-import { handleCommandError, outputResult } from '../utils/output';
-import {
-  parsePaginationOptions,
-  validateSearchEntityTypes,
-  parseCommaSeparated,
-} from '../utils/validator';
-import { TYPE_PAD_WIDTH } from '../utils/constants';
-import type { SearchCommandOptions } from '../types/options';
-import type { SearchEntityType } from '../types';
+import { DbClient } from '@/src/db/client';
+import { SearchService } from '@/src/services/search';
+import type { SearchResponse } from '@/src/services/search';
+import { Output } from '@/src/utils/output';
+import { Validator } from '@/src/utils/validator';
+import { TYPE_PAD_WIDTH } from '@/src/utils/constants';
+import type { SearchCommandOptions } from '@/src/types/options';
+import type { SearchEntityType } from '@/src/types';
+
+abstract class SearchOutput {
+  static readonly formatSearchResults = (result: SearchResponse): string => {
+    const lines: string[] = [];
+
+    lines.push(`Search: "${result.query}"`);
+    lines.push(
+      `Found ${result.total} ${plur('result', result.total)} (page ${result.page}, ${result.limit} per page)`
+    );
+    lines.push('');
+
+    if (result.results.length === 0) {
+      lines.push('No results found.');
+      return lines.join('\n');
+    }
+
+    for (const r of result.results) {
+      const typeLabel = r.type.toUpperCase().padEnd(TYPE_PAD_WIDTH);
+      let statusLabel = '';
+      if (r.status) {
+        statusLabel = ` [${r.status}]`;
+      }
+      let parentLabel = '';
+      if (r.parentId) {
+        parentLabel = ` (parent: ${r.parentId})`;
+      }
+
+      lines.push(`${typeLabel} ${r.id}${statusLabel}${parentLabel}`);
+      if (r.title) {
+        lines.push(`  Title: ${r.title}`);
+      }
+      if (r.snippet) {
+        lines.push(`  ${r.snippet}`);
+      }
+      lines.push('');
+    }
+
+    return Output.joinWithPageLine(lines, result.total, result.page, result.limit);
+  };
+}
 
 export const searchCommand = new Command('search')
   .description('Search across epics, tasks, subtasks, and comments')
@@ -22,69 +60,28 @@ export const searchCommand = new Command('search')
   .action((query: string, options: SearchCommandOptions) => {
     try {
       if (options.rebuildIndex) {
-        rebuildSearchIndex();
+        DbClient.rebuildSearchIndex();
       }
 
-      const { limit, page } = parsePaginationOptions(options);
+      const { limit, page } = Validator.parsePaginationOptions(options);
 
-      const rawTypes = parseCommaSeparated(options.type);
+      const rawTypes = Validator.parseCommaSeparated(options.type);
       let types: SearchEntityType[] | undefined;
 
       if (rawTypes) {
-        validateSearchEntityTypes(rawTypes);
+        Validator.validateSearchEntityTypes(rawTypes);
         types = rawTypes;
       }
 
-      const result = search(query, {
+      const result = SearchService.search(query, {
         types,
-        status: options.status,
+        statuses: Validator.parseCommaSeparated(options.status),
         limit,
         page,
       });
 
-      outputResult(result, formatSearchResults);
+      Output.outputResult(result, SearchOutput.formatSearchResults);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
-
-function formatSearchResults(result: SearchResponse): string {
-  const lines: string[] = [];
-
-  lines.push(`Search: "${result.query}"`);
-  lines.push(`Found ${result.total} results (page ${result.page}, ${result.limit} per page)`);
-  lines.push('');
-
-  if (result.results.length === 0) {
-    lines.push('No results found.');
-    return lines.join('\n');
-  }
-
-  for (const r of result.results) {
-    const typeLabel = r.type.toUpperCase().padEnd(TYPE_PAD_WIDTH);
-    let statusLabel = '';
-    if (r.status) {
-      statusLabel = ` [${r.status}]`;
-    }
-    let parentLabel = '';
-    if (r.parentId) {
-      parentLabel = ` (parent: ${r.parentId})`;
-    }
-
-    lines.push(`${typeLabel} ${r.id}${statusLabel}${parentLabel}`);
-    if (r.title) {
-      lines.push(`  Title: ${r.title}`);
-    }
-    if (r.snippet) {
-      lines.push(`  ${r.snippet}`);
-    }
-    lines.push('');
-  }
-
-  const totalPages = Math.ceil(result.total / result.limit);
-  if (totalPages > 1) {
-    lines.push(`Page ${result.page} of ${totalPages}`);
-  }
-
-  return lines.join('\n');
-}

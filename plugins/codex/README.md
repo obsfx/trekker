@@ -72,11 +72,11 @@ There is no MCP server and nothing to configure. Every skill runs ordinary `trek
 
 ```text
 plugins/codex/
-├── plugin.json            # Portable manifest; Codex settings under extensions.com.openai
-├── assets/trekker.svg
-├── hooks/hooks.json       # SessionStart hook, discovered by default
-├── scripts/session-start.sh
-└── skills/                # 10 skills
+|-- plugin.json            # Portable manifest; Codex settings under extensions.com.openai
+|-- assets/trekker.svg
+|-- hooks/hooks.json       # SessionStart hook, discovered by default
+|-- scripts/session-start.sh
+`-- skills/                # 10 skills
 ```
 
 The marketplace that lists this plugin is [`.agents/plugins/marketplace.json`](../../.agents/plugins/marketplace.json) at the repository root.

@@ -34,7 +34,7 @@ trekker task update TREK-1 -s completed
 
 ```text
 $ trekker ready
-1 ready task(s) (page 1, 50 per page)
+1 ready task (page 1, 50 per page)
 
 TREK-1 | P1 | Create the users table (EPIC-1)
   -> unblocks TREK-2 | todo        | P2 | Build the login endpoint
@@ -93,21 +93,26 @@ Statuses: `todo`, `in_progress`, `completed`, `wont_fix`, `archived` (epics have
 
 IDs look like `EPIC-1`, `TREK-1`, and `CMT-1`. You can change the prefixes with `trekker init --issue-prefix FEAT` or `trekker config set issue_prefix FEAT`; existing IDs keep their old prefix.
 
-## Dashboard
+## Web UI
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/dark-kanban.webp">
-  <img alt="Trekker dashboard kanban board" src="assets/screenshots/light-kanban.webp">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/dark-board.webp">
+  <img alt="Trekker web UI board" src="assets/screenshots/light-board.webp">
 </picture>
 
-A kanban board that reads the same database and updates live, so you can watch agents work:
+`trekker serve` opens a local web UI on the same database, so you can watch agents work and step in:
 
 ```bash
-npm install -g @obsfx/trekker-dashboard
-trekker-dashboard -p 3000
+trekker serve          # http://127.0.0.1:3000, or the next free port
+trekker serve --open   # also opens the browser
 ```
 
-See [trekker-dashboard](https://github.com/obsfx/trekker-dashboard).
+- A board you can drag cards around: reorder inside a column or move to another status.
+- List and history pages with filters, task and epic pages with inline editing, comments and dependencies.
+- Live updates when an agent changes something through the CLI.
+- Built for large projects: columns and lists load 50 rows at a time, so a 10k-ticket project stays fast.
+
+It replaces the separate `@obsfx/trekker-dashboard` package. The UI ships inside the CLI as a single file, so there is nothing else to install.
 
 ## Data
 

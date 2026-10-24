@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import type { Identified } from '@/tests/helpers/shapes';
 
 interface PaginatedResponse {
   total: number;
   page: number;
   limit: number;
-  items: { id: string }[];
+  items: Identified[];
 }
 
 interface PaginatedCommand {
@@ -19,28 +20,48 @@ const ITEM_COUNT = 3;
 const PAGINATED_COMMANDS: PaginatedCommand[] = [
   {
     name: 'epic list',
-    base: () => 'epic list',
-    paged: (_parentId, limit, page) => `epic list --limit ${limit} --page ${page}`,
+    base: () => {
+      return 'epic list';
+    },
+    paged: (_parentId, limit, page) => {
+      return `epic list --limit ${limit} --page ${page}`;
+    },
   },
   {
     name: 'task list',
-    base: () => 'task list',
-    paged: (_parentId, limit, page) => `task list --limit ${limit} --page ${page}`,
+    base: () => {
+      return 'task list';
+    },
+    paged: (_parentId, limit, page) => {
+      return `task list --limit ${limit} --page ${page}`;
+    },
   },
   {
     name: 'subtask list',
-    base: (parentId) => `subtask list ${parentId}`,
-    paged: (parentId, limit, page) => `subtask list ${parentId} --limit ${limit} --page ${page}`,
+    base: (parentId) => {
+      return `subtask list ${parentId}`;
+    },
+    paged: (parentId, limit, page) => {
+      return `subtask list ${parentId} --limit ${limit} --page ${page}`;
+    },
   },
   {
     name: 'comment list',
-    base: (parentId) => `comment list ${parentId}`,
-    paged: (parentId, limit, page) => `comment list ${parentId} --limit ${limit} --page ${page}`,
+    base: (parentId) => {
+      return `comment list ${parentId}`;
+    },
+    paged: (parentId, limit, page) => {
+      return `comment list ${parentId} --limit ${limit} --page ${page}`;
+    },
   },
   {
     name: 'ready',
-    base: () => 'ready',
-    paged: (_parentId, limit, page) => `ready --limit ${limit} --page ${page}`,
+    base: () => {
+      return 'ready';
+    },
+    paged: (_parentId, limit, page) => {
+      return `ready --limit ${limit} --page ${page}`;
+    },
   },
 ];
 
@@ -49,9 +70,9 @@ describe('pagination options on list commands', () => {
   let parentId: string;
 
   beforeAll(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
-    parentId = ctx.runToon<{ id: string }>('task create -t "Parent"').id;
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
+    parentId = ctx.runToon<Identified>('task create -t "Parent"').id;
     for (let index = 0; index < ITEM_COUNT; index++) {
       ctx.run(`epic create -t "Epic ${index}"`);
       ctx.run(`subtask create ${parentId} -t "Subtask ${index}"`);
@@ -85,7 +106,9 @@ describe('pagination options on list commands', () => {
         expect(first.total).toBe(ITEM_COUNT);
         expect(second.page).toBe(2);
 
-        const ids = [...first.items, ...second.items].map((item) => item.id);
+        const ids = [...first.items, ...second.items].map((item) => {
+          return item.id;
+        });
         expect(new Set(ids).size).toBe(ITEM_COUNT);
       });
 

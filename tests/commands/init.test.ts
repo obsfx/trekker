@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'bun:test';
-import { createTestContext, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 describe('init command', () => {
   let ctx: TestContext;
@@ -9,7 +9,7 @@ describe('init command', () => {
   });
 
   it('should create .trekker directory', () => {
-    ctx = createTestContext();
+    ctx = TestContexts.createTestContext();
     const output = ctx.run('init');
 
     expect(output).toContain('initialized successfully');
@@ -18,7 +18,7 @@ describe('init command', () => {
   });
 
   it('should fail if already initialized', () => {
-    ctx = createTestContext();
+    ctx = TestContexts.createTestContext();
     ctx.run('init');
 
     const error = ctx.runExpectError('init');

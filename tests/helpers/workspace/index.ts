@@ -1,6 +1,6 @@
-import { ContainerWorkspace } from './container-workspace';
-import { LocalWorkspace } from './local-workspace';
-import type { Workspace } from './workspace';
+import { ContainerWorkspace } from '@/tests/helpers/workspace/container-workspace';
+import { LocalWorkspace } from '@/tests/helpers/workspace/local-workspace';
+import type { Workspace } from '@/tests/helpers/workspace/workspace';
 
 export * from './workspace';
 export { ContainerWorkspace } from './container-workspace';

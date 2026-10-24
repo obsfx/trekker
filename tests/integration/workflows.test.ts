@@ -1,5 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import type { Identified, ArchiveSummary } from '@/tests/helpers/shapes';
+
+interface WorkflowEvent {
+  entityId: string;
+  action: string;
+  entityType: string;
+}
+
+interface StatusEntity {
+  id: string;
+  status: string;
+}
 
 interface Epic {
   id: string;
@@ -39,29 +51,25 @@ interface DependencyList {
 }
 
 interface HistoryResponse {
-  events: {
-    entityId: string;
-    action: string;
-    entityType: string;
-  }[];
+  events: WorkflowEvent[];
 }
 
 interface SearchResponse {
   total: number;
-  results: { id: string }[];
+  results: Identified[];
 }
 
 interface ListResponse {
   total: number;
-  items: { id: string; status: string }[];
+  items: StatusEntity[];
 }
 
 describe('workflow integration tests', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
   });
 
   afterEach(() => {
@@ -102,8 +110,16 @@ describe('workflow integration tests', () => {
 
       const history = ctx.runToon<HistoryResponse>(`history --entity ${task.id}`);
 
-      expect(history.events.some((e) => e.action === 'create')).toBe(true);
-      expect(history.events.filter((e) => e.action === 'update').length).toBe(2);
+      expect(
+        history.events.some((e) => {
+          return e.action === 'create';
+        })
+      ).toBe(true);
+      expect(
+        history.events.filter((e) => {
+          return e.action === 'update';
+        }).length
+      ).toBe(2);
     });
   });
 
@@ -119,9 +135,7 @@ describe('workflow integration tests', () => {
       ctx.run(`subtask create ${task2.id} -t "Add validation"`);
 
       // Complete the epic
-      const result = ctx.runToon<{ epic: string; archived: { tasks: number; subtasks: number } }>(
-        `epic complete ${epic.id}`
-      );
+      const result = ctx.runToon<ArchiveSummary>(`epic complete ${epic.id}`);
 
       expect(result.archived.tasks).toBe(2);
       expect(result.archived.subtasks).toBe(2);
@@ -220,9 +234,21 @@ describe('workflow integration tests', () => {
       // Check history
       const history = ctx.runToon<HistoryResponse>(`history --entity ${task.id}`);
 
-      expect(history.events.filter((e) => e.action === 'create').length).toBe(1);
-      expect(history.events.filter((e) => e.action === 'update').length).toBe(3);
-      expect(history.events.filter((e) => e.action === 'delete').length).toBe(1);
+      expect(
+        history.events.filter((e) => {
+          return e.action === 'create';
+        }).length
+      ).toBe(1);
+      expect(
+        history.events.filter((e) => {
+          return e.action === 'update';
+        }).length
+      ).toBe(3);
+      expect(
+        history.events.filter((e) => {
+          return e.action === 'delete';
+        }).length
+      ).toBe(1);
     });
 
     it('should track dependency operations', () => {
@@ -234,8 +260,16 @@ describe('workflow integration tests', () => {
 
       const history = ctx.runToon<HistoryResponse>('history --type dependency');
 
-      expect(history.events.some((e) => e.action === 'create')).toBe(true);
-      expect(history.events.some((e) => e.action === 'delete')).toBe(true);
+      expect(
+        history.events.some((e) => {
+          return e.action === 'create';
+        })
+      ).toBe(true);
+      expect(
+        history.events.some((e) => {
+          return e.action === 'delete';
+        })
+      ).toBe(true);
     });
   });
 

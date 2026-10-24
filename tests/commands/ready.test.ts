@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 interface ReadyTaskDependent {
   id: string;
@@ -30,8 +30,8 @@ describe('ready command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
   });
 
   afterEach(() => {
@@ -92,7 +92,9 @@ describe('ready command', () => {
     expect(result.items[0].id).toBe('TREK-1');
     expect(result.items[0].dependents).toHaveLength(2);
 
-    const depIds = result.items[0].dependents.map((d) => d.id);
+    const depIds = result.items[0].dependents.map((d) => {
+      return d.id;
+    });
     expect(depIds).toContain('TREK-2');
     expect(depIds).toContain('TREK-3');
   });
@@ -165,7 +167,9 @@ describe('ready command', () => {
 
     // TREK-3 still blocked by TREK-2
     const result = ctx.runToon<PaginatedResponse<ReadyTask>>('ready');
-    const readyIds = result.items.map((t) => t.id);
+    const readyIds = result.items.map((t) => {
+      return t.id;
+    });
     expect(readyIds).toContain('TREK-2');
     expect(readyIds).not.toContain('TREK-3');
   });
@@ -176,7 +180,7 @@ describe('ready command', () => {
     ctx.run('dep add TREK-2 TREK-1');
 
     const output = ctx.run('ready');
-    expect(output).toContain('1 ready task(s)');
+    expect(output).toContain('1 ready task (page');
     expect(output).toContain('TREK-1');
     expect(output).toContain('Ready Task');
     expect(output).toContain('unblocks TREK-2');

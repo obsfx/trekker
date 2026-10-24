@@ -6,12 +6,11 @@ import { Database } from 'bun:sqlite';
 import {
   DB_RELATIVE_PATH,
   Workspace,
-  spawnAsync,
-  toCommandResult,
   type CommandOptions,
   type CommandResult,
   type SqlRow,
-} from './workspace';
+  WorkspaceProcesses,
+} from '@/tests/helpers/workspace/workspace';
 
 const CLI_PATH = join(import.meta.dir, '../../../src/index.ts');
 
@@ -21,7 +20,7 @@ export class LocalWorkspace extends Workspace {
 
   exec(command: readonly string[], options: CommandOptions = {}): CommandResult {
     const [program, ...args] = command;
-    return toCommandResult(
+    return WorkspaceProcesses.toCommandResult(
       spawnSync(program, args, {
         cwd: this.cwd,
         encoding: 'utf-8',
@@ -32,7 +31,7 @@ export class LocalWorkspace extends Workspace {
   }
 
   execAsync(command: readonly string[], options: CommandOptions = {}): Promise<CommandResult> {
-    return spawnAsync(command, {
+    return WorkspaceProcesses.spawnAsync(command, {
       cwd: this.cwd,
       input: options.input,
       env: { ...process.env, NO_COLOR: '1', ...options.env },

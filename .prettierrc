@@ -5,5 +5,8 @@
   "printWidth": 100,
   "tabWidth": 2,
   "bracketSpacing": true,
-  "arrowParens": "always"
+  "arrowParens": "always",
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindStylesheet": "./ui/index.css",
+  "tailwindFunctions": ["c"]
 }

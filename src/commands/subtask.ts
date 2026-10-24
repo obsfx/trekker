@@ -1,25 +1,26 @@
 import { Command } from 'commander';
-import { createTask, getTask, listSubtasks, updateTask, deleteTask } from '../services/task';
-import {
-  parseStatus,
-  parsePriority,
-  validateRequired,
-  parsePaginationOptions,
-} from '../utils/validator';
-import {
-  success,
-  error,
-  formatTask,
-  formatPaginatedTaskList,
-  handleCommandError,
-  handleNotFound,
-  outputResult,
-} from '../utils/output';
+import { TaskService } from '@/src/services/task';
+import { Validator } from '@/src/utils/validator';
+import { Output } from '@/src/utils/output';
+import { TaskInputs } from '@/src/commands/task-inputs';
 import type {
   SubtaskCreateOptions,
   SubtaskUpdateOptions,
   PaginationOptions,
-} from '../types/options';
+} from '@/src/types/options';
+
+abstract class SubtaskGuards {
+  static requireSubtask(subtaskId: string, command: 'update' | 'delete'): void {
+    const subtask = TaskService.getTask(subtaskId);
+    if (!subtask) {
+      Output.handleNotFound('Subtask', subtaskId);
+    }
+    if (!subtask.parentTaskId) {
+      Output.error(`${subtaskId} is not a subtask. Use 'trekker task ${command}' instead.`);
+      process.exit(1);
+    }
+  }
+}
 
 export const subtaskCommand = new Command('subtask').description('Manage subtasks');
 
@@ -32,25 +33,25 @@ subtaskCommand
   .option('-s, --status <status>', 'Status (todo, in_progress, completed, wont_fix, archived)')
   .action((parentTaskId: string, options: SubtaskCreateOptions) => {
     try {
-      validateRequired(options.title, 'Title');
+      Validator.validateRequired(options.title, 'Title');
 
-      const parent = getTask(parentTaskId);
+      const parent = TaskService.getTask(parentTaskId);
       if (!parent) {
-        return handleNotFound('Parent task', parentTaskId);
+        return Output.handleNotFound('Parent task', parentTaskId);
       }
 
-      const subtask = createTask({
+      const subtask = TaskService.createTask({
         title: options.title,
         description: options.description,
-        priority: parsePriority(options.priority),
-        status: parseStatus(options.status, 'task'),
+        priority: Validator.parsePriority(options.priority),
+        status: Validator.parseTaskStatus(options.status),
         parentTaskId,
         epicId: parent.epicId ?? undefined,
       });
 
-      outputResult(subtask, formatTask, `Subtask created: ${subtask.id}`);
+      Output.outputResult(subtask, Output.formatTask, `Subtask created: ${subtask.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -61,18 +62,18 @@ subtaskCommand
   .option('--page <n>', 'Page number (default: 1)', '1')
   .action((parentTaskId: string, options: PaginationOptions) => {
     try {
-      const parent = getTask(parentTaskId);
+      const parent = TaskService.getTask(parentTaskId);
       if (!parent) {
-        return handleNotFound('Parent task', parentTaskId);
+        return Output.handleNotFound('Parent task', parentTaskId);
       }
 
-      const { limit, page } = parsePaginationOptions(options);
+      const { limit, page } = Validator.parsePaginationOptions(options);
 
-      const result = listSubtasks(parentTaskId, { limit, page });
+      const result = TaskService.listSubtasks(parentTaskId, { limit, page });
 
-      outputResult(result, formatPaginatedTaskList);
+      Output.outputResult(result, Output.formatPaginatedTaskList);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -85,34 +86,14 @@ subtaskCommand
   .option('-s, --status <status>', 'New status')
   .action((subtaskId: string, options: SubtaskUpdateOptions) => {
     try {
-      const subtask = getTask(subtaskId);
-      if (!subtask) {
-        return handleNotFound('Subtask', subtaskId);
-      }
+      SubtaskGuards.requireSubtask(subtaskId, 'update');
 
-      if (!subtask.parentTaskId) {
-        error(`${subtaskId} is not a subtask. Use 'trekker task update' instead.`);
-        process.exit(1);
-      }
+      const updateInput = TaskInputs.update(options);
 
-      const updateInput: Record<string, unknown> = {};
-      if (options.title !== undefined) {
-        updateInput.title = options.title;
-      }
-      if (options.description !== undefined) {
-        updateInput.description = options.description;
-      }
-      if (options.priority !== undefined) {
-        updateInput.priority = parsePriority(options.priority);
-      }
-      if (options.status !== undefined) {
-        updateInput.status = parseStatus(options.status, 'task');
-      }
-
-      const updated = updateTask(subtaskId, updateInput);
-      outputResult(updated, formatTask, `Subtask updated: ${updated.id}`);
+      const updated = TaskService.updateTask(subtaskId, updateInput);
+      Output.outputResult(updated, Output.formatTask, `Subtask updated: ${updated.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -121,19 +102,11 @@ subtaskCommand
   .description('Delete a subtask')
   .action((subtaskId: string) => {
     try {
-      const subtask = getTask(subtaskId);
-      if (!subtask) {
-        return handleNotFound('Subtask', subtaskId);
-      }
+      SubtaskGuards.requireSubtask(subtaskId, 'delete');
 
-      if (!subtask.parentTaskId) {
-        error(`${subtaskId} is not a subtask. Use 'trekker task delete' instead.`);
-        process.exit(1);
-      }
-
-      deleteTask(subtaskId);
-      success(`Subtask deleted: ${subtaskId}`);
+      TaskService.deleteTask(subtaskId);
+      Output.success(`Subtask deleted: ${subtaskId}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });

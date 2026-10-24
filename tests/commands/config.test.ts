@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 interface ConfigMap {
   issue_prefix: string;
@@ -34,7 +34,7 @@ describe('config command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
+    ctx = TestContexts.createTestContext();
   });
 
   afterEach(() => {

@@ -4,10 +4,11 @@ ARG NODE_VERSION=24
 FROM oven/bun:${BUN_VERSION} AS pack
 WORKDIR /src
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production --ignore-scripts
-COPY tsconfig.json README.md LICENSE ./
+RUN bun install --frozen-lockfile --ignore-scripts
+COPY tsconfig.json tsconfig.tools.json vite.config.ts README.md LICENSE ./
 COPY bin ./bin
 COPY src ./src
+COPY ui ./ui
 RUN bun run build \
   && mkdir /out \
   && bun pm pack --destination /out \

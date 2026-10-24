@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 interface Task {
   id: string;
@@ -27,8 +27,8 @@ describe('comment command', () => {
   let task: Task;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
     task = ctx.runToon<Task>('task create -t "Test Task"');
   });
 

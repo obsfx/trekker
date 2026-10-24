@@ -1,5 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+
+interface TypedEntity {
+  id: string;
+  type: string;
+}
+
+interface TaskDependencies {
+  dependsOn: Task[];
+  blocks: Task[];
+}
+
+interface Prioritized {
+  priority: number;
+}
+
+interface PrioritizedPage {
+  items: Prioritized[];
+}
 
 interface Epic {
   id: string;
@@ -20,14 +38,14 @@ interface Task {
 
 interface ListResponse {
   total: number;
-  items: { id: string; type: string }[];
+  items: TypedEntity[];
 }
 
 describe('seed command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
+    ctx = TestContexts.createTestContext();
   });
 
   afterEach(() => {
@@ -40,7 +58,7 @@ describe('seed command', () => {
   });
 
   it('should create sample data with --force flag', () => {
-    initTrekker(ctx);
+    TestContexts.initTrekker(ctx);
     const output = ctx.run('seed --force');
 
     expect(output.toLowerCase()).toContain('seed complete');
@@ -51,7 +69,7 @@ describe('seed command', () => {
   });
 
   it('should create epics', () => {
-    initTrekker(ctx);
+    TestContexts.initTrekker(ctx);
     ctx.run('seed --force');
 
     const result = ctx.runToon<PaginatedResponse<Epic>>('epic list');
@@ -59,7 +77,7 @@ describe('seed command', () => {
   });
 
   it('should create tasks', () => {
-    initTrekker(ctx);
+    TestContexts.initTrekker(ctx);
     ctx.run('seed --force');
 
     const result = ctx.runToon<ListResponse>('list --type task');
@@ -67,7 +85,7 @@ describe('seed command', () => {
   });
 
   it('should create subtasks', () => {
-    initTrekker(ctx);
+    TestContexts.initTrekker(ctx);
     ctx.run('seed --force');
 
     const result = ctx.runToon<ListResponse>('list --type subtask');
@@ -75,7 +93,7 @@ describe('seed command', () => {
   });
 
   it('should create dependencies', () => {
-    initTrekker(ctx);
+    TestContexts.initTrekker(ctx);
     ctx.run('seed --force');
 
     // Get any task and check if it has dependencies
@@ -85,7 +103,7 @@ describe('seed command', () => {
     // At least some tasks should have dependencies
     let foundDep = false;
     for (const item of result.items.slice(0, 5)) {
-      const deps = ctx.runToon<{ dependsOn: Task[]; blocks: Task[] }>(`dep list ${item.id}`);
+      const deps = ctx.runToon<TaskDependencies>(`dep list ${item.id}`);
       if (deps.dependsOn.length > 0 || deps.blocks.length > 0) {
         foundDep = true;
         break;
@@ -95,7 +113,7 @@ describe('seed command', () => {
   });
 
   it('should create tasks with various statuses', () => {
-    initTrekker(ctx);
+    TestContexts.initTrekker(ctx);
     ctx.run('seed --force');
 
     const todoTasks = ctx.runToon<ListResponse>('list --type task --status todo');
@@ -108,11 +126,15 @@ describe('seed command', () => {
   });
 
   it('should create tasks with various priorities', () => {
-    initTrekker(ctx);
+    TestContexts.initTrekker(ctx);
     ctx.run('seed --force');
 
-    const result = ctx.runToon<{ items: { priority: number }[] }>('list --type task');
-    const priorities = new Set(result.items.map((i) => i.priority));
+    const result = ctx.runToon<PrioritizedPage>('list --type task');
+    const priorities = new Set(
+      result.items.map((i) => {
+        return i.priority;
+      })
+    );
 
     // Should have at least 2 different priority levels
     expect(priorities.size).toBeGreaterThanOrEqual(2);

@@ -1,12 +1,6 @@
 import { Command } from 'commander';
-import { addDependency, removeDependency, getDependencies } from '../services/dependency';
-import {
-  success,
-  formatDependencyList,
-  handleCommandError,
-  isToonMode,
-  output,
-} from '../utils/output';
+import { DependencyService } from '@/src/services/dependency';
+import { Output } from '@/src/utils/output';
 
 export const depCommand = new Command('dep').description('Manage task dependencies');
 
@@ -15,15 +9,15 @@ depCommand
   .description('Add a dependency (task-id depends on depends-on-id)')
   .action((taskId: string, dependsOnId: string) => {
     try {
-      const dependency = addDependency(taskId, dependsOnId);
+      const dependency = DependencyService.addDependency(taskId, dependsOnId);
 
-      if (isToonMode()) {
-        output(dependency);
+      if (Output.isToonMode()) {
+        Output.print(dependency);
       } else {
-        success(`Dependency added: ${taskId} → depends on ${dependsOnId}`);
+        Output.success(`Dependency added: ${taskId} depends on ${dependsOnId}`);
       }
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -32,10 +26,10 @@ depCommand
   .description('Remove a dependency')
   .action((taskId: string, dependsOnId: string) => {
     try {
-      removeDependency(taskId, dependsOnId);
-      success(`Dependency removed: ${taskId} → ${dependsOnId}`);
+      DependencyService.removeDependency(taskId, dependsOnId);
+      Output.success(`Dependency removed: ${taskId} no longer depends on ${dependsOnId}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -44,18 +38,18 @@ depCommand
   .description('List dependencies for a task')
   .action((taskId: string) => {
     try {
-      const { dependsOn, blocks } = getDependencies(taskId);
+      const { dependsOn, blocks } = DependencyService.getDependencies(taskId);
 
-      if (isToonMode()) {
-        output({ taskId, dependsOn, blocks });
+      if (Output.isToonMode()) {
+        Output.print({ taskId, dependsOn, blocks });
       } else {
         console.log(`Dependencies for ${taskId}:`);
         console.log('\nDepends on:');
-        console.log(formatDependencyList(dependsOn, 'depends_on'));
+        console.log(Output.formatDependencyList(dependsOn, 'depends_on'));
         console.log('\nBlocks:');
-        console.log(formatDependencyList(blocks, 'blocks'));
+        console.log(Output.formatDependencyList(blocks, 'blocks'));
       }
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });

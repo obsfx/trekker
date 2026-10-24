@@ -1,5 +1,7 @@
+import dayjs from 'dayjs';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import type { FieldChange } from '@/src/types';
 
 interface Task {
   id: string;
@@ -16,7 +18,7 @@ interface HistoryEvent {
   entityType: 'epic' | 'task' | 'subtask' | 'comment' | 'dependency';
   entityId: string;
   action: 'create' | 'update' | 'delete';
-  changes?: Record<string, { from: unknown; to: unknown }>;
+  changes?: Record<string, FieldChange>;
   snapshot?: Record<string, unknown>;
   timestamp: string;
 }
@@ -32,8 +34,8 @@ describe('history command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
   });
 
   afterEach(() => {
@@ -45,9 +47,11 @@ describe('history command', () => {
       ctx.run('task create -t "Test Task"');
 
       const result = ctx.runToon<HistoryResponse>('history');
-      expect(result.events.some((e) => e.action === 'create' && e.entityType === 'task')).toBe(
-        true
-      );
+      expect(
+        result.events.some((e) => {
+          return e.action === 'create' && e.entityType === 'task';
+        })
+      ).toBe(true);
     });
 
     it('should track task updates', () => {
@@ -55,9 +59,9 @@ describe('history command', () => {
       ctx.run(`task update ${task.id} -s in_progress`);
 
       const result = ctx.runToon<HistoryResponse>('history');
-      const updateEvent = result.events.find(
-        (e) => e.action === 'update' && e.entityId === task.id
-      );
+      const updateEvent = result.events.find((e) => {
+        return e.action === 'update' && e.entityId === task.id;
+      });
 
       expect(updateEvent).toBeDefined();
       expect(updateEvent?.changes?.status?.from).toBe('todo');
@@ -69,7 +73,11 @@ describe('history command', () => {
       ctx.run(`task delete ${task.id}`);
 
       const result = ctx.runToon<HistoryResponse>('history');
-      expect(result.events.some((e) => e.action === 'delete' && e.entityId === task.id)).toBe(true);
+      expect(
+        result.events.some((e) => {
+          return e.action === 'delete' && e.entityId === task.id;
+        })
+      ).toBe(true);
     });
 
     it('should track epic operations', () => {
@@ -78,11 +86,25 @@ describe('history command', () => {
       ctx.run(`epic delete ${epic.id}`);
 
       const result = ctx.runToon<HistoryResponse>('history');
-      const epicEvents = result.events.filter((e) => e.entityId === epic.id);
+      const epicEvents = result.events.filter((e) => {
+        return e.entityId === epic.id;
+      });
 
-      expect(epicEvents.some((e) => e.action === 'create')).toBe(true);
-      expect(epicEvents.some((e) => e.action === 'update')).toBe(true);
-      expect(epicEvents.some((e) => e.action === 'delete')).toBe(true);
+      expect(
+        epicEvents.some((e) => {
+          return e.action === 'create';
+        })
+      ).toBe(true);
+      expect(
+        epicEvents.some((e) => {
+          return e.action === 'update';
+        })
+      ).toBe(true);
+      expect(
+        epicEvents.some((e) => {
+          return e.action === 'delete';
+        })
+      ).toBe(true);
     });
 
     it('should return empty history when no operations', () => {
@@ -97,7 +119,11 @@ describe('history command', () => {
       ctx.run('task create -t "Task 2"');
 
       const result = ctx.runToon<HistoryResponse>(`history --entity ${task1.id}`);
-      expect(result.events.every((e) => e.entityId === task1.id)).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.entityId === task1.id;
+        })
+      ).toBe(true);
     });
   });
 
@@ -111,29 +137,47 @@ describe('history command', () => {
 
     it('should filter by epic type', () => {
       const result = ctx.runToon<HistoryResponse>('history --type epic');
-      expect(result.events.every((e) => e.entityType === 'epic')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.entityType === 'epic';
+        })
+      ).toBe(true);
     });
 
     it('should filter by task type', () => {
       const result = ctx.runToon<HistoryResponse>('history --type task');
-      expect(result.events.every((e) => e.entityType === 'task')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.entityType === 'task';
+        })
+      ).toBe(true);
     });
 
     it('should filter by subtask type', () => {
       const result = ctx.runToon<HistoryResponse>('history --type subtask');
-      expect(result.events.every((e) => e.entityType === 'subtask')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.entityType === 'subtask';
+        })
+      ).toBe(true);
     });
 
     it('should filter by comment type', () => {
       const result = ctx.runToon<HistoryResponse>('history --type comment');
-      expect(result.events.every((e) => e.entityType === 'comment')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.entityType === 'comment';
+        })
+      ).toBe(true);
     });
 
     it('should filter by multiple types', () => {
       const result = ctx.runToon<HistoryResponse>('history --type epic,task');
-      expect(result.events.every((e) => e.entityType === 'epic' || e.entityType === 'task')).toBe(
-        true
-      );
+      expect(
+        result.events.every((e) => {
+          return e.entityType === 'epic' || e.entityType === 'task';
+        })
+      ).toBe(true);
     });
 
     it('should fail with invalid type', () => {
@@ -151,22 +195,38 @@ describe('history command', () => {
 
     it('should filter by create action', () => {
       const result = ctx.runToon<HistoryResponse>('history --action create');
-      expect(result.events.every((e) => e.action === 'create')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.action === 'create';
+        })
+      ).toBe(true);
     });
 
     it('should filter by update action', () => {
       const result = ctx.runToon<HistoryResponse>('history --action update');
-      expect(result.events.every((e) => e.action === 'update')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.action === 'update';
+        })
+      ).toBe(true);
     });
 
     it('should filter by delete action', () => {
       const result = ctx.runToon<HistoryResponse>('history --action delete');
-      expect(result.events.every((e) => e.action === 'delete')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.action === 'delete';
+        })
+      ).toBe(true);
     });
 
     it('should filter by multiple actions', () => {
       const result = ctx.runToon<HistoryResponse>('history --action create,update');
-      expect(result.events.every((e) => e.action === 'create' || e.action === 'update')).toBe(true);
+      expect(
+        result.events.every((e) => {
+          return e.action === 'create' || e.action === 'update';
+        })
+      ).toBe(true);
     });
 
     it('should fail with invalid action', () => {
@@ -180,7 +240,7 @@ describe('history command', () => {
       ctx.run('task create -t "Test Task"');
 
       // Use today's date
-      const today = new Date().toISOString().split('T')[0];
+      const today = dayjs().toISOString().split('T')[0];
       const result = ctx.runToon<HistoryResponse>(`history --since ${today}`);
       expect(result.events.length).toBeGreaterThanOrEqual(1);
     });
@@ -189,7 +249,7 @@ describe('history command', () => {
       ctx.run('task create -t "Test Task"');
 
       // Use tomorrow's date
-      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const tomorrow = dayjs().add(1, 'day').toISOString().split('T')[0];
       const result = ctx.runToon<HistoryResponse>(`history --until ${tomorrow}`);
       expect(result.events.length).toBeGreaterThanOrEqual(1);
     });
@@ -210,8 +270,8 @@ describe('history command pagination', () => {
   let ctx: TestContext;
 
   beforeAll(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
     for (let i = 1; i <= 12; i++) {
       ctx.run(`task create -t "Task ${i}"`);
     }

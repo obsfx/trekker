@@ -1,7 +1,29 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
-import { createTestContext, type TestContext } from '../helpers/test-context';
-import { TestTarget } from '../helpers/workspace';
-import { PREVIOUS_TREKKER_VERSIONS, previousTrekkerBin } from './release-matrix';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import { TestTarget } from '@/tests/helpers/workspace';
+import { PREVIOUS_TREKKER_VERSIONS, ReleaseMatrix } from '@/tests/container/release-matrix';
+import type { ContentItem, Identified, SearchResults } from '@/tests/helpers/shapes';
+
+interface Titled {
+  title: string;
+}
+
+interface DependsOnRef {
+  dependsOnId: string;
+}
+
+interface EntityEvent {
+  entityId: string;
+  action: string;
+}
+
+interface DependsOnRefs {
+  dependsOn: DependsOnRef[];
+}
+
+interface EntityEventPage {
+  events: EntityEvent[];
+}
 
 interface Task {
   id: string;
@@ -49,9 +71,9 @@ describe.skipIf(!TestTarget.isContainer)('upgrade from published releases', () =
       let ctx: TestContext;
 
       beforeAll(() => {
-        ctx = createTestContext();
+        ctx = TestContexts.createTestContext();
         for (const args of LEGACY_SETUP) {
-          const result = ctx.workspace.exec([previousTrekkerBin(version), ...args]);
+          const result = ctx.workspace.exec([ReleaseMatrix.previousTrekkerBin(version), ...args]);
           if (result.status !== 0) {
             throw new Error(
               `${version} ${args.join(' ')} failed: ${result.stderr || result.stdout}`
@@ -74,17 +96,29 @@ describe.skipIf(!TestTarget.isContainer)('upgrade from published releases', () =
           epicId: 'EPIC-1',
           status: 'todo',
         });
-        expect(ctx.runToon<{ title: string }>('epic show EPIC-1').title).toBe('Legacy epic');
+        expect(ctx.runToon<Titled>('epic show EPIC-1').title).toBe('Legacy epic');
         expect(ctx.runToon<Task>('task show TREK-3').status).toBe('in_progress');
 
         const subtasks = ctx.runToon<Paginated<Task>>('subtask list TREK-1');
-        expect(subtasks.items.map((subtask) => subtask.title)).toEqual(['Legacy subtask']);
+        expect(
+          subtasks.items.map((subtask) => {
+            return subtask.title;
+          })
+        ).toEqual(['Legacy subtask']);
 
-        const comments = ctx.runToon<Paginated<{ content: string }>>('comment list TREK-1');
-        expect(comments.items.map((comment) => comment.content)).toEqual(['Legacy comment body']);
+        const comments = ctx.runToon<Paginated<ContentItem>>('comment list TREK-1');
+        expect(
+          comments.items.map((comment) => {
+            return comment.content;
+          })
+        ).toEqual(['Legacy comment body']);
 
-        const deps = ctx.runToon<{ dependsOn: { dependsOnId: string }[] }>('dep list TREK-3');
-        expect(deps.dependsOn.map((dep) => dep.dependsOnId)).toEqual(['TREK-1']);
+        const deps = ctx.runToon<DependsOnRefs>('dep list TREK-3');
+        expect(
+          deps.dependsOn.map((dep) => {
+            return dep.dependsOnId;
+          })
+        ).toEqual(['TREK-1']);
       });
 
       it('migrates config with default prefixes', () => {
@@ -96,30 +130,32 @@ describe.skipIf(!TestTarget.isContainer)('upgrade from published releases', () =
       });
 
       it('indexes legacy content for search', () => {
-        const results = ctx.runToon<{ results: { id: string }[] }>('search legacy');
-        expect(results.results.map((result) => result.id)).toEqual(
-          expect.arrayContaining(['EPIC-1', 'TREK-1', 'TREK-2'])
-        );
+        const results = ctx.runToon<SearchResults>('search legacy');
+        expect(
+          results.results.map((result) => {
+            return result.id;
+          })
+        ).toEqual(expect.arrayContaining(['EPIC-1', 'TREK-1', 'TREK-2']));
       });
 
       it('continues ID counters without collisions', () => {
         expect(ctx.runToon<Task>('task create -t "After upgrade"').id).toBe('TREK-4');
-        expect(ctx.runToon<{ id: string }>('epic create -t "After upgrade"').id).toBe('EPIC-2');
-        expect(ctx.runToon<{ id: string }>('comment add TREK-1 -a new -c "After"').id).toBe(
-          'CMT-2'
-        );
+        expect(ctx.runToon<Identified>('epic create -t "After upgrade"').id).toBe('EPIC-2');
+        expect(ctx.runToon<Identified>('comment add TREK-1 -a new -c "After"').id).toBe('CMT-2');
       });
 
       it('records history for changes made after the upgrade', () => {
         ctx.run('task update TREK-1 -s completed');
-        const history = ctx.runToon<{ events: { entityId: string; action: string }[] }>(
-          'history --entity TREK-1 --action update'
-        );
+        const history = ctx.runToon<EntityEventPage>('history --entity TREK-1 --action update');
         expect(history.events.length).toBeGreaterThan(0);
       });
 
       it('applies dependency rules to legacy rows', () => {
-        const readyIds = () => ctx.runToon<Paginated<Task>>('ready').items.map((task) => task.id);
+        const readyIds = () => {
+          return ctx.runToon<Paginated<Task>>('ready').items.map((task) => {
+            return task.id;
+          });
+        };
         ctx.run('task update TREK-3 -s todo');
 
         ctx.run('task update TREK-1 -s todo');

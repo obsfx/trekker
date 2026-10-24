@@ -6,3 +6,9 @@
 !src
 !README.md
 !LICENSE
+!ui
+!vite.config.ts
+!tsconfig.tools.json
+ui/tests
+ui/stories
+ui/alternatives

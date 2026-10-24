@@ -44,9 +44,9 @@ trekker search "performance" --status todo
 1. SEARCH: trekker search "<single keyword>" (try 2-3 keywords separately)
 2. REVIEW results
 3. DECIDE:
-   - Found exact match → DO NOT create, update existing task
-   - Found related work → Review carefully, may need to link
-   - No results → Safe to create new
+   - Found exact match: DO NOT create, update the existing task
+   - Found related work: review carefully, it may need a link
+   - No results: safe to create a new task
 4. CREATE in Trekker FIRST (if no duplicate)
 5. MIRROR to TodoWrite after
 ```

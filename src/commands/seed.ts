@@ -1,18 +1,37 @@
+import plur from 'plur';
 import { Command } from 'commander';
-import { isTrekkerInitialized } from '../services/project';
-import { createEpic } from '../services/epic';
-import { createTask } from '../services/task';
-import { addDependency } from '../services/dependency';
-import { success, error, info, handleCommandError } from '../utils/output';
-import type { EpicStatus, Priority, TaskStatus } from '../types';
-import type { SeedCommandOptions } from '../types/options';
+import { DbClient } from '@/src/db/client';
+import { EpicService } from '@/src/services/epic';
+import { TaskService } from '@/src/services/task';
+import { DependencyService } from '@/src/services/dependency';
+import { Output } from '@/src/utils/output';
+import type { EpicStatus, Priority, TaskStatus } from '@/src/types';
+import type { SeedCommandOptions } from '@/src/types/options';
 
-const SAMPLE_EPICS: {
+interface SeedTask {
+  epicIndex: number | null;
+  title: string;
+  description: string;
+  priority: Priority;
+  status: TaskStatus;
+  tags: string;
+}
+
+interface SeedEpic {
   title: string;
   description: string;
   priority: Priority;
   status: EpicStatus;
-}[] = [
+}
+
+interface SeedSubtask {
+  parentIndex: number;
+  title: string;
+  status: TaskStatus;
+  priority: Priority;
+}
+
+const SAMPLE_EPICS: SeedEpic[] = [
   {
     title: 'User Authentication',
     description: 'Implement user authentication and authorization system',
@@ -39,14 +58,7 @@ const SAMPLE_EPICS: {
   },
 ];
 
-const SAMPLE_TASKS: {
-  epicIndex: number | null;
-  title: string;
-  description: string;
-  priority: Priority;
-  status: TaskStatus;
-  tags: string;
-}[] = [
+const SAMPLE_TASKS: SeedTask[] = [
   // Auth tasks
   {
     epicIndex: 0,
@@ -182,12 +194,7 @@ const SAMPLE_TASKS: {
   },
 ];
 
-const SAMPLE_SUBTASKS: {
-  parentIndex: number;
-  title: string;
-  status: TaskStatus;
-  priority: Priority;
-}[] = [
+const SAMPLE_SUBTASKS: SeedSubtask[] = [
   {
     parentIndex: 1, // JWT token handling
     title: 'Implement access token generation',
@@ -255,40 +262,40 @@ export const seedCommand = new Command('seed')
   .option('--force', 'Skip confirmation prompt')
   .action((options: SeedCommandOptions) => {
     try {
-      if (!isTrekkerInitialized()) {
-        error("Trekker is not initialized. Run 'trekker init' first.");
+      if (!DbClient.isTrekkerInitialized()) {
+        Output.error("Trekker is not initialized. Run 'trekker init' first.");
         process.exit(1);
       }
 
       if (!options.force) {
-        info('This will create sample epics, tasks, and dependencies.');
-        info('Use --force to skip this confirmation.\n');
+        Output.info('This will create sample epics, tasks, and dependencies.');
+        Output.info('Use --force to skip this confirmation.\n');
       }
 
       const epicIds: string[] = [];
       const taskIds: string[] = [];
 
       // Create epics
-      info('Creating epics...');
+      Output.info('Creating epics...');
       for (const epicData of SAMPLE_EPICS) {
-        const epic = createEpic({
+        const epic = EpicService.createEpic({
           title: epicData.title,
           description: epicData.description,
           priority: epicData.priority,
           status: epicData.status,
         });
         epicIds.push(epic.id);
-        info(`  Created ${epic.id}: ${epic.title}`);
+        Output.info(`  Created ${epic.id}: ${epic.title}`);
       }
 
       // Create tasks
-      info('\nCreating tasks...');
+      Output.info('\nCreating tasks...');
       for (const taskData of SAMPLE_TASKS) {
         let epicId: string | undefined;
         if (taskData.epicIndex !== null) {
           epicId = epicIds[taskData.epicIndex];
         }
-        const task = createTask({
+        const task = TaskService.createTask({
           title: taskData.title,
           description: taskData.description,
           priority: taskData.priority,
@@ -297,36 +304,36 @@ export const seedCommand = new Command('seed')
           epicId,
         });
         taskIds.push(task.id);
-        info(`  Created ${task.id}: ${task.title}`);
+        Output.info(`  Created ${task.id}: ${task.title}`);
       }
 
       // Create subtasks
-      info('\nCreating subtasks...');
+      Output.info('\nCreating subtasks...');
       for (const subtaskData of SAMPLE_SUBTASKS) {
-        const subtask = createTask({
+        const subtask = TaskService.createTask({
           title: subtaskData.title,
           priority: subtaskData.priority,
           status: subtaskData.status,
           parentTaskId: taskIds[subtaskData.parentIndex],
         });
-        info(
+        Output.info(
           `  Created ${subtask.id}: ${subtask.title} (subtask of ${taskIds[subtaskData.parentIndex]})`
         );
       }
 
       // Create dependencies
-      info('\nCreating dependencies...');
+      Output.info('\nCreating dependencies...');
       for (const [taskIndex, dependsOnIndex] of SAMPLE_DEPENDENCIES) {
         const taskId = taskIds[taskIndex];
         const dependsOnId = taskIds[dependsOnIndex];
-        addDependency(taskId, dependsOnId);
-        info(`  ${taskId} depends on ${dependsOnId}`);
+        DependencyService.addDependency(taskId, dependsOnId);
+        Output.info(`  ${taskId} depends on ${dependsOnId}`);
       }
 
-      success(
-        `\nSeed complete! Created ${epicIds.length} epics, ${taskIds.length} tasks, ${SAMPLE_SUBTASKS.length} subtasks, and ${SAMPLE_DEPENDENCIES.length} dependencies.`
+      Output.success(
+        `\nSeed complete! Created ${epicIds.length} ${plur('epic', epicIds.length)}, ${taskIds.length} ${plur('task', taskIds.length)}, ${SAMPLE_SUBTASKS.length} ${plur('subtask', SAMPLE_SUBTASKS.length)}, and ${SAMPLE_DEPENDENCIES.length} ${plur('dependency', SAMPLE_DEPENDENCIES.length)}.`
       );
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });

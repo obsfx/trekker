@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import type { Identified, ArchiveSummary } from '@/tests/helpers/shapes';
 
 interface Epic {
   id: string;
@@ -22,8 +23,8 @@ describe('epic command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
   });
 
   afterEach(() => {
@@ -206,9 +207,7 @@ describe('epic command', () => {
       ctx.run(`task create -t "Task 1" -e ${epic.id}`);
       ctx.run(`task create -t "Task 2" -e ${epic.id}`);
 
-      const result = ctx.runToon<{ epic: string; archived: { tasks: number; subtasks: number } }>(
-        `epic complete ${epic.id}`
-      );
+      const result = ctx.runToon<ArchiveSummary>(`epic complete ${epic.id}`);
 
       expect(result.epic).toBe(epic.id);
       expect(result.archived.tasks).toBe(2);
@@ -216,13 +215,11 @@ describe('epic command', () => {
 
     it('should complete epic with subtasks', () => {
       const epic = ctx.runToon<Epic>('epic create -t "Complete Test"');
-      const task = ctx.runToon<{ id: string }>(`task create -t "Parent Task" -e ${epic.id}`);
+      const task = ctx.runToon<Identified>(`task create -t "Parent Task" -e ${epic.id}`);
       ctx.run(`subtask create ${task.id} -t "Subtask 1"`);
       ctx.run(`subtask create ${task.id} -t "Subtask 2"`);
 
-      const result = ctx.runToon<{ epic: string; archived: { tasks: number; subtasks: number } }>(
-        `epic complete ${epic.id}`
-      );
+      const result = ctx.runToon<ArchiveSummary>(`epic complete ${epic.id}`);
 
       expect(result.archived.tasks).toBe(1);
       expect(result.archived.subtasks).toBe(2);
@@ -230,9 +227,7 @@ describe('epic command', () => {
 
     it('should complete epic with no tasks', () => {
       const epic = ctx.runToon<Epic>('epic create -t "Empty Epic"');
-      const result = ctx.runToon<{ epic: string; archived: { tasks: number; subtasks: number } }>(
-        `epic complete ${epic.id}`
-      );
+      const result = ctx.runToon<ArchiveSummary>(`epic complete ${epic.id}`);
 
       expect(result.archived.tasks).toBe(0);
       expect(result.archived.subtasks).toBe(0);

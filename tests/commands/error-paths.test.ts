@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import type { Identified } from '@/tests/helpers/shapes';
 
 const COMMANDS_REQUIRING_INIT = [
   'wipe -y',
@@ -40,7 +41,7 @@ describe('error paths', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
+    ctx = TestContexts.createTestContext();
   });
 
   afterEach(() => {
@@ -62,7 +63,7 @@ describe('error paths', () => {
 
   describe('invalid values', () => {
     beforeEach(() => {
-      initTrekker(ctx);
+      TestContexts.initTrekker(ctx);
     });
 
     it('rejects invalid statuses and priorities on create', () => {
@@ -74,9 +75,9 @@ describe('error paths', () => {
     });
 
     it('rejects invalid statuses and priorities on update', () => {
-      const task = ctx.runToon<{ id: string }>('task create -t "T"').id;
-      const subtask = ctx.runToon<{ id: string }>(`subtask create ${task} -t "S"`).id;
-      const epic = ctx.runToon<{ id: string }>('epic create -t "E"').id;
+      const task = ctx.runToon<Identified>('task create -t "T"').id;
+      const subtask = ctx.runToon<Identified>(`subtask create ${task} -t "S"`).id;
+      const epic = ctx.runToon<Identified>('epic create -t "E"').id;
 
       expect(ctx.runExpectError(`task update ${task} -s done`)).toContain('Invalid task status');
       expect(ctx.runExpectError(`subtask update ${subtask} -p 9`)).toContain('Invalid priority');

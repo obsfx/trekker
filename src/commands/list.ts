@@ -1,17 +1,75 @@
+import plur from 'plur';
 import { Command } from 'commander';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { listAll, parseSort } from '../services/list';
-import type { ListEntityType, ListResponse, ListItem } from '../services/list';
-import { handleCommandError, outputResult } from '../utils/output';
-import {
-  parsePaginationOptions,
-  validateListEntityTypes,
-  validatePriorities,
-  parseCommaSeparated,
-} from '../utils/validator';
-import { STATUS_PAD_WIDTH, TYPE_PAD_WIDTH, RADIX_DECIMAL } from '../utils/constants';
-import type { ListCommandOptions } from '../types/options';
+import { ListService } from '@/src/services/list';
+import type { ListEntityType, ListResponse, ListItem } from '@/src/services/list';
+import { Output } from '@/src/utils/output';
+import { Validator } from '@/src/utils/validator';
+import { STATUS_PAD_WIDTH, TYPE_PAD_WIDTH, RADIX_DECIMAL } from '@/src/utils/constants';
+import type { ListCommandOptions } from '@/src/types/options';
+
+abstract class ListOutput {
+  static parseDate(dateStr: string | undefined): Date | undefined {
+    if (!dateStr) {
+      return undefined;
+    }
+    const parsed = dayjs(dateStr, 'YYYY-MM-DD', true);
+    if (parsed.isValid()) {
+      return parsed.toDate();
+    }
+    return undefined;
+  }
+
+  static parseUntilDate(dateStr: string | undefined): Date | undefined {
+    if (!dateStr) {
+      return undefined;
+    }
+    const parsed = dayjs(dateStr, 'YYYY-MM-DD', true);
+    if (parsed.isValid()) {
+      return parsed.endOf('day').toDate();
+    }
+    return undefined;
+  }
+
+  static readonly formatListResults = (result: ListResponse): string => {
+    const lines: string[] = [];
+
+    lines.push(
+      `Found ${result.total} ${plur('item', result.total)} (page ${result.page}, ${result.limit} per page)`
+    );
+    lines.push('');
+
+    if (result.items.length === 0) {
+      lines.push('No items found.');
+      return lines.join('\n');
+    }
+
+    for (const item of result.items) {
+      lines.push(ListOutput.formatItem(item));
+    }
+
+    const pageLine = Output.pageLine(result.total, result.page, result.limit);
+    if (pageLine !== null) {
+      lines.push('');
+      lines.push(pageLine);
+    }
+
+    return lines.join('\n');
+  };
+
+  private static formatItem(item: ListItem): string {
+    const typeLabel = item.type.toUpperCase().padEnd(TYPE_PAD_WIDTH);
+    const statusLabel = item.status.padEnd(STATUS_PAD_WIDTH);
+    const priorityLabel = `P${item.priority}`;
+    let parentLabel = '';
+    if (item.parentId) {
+      parentLabel = ` (${item.parentId})`;
+    }
+
+    return `${typeLabel} ${item.id} | ${statusLabel} | ${priorityLabel} | ${item.title}${parentLabel}`;
+  }
+}
 
 dayjs.extend(customParseFormat);
 
@@ -27,50 +85,50 @@ export const listCommand = new Command('list')
   .option('--page <n>', 'Page number (default: 1)', '1')
   .action((options: ListCommandOptions) => {
     try {
-      const { limit, page } = parsePaginationOptions(options);
+      const { limit, page } = Validator.parsePaginationOptions(options);
 
-      const rawTypes = parseCommaSeparated(options.type);
+      const rawTypes = Validator.parseCommaSeparated(options.type);
       let types: ListEntityType[] | undefined;
 
       if (rawTypes) {
-        validateListEntityTypes(rawTypes);
+        Validator.validateListEntityTypes(rawTypes);
         types = rawTypes;
       }
 
-      const statuses = parseCommaSeparated(options.status);
+      const statuses = Validator.parseCommaSeparated(options.status);
 
       let priorities: number[] | undefined;
       if (options.priority) {
-        priorities = options.priority
-          .split(',')
-          .map((p) => Number.parseInt(p.trim(), RADIX_DECIMAL));
+        priorities = options.priority.split(',').map((p) => {
+          return Number.parseInt(p.trim(), RADIX_DECIMAL);
+        });
       }
 
       if (priorities) {
-        validatePriorities(priorities);
+        Validator.validatePriorities(priorities);
       }
 
       let sort;
       try {
-        sort = parseSort(options.sort);
+        sort = ListService.parseSort(options.sort);
       } catch (err) {
         if (err instanceof Error) {
-          throw new Error(`Invalid sort: ${err.message}`);
+          throw new Error(`Invalid sort: ${err.message}`, { cause: err });
         }
-        throw new Error(`Invalid sort: ${String(err)}`);
+        throw new Error(`Invalid sort: ${String(err)}`, { cause: err });
       }
 
-      const since = parseDate(options.since);
+      const since = ListOutput.parseDate(options.since);
       if (options.since && !since) {
         throw new Error('Invalid since date. Use YYYY-MM-DD format.');
       }
 
-      const until = parseUntilDate(options.until);
+      const until = ListOutput.parseUntilDate(options.until);
       if (options.until && !until) {
         throw new Error('Invalid until date. Use YYYY-MM-DD format.');
       }
 
-      const result = listAll({
+      const result = ListService.listAll({
         types,
         statuses,
         priorities,
@@ -81,66 +139,8 @@ export const listCommand = new Command('list')
         page,
       });
 
-      outputResult(result, formatListResults);
+      Output.outputResult(result, ListOutput.formatListResults);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
-
-function parseDate(dateStr: string | undefined): Date | undefined {
-  if (!dateStr) {
-    return undefined;
-  }
-  const parsed = dayjs(dateStr, 'YYYY-MM-DD', true);
-  if (parsed.isValid()) {
-    return parsed.toDate();
-  }
-  return undefined;
-}
-
-function parseUntilDate(dateStr: string | undefined): Date | undefined {
-  if (!dateStr) {
-    return undefined;
-  }
-  const parsed = dayjs(dateStr, 'YYYY-MM-DD', true);
-  if (parsed.isValid()) {
-    return parsed.endOf('day').toDate();
-  }
-  return undefined;
-}
-
-function formatListResults(result: ListResponse): string {
-  const lines: string[] = [];
-
-  lines.push(`Found ${result.total} items (page ${result.page}, ${result.limit} per page)`);
-  lines.push('');
-
-  if (result.items.length === 0) {
-    lines.push('No items found.');
-    return lines.join('\n');
-  }
-
-  for (const item of result.items) {
-    lines.push(formatItem(item));
-  }
-
-  const totalPages = Math.ceil(result.total / result.limit);
-  if (totalPages > 1) {
-    lines.push('');
-    lines.push(`Page ${result.page} of ${totalPages}`);
-  }
-
-  return lines.join('\n');
-}
-
-function formatItem(item: ListItem): string {
-  const typeLabel = item.type.toUpperCase().padEnd(TYPE_PAD_WIDTH);
-  const statusLabel = item.status.padEnd(STATUS_PAD_WIDTH);
-  const priorityLabel = `P${item.priority}`;
-  let parentLabel = '';
-  if (item.parentId) {
-    parentLabel = ` (${item.parentId})`;
-  }
-
-  return `${typeLabel} ${item.id} | ${statusLabel} | ${priorityLabel} | ${item.title}${parentLabel}`;
-}

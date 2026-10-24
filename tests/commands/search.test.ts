@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 interface Task {
   id: string;
@@ -32,8 +32,8 @@ describe('search command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
   });
 
   afterEach(() => {
@@ -48,9 +48,11 @@ describe('search command', () => {
 
       const result = ctx.runToon<SearchResponse>('search authentication');
       expect(result.total).toBe(2);
-      expect(result.results.every((r) => r.title?.toLowerCase().includes('authentication'))).toBe(
-        true
-      );
+      expect(
+        result.results.every((r) => {
+          return r.title?.toLowerCase().includes('authentication');
+        })
+      ).toBe(true);
     });
 
     it('should find epics by title', () => {
@@ -59,7 +61,11 @@ describe('search command', () => {
 
       const result = ctx.runToon<SearchResponse>('search user');
       expect(result.total).toBeGreaterThanOrEqual(1);
-      expect(result.results.some((r) => r.type === 'epic')).toBe(true);
+      expect(
+        result.results.some((r) => {
+          return r.type === 'epic';
+        })
+      ).toBe(true);
     });
 
     it('should find tasks by description', () => {
@@ -76,7 +82,11 @@ describe('search command', () => {
 
       const result = ctx.runToon<SearchResponse>('search critical');
       expect(result.total).toBeGreaterThanOrEqual(1);
-      expect(result.results.some((r) => r.type === 'comment')).toBe(true);
+      expect(
+        result.results.some((r) => {
+          return r.type === 'comment';
+        })
+      ).toBe(true);
     });
 
     it('should return empty results for no matches', () => {
@@ -130,7 +140,11 @@ describe('search command', () => {
 
     it('should return null snippet for title-only matches', () => {
       const result = ctx.runToon<SearchResponse>('search range');
-      const byTitle = new Map(result.results.map((r) => [r.title, r.snippet]));
+      const byTitle = new Map(
+        result.results.map((r) => {
+          return [r.title, r.snippet];
+        })
+      );
 
       expect(byTitle.get('Clamp range input')).toBeNull();
       expect(byTitle.get('Empty range description')).toBeNull();
@@ -141,7 +155,11 @@ describe('search command', () => {
       const lines = ctx.run('search range').split('\n');
 
       expect(lines).not.toContain('  null');
-      expect(lines.filter((line) => line.length > 0 && line.trim() === '')).toHaveLength(0);
+      expect(
+        lines.filter((line) => {
+          return line.length > 0 && line.trim() === '';
+        })
+      ).toHaveLength(0);
       expect(lines[lines.indexOf('  Title: Clamp range input') + 1]).toBe('');
       expect(lines[lines.indexOf('  Title: Described task') + 1]).toBe(
         '  Values outside the **range** are rejected'
@@ -159,27 +177,47 @@ describe('search command', () => {
 
     it('should filter by epic type', () => {
       const result = ctx.runToon<SearchResponse>('search test --type epic');
-      expect(result.results.every((r) => r.type === 'epic')).toBe(true);
+      expect(
+        result.results.every((r) => {
+          return r.type === 'epic';
+        })
+      ).toBe(true);
     });
 
     it('should filter by task type', () => {
       const result = ctx.runToon<SearchResponse>('search test --type task');
-      expect(result.results.every((r) => r.type === 'task')).toBe(true);
+      expect(
+        result.results.every((r) => {
+          return r.type === 'task';
+        })
+      ).toBe(true);
     });
 
     it('should filter by subtask type', () => {
       const result = ctx.runToon<SearchResponse>('search test --type subtask');
-      expect(result.results.every((r) => r.type === 'subtask')).toBe(true);
+      expect(
+        result.results.every((r) => {
+          return r.type === 'subtask';
+        })
+      ).toBe(true);
     });
 
     it('should filter by comment type', () => {
       const result = ctx.runToon<SearchResponse>('search test --type comment');
-      expect(result.results.every((r) => r.type === 'comment')).toBe(true);
+      expect(
+        result.results.every((r) => {
+          return r.type === 'comment';
+        })
+      ).toBe(true);
     });
 
     it('should filter by multiple types', () => {
       const result = ctx.runToon<SearchResponse>('search test --type epic,task');
-      expect(result.results.every((r) => r.type === 'epic' || r.type === 'task')).toBe(true);
+      expect(
+        result.results.every((r) => {
+          return r.type === 'epic' || r.type === 'task';
+        })
+      ).toBe(true);
     });
 
     it('should fail with invalid type', () => {
@@ -195,7 +233,50 @@ describe('search command', () => {
       ctx.run('task create -t "Completed task" -s completed');
 
       const result = ctx.runToon<SearchResponse>('search task --status todo');
-      expect(result.results.every((r) => r.status === 'todo')).toBe(true);
+      expect(
+        result.results.every((r) => {
+          return r.status === 'todo';
+        })
+      ).toBe(true);
+    });
+  });
+
+  describe('index maintenance', () => {
+    it('keeps exactly one index row per item through edits, status changes and deletes', () => {
+      const task = ctx.runToon<Task>('task create -t "Original wording"');
+      ctx.run(`task update ${task.id} -t "Renamed wording"`);
+      ctx.run(`task update ${task.id} -s completed`);
+
+      expect(ctx.runToon<SearchResponse>('search original').total).toBe(0);
+      const renamed = ctx.runToon<SearchResponse>('search renamed');
+      expect(
+        renamed.results.map((result) => {
+          return result.id;
+        })
+      ).toEqual([task.id]);
+      expect(renamed.results[0]?.status).toBe('completed');
+
+      ctx.run(`task delete ${task.id}`);
+      expect(ctx.runToon<SearchResponse>('search renamed').total).toBe(0);
+    });
+
+    it('rebuilds an index created with the old trigger layout', () => {
+      const task = ctx.runToon<Task>('task create -t "Legacy indexed"');
+      ctx.query('DROP TRIGGER tasks_search_insert');
+      ctx.query(`CREATE TRIGGER tasks_search_insert AFTER INSERT ON tasks BEGIN
+        INSERT INTO search_index(entity_id, entity_type, title, content, author, status, parent_id)
+        VALUES (NEW.id, 'task', NEW.title, NEW.description, '', NEW.status, NEW.epic_id);
+      END`);
+      ctx.query(`UPDATE search_index SET author = 'legacy' WHERE entity_id = '${task.id}'`);
+
+      ctx.run(`task update ${task.id} -t "Upgraded indexed"`);
+
+      expect(ctx.runToon<SearchResponse>('search legacy').total).toBe(0);
+      expect(
+        ctx.runToon<SearchResponse>('search upgraded').results.map((result) => {
+          return result.id;
+        })
+      ).toEqual([task.id]);
     });
   });
 
@@ -214,8 +295,8 @@ describe('search command pagination', () => {
   let ctx: TestContext;
 
   beforeAll(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
     for (let i = 1; i <= 12; i++) {
       ctx.run(`task create -t "Search Test Task ${i}"`);
     }

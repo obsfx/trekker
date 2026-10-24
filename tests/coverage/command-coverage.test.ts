@@ -1,19 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
-import { createTestContext, type TestContext } from '../helpers/test-context';
-import {
-  collectInvocations,
-  discoverCommands,
-  uncoveredEntries,
-  type CommandSpec,
-} from './command-matrix';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import { type CommandSpec, CommandMatrix } from '@/tests/coverage/command-matrix';
 
 describe('command coverage matrix', () => {
   let ctx: TestContext;
   let commands: CommandSpec[];
 
   beforeAll(() => {
-    ctx = createTestContext();
-    commands = discoverCommands(ctx).commands;
+    ctx = TestContexts.createTestContext();
+    commands = CommandMatrix.discoverCommands(ctx).commands;
   });
 
   afterAll(() => {
@@ -21,12 +16,18 @@ describe('command coverage matrix', () => {
   });
 
   it('discovers the registered command tree', () => {
-    expect(commands.map((command) => command.path)).toContain('task update');
+    expect(
+      commands.map((command) => {
+        return command.path;
+      })
+    ).toContain('task update');
     expect(commands.length).toBeGreaterThan(30);
   });
 
   it('has a test invoking every command and every option', () => {
-    expect(uncoveredEntries(commands, collectInvocations(commands))).toEqual([]);
+    expect(
+      CommandMatrix.uncoveredEntries(commands, CommandMatrix.collectInvocations(commands))
+    ).toEqual([]);
   });
 
   it('reports commands and options that no test exercises', () => {
@@ -41,7 +42,7 @@ describe('command coverage matrix', () => {
       { path: 'dep list', options: [] },
     ];
 
-    expect(uncoveredEntries(specs, [['task', 'update', 'X', '-t', 'New']])).toEqual([
+    expect(CommandMatrix.uncoveredEntries(specs, [['task', 'update', 'X', '-t', 'New']])).toEqual([
       'task update --tags',
       'dep list',
     ]);

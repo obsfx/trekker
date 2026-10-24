@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+
+interface EntityPage {
+  items: Entity[];
+}
 
 interface Entity {
   id: string;
@@ -9,8 +13,8 @@ describe('data integrity on delete', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
   });
 
   afterEach(() => {
@@ -44,8 +48,12 @@ describe('data integrity on delete', () => {
 
     ctx.run(`task delete ${blocker}`);
 
-    const ready = ctx.runToon<{ items: Entity[] }>('ready');
-    expect(ready.items.map((item) => item.id)).toEqual([blocked]);
+    const ready = ctx.runToon<EntityPage>('ready');
+    expect(
+      ready.items.map((item) => {
+        return item.id;
+      })
+    ).toEqual([blocked]);
   });
 
   it('detaches tasks and subtasks from a deleted epic', () => {
@@ -81,15 +89,17 @@ describe('data integrity on delete', () => {
 
     ctx.run(`task delete ${task}`);
 
-    const deleted = ctx
-      .query("SELECT entity_id FROM events WHERE action = 'delete'")
-      .map((row) => row.entity_id);
+    const deleted = ctx.query("SELECT entity_id FROM events WHERE action = 'delete'").map((row) => {
+      return row.entity_id;
+    });
     expect(deleted).toEqual(expect.arrayContaining([task, subtask, comment]));
   });
 
   it('keeps no orphaned rows after mixed deletes', () => {
     const epic = create('epic create -t "Epic"');
-    const tasks = [1, 2, 3].map((index) => create(`task create -t "Task ${index}" -e ${epic}`));
+    const tasks = [1, 2, 3].map((index) => {
+      return create(`task create -t "Task ${index}" -e ${epic}`);
+    });
     for (const task of tasks) {
       create(`subtask create ${task} -t "Child of ${task}"`);
       create(`comment add ${task} -a tester -c "Note"`);

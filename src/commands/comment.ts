@@ -1,14 +1,12 @@
 import { Command } from 'commander';
-import { createComment, listComments, updateComment, deleteComment } from '../services/comment';
-import { validateRequired, parsePaginationOptions } from '../utils/validator';
-import {
-  success,
-  formatComment,
-  formatPaginatedCommentList,
-  handleCommandError,
-  outputResult,
-} from '../utils/output';
-import type { CommentAddOptions, CommentUpdateOptions, PaginationOptions } from '../types/options';
+import { CommentService } from '@/src/services/comment';
+import { Validator } from '@/src/utils/validator';
+import { Output } from '@/src/utils/output';
+import type {
+  CommentAddOptions,
+  CommentUpdateOptions,
+  PaginationOptions,
+} from '@/src/types/options';
 
 export const commentCommand = new Command('comment').description('Manage comments');
 
@@ -19,18 +17,18 @@ commentCommand
   .requiredOption('-c, --content <content>', 'Comment content')
   .action((taskId: string, options: CommentAddOptions) => {
     try {
-      validateRequired(options.author, 'Author');
-      validateRequired(options.content, 'Content');
+      Validator.validateRequired(options.author, 'Author');
+      Validator.validateRequired(options.content, 'Content');
 
-      const comment = createComment({
+      const comment = CommentService.createComment({
         taskId,
         author: options.author,
         content: options.content,
       });
 
-      outputResult(comment, formatComment, `Comment added: ${comment.id}`);
+      Output.outputResult(comment, Output.formatComment, `Comment added: ${comment.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -41,13 +39,13 @@ commentCommand
   .option('--page <n>', 'Page number (default: 1)', '1')
   .action((taskId: string, options: PaginationOptions) => {
     try {
-      const { limit, page } = parsePaginationOptions(options);
+      const { limit, page } = Validator.parsePaginationOptions(options);
 
-      const result = listComments(taskId, { limit, page });
+      const result = CommentService.listComments(taskId, { limit, page });
 
-      outputResult(result, formatPaginatedCommentList);
+      Output.outputResult(result, Output.formatPaginatedCommentList);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -57,15 +55,15 @@ commentCommand
   .requiredOption('-c, --content <content>', 'New comment content')
   .action((commentId: string, options: CommentUpdateOptions) => {
     try {
-      validateRequired(options.content, 'Content');
+      Validator.validateRequired(options.content, 'Content');
 
-      const comment = updateComment(commentId, {
+      const comment = CommentService.updateComment(commentId, {
         content: options.content,
       });
 
-      outputResult(comment, formatComment, `Comment updated: ${comment.id}`);
+      Output.outputResult(comment, Output.formatComment, `Comment updated: ${comment.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -74,9 +72,9 @@ commentCommand
   .description('Delete a comment')
   .action((commentId: string) => {
     try {
-      deleteComment(commentId);
-      success(`Comment deleted: ${commentId}`);
+      CommentService.deleteComment(commentId);
+      Output.success(`Comment deleted: ${commentId}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });

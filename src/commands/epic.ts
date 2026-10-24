@@ -1,29 +1,20 @@
+import plur from 'plur';
 import { Command } from 'commander';
-import {
-  createEpic,
-  getEpic,
-  listEpics,
-  updateEpic,
-  deleteEpic,
-  completeEpic,
-} from '../services/epic';
-import {
-  parseStatus,
-  parsePriority,
-  validateRequired,
-  parsePaginationOptions,
-} from '../utils/validator';
-import {
-  success,
-  formatEpic,
-  formatPaginatedEpicList,
-  handleCommandError,
-  handleNotFound,
-  outputResult,
-  isToonMode,
-  output,
-} from '../utils/output';
-import type { EpicCreateOptions, EpicListOptions, EpicUpdateOptions } from '../types/options';
+import { EpicService } from '@/src/services/epic';
+import { Validator } from '@/src/utils/validator';
+import { Output } from '@/src/utils/output';
+import type { EpicCreateOptions, EpicListOptions, EpicUpdateOptions } from '@/src/types/options';
+
+abstract class EpicInputs {
+  static fields(options: EpicUpdateOptions) {
+    return {
+      title: options.title,
+      description: options.description,
+      priority: Validator.parsePriority(options.priority),
+      status: Validator.parseEpicStatus(options.status),
+    };
+  }
+}
 
 export const epicCommand = new Command('epic').description('Manage epics');
 
@@ -36,18 +27,13 @@ epicCommand
   .option('-s, --status <status>', 'Status (todo, in_progress, completed, archived)')
   .action((options: EpicCreateOptions) => {
     try {
-      validateRequired(options.title, 'Title');
+      Validator.validateRequired(options.title, 'Title');
 
-      const epic = createEpic({
-        title: options.title,
-        description: options.description,
-        priority: parsePriority(options.priority),
-        status: parseStatus(options.status, 'epic'),
-      });
+      const epic = EpicService.createEpic({ ...EpicInputs.fields(options), title: options.title });
 
-      outputResult(epic, formatEpic, `Epic created: ${epic.id}`);
+      Output.outputResult(epic, Output.formatEpic, `Epic created: ${epic.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -59,14 +45,14 @@ epicCommand
   .option('--page <n>', 'Page number (default: 1)', '1')
   .action((options: EpicListOptions) => {
     try {
-      const status = parseStatus(options.status, 'epic');
-      const { limit, page } = parsePaginationOptions(options);
+      const status = Validator.parseEpicStatus(options.status);
+      const { limit, page } = Validator.parsePaginationOptions(options);
 
-      const result = listEpics({ status, limit, page });
+      const result = EpicService.listEpics({ status, limit, page });
 
-      outputResult(result, formatPaginatedEpicList);
+      Output.outputResult(result, Output.formatPaginatedEpicList);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -75,14 +61,14 @@ epicCommand
   .description('Show epic details')
   .action((epicId: string) => {
     try {
-      const epic = getEpic(epicId);
+      const epic = EpicService.getEpic(epicId);
       if (!epic) {
-        return handleNotFound('Epic', epicId);
+        return Output.handleNotFound('Epic', epicId);
       }
 
-      outputResult(epic, formatEpic);
+      Output.outputResult(epic, Output.formatEpic);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -95,16 +81,11 @@ epicCommand
   .option('-s, --status <status>', 'New status')
   .action((epicId: string, options: EpicUpdateOptions) => {
     try {
-      const epic = updateEpic(epicId, {
-        title: options.title,
-        description: options.description,
-        priority: parsePriority(options.priority),
-        status: parseStatus(options.status, 'epic'),
-      });
+      const epic = EpicService.updateEpic(epicId, EpicInputs.fields(options));
 
-      outputResult(epic, formatEpic, `Epic updated: ${epic.id}`);
+      Output.outputResult(epic, Output.formatEpic, `Epic updated: ${epic.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -113,10 +94,10 @@ epicCommand
   .description('Delete an epic')
   .action((epicId: string) => {
     try {
-      deleteEpic(epicId);
-      success(`Epic deleted: ${epicId}`);
+      EpicService.deleteEpic(epicId);
+      Output.success(`Epic deleted: ${epicId}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -125,17 +106,17 @@ epicCommand
   .description('Complete an epic and archive all its tasks and subtasks')
   .action((epicId: string) => {
     try {
-      const result = completeEpic(epicId);
+      const result = EpicService.completeEpic(epicId);
 
-      if (isToonMode()) {
-        output(result);
+      if (Output.isToonMode()) {
+        Output.print(result);
       } else {
-        success(`Epic completed: ${result.epic}`);
+        Output.success(`Epic completed: ${result.epic}`);
         console.log(
-          `Archived ${result.archived.tasks} task(s) and ${result.archived.subtasks} subtask(s)`
+          `Archived ${result.archived.tasks} ${plur('task', result.archived.tasks)} and ${result.archived.subtasks} ${plur('subtask', result.archived.subtasks)}`
         );
       }
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });

@@ -1,8 +1,41 @@
+import dayjs from 'dayjs';
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers';
 import { decode } from '@toon-format/toon';
-import { createTestContext, type TestContext } from '../helpers/test-context';
-import { ContainerWorkspace, TestTarget } from '../helpers/workspace';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
+import { ContainerWorkspace, TestTarget } from '@/tests/helpers/workspace';
+import type { Identified, ContentItem, SearchResults } from '@/tests/helpers/shapes';
+
+interface StatusPriority {
+  status: string;
+  priority: number;
+}
+
+interface EventAction {
+  action: string;
+}
+
+interface PrefixConfig {
+  issue_prefix: string;
+}
+
+interface DependsOnList {
+  dependsOn: unknown[];
+}
+
+interface CommentPage {
+  items: ContentItem[];
+}
+
+interface EventPage {
+  events: EventAction[];
+}
+
+abstract class DashboardContractFixture {
+  static parseJson<T>(text: string): T {
+    return JSON.parse(text);
+  }
+}
 
 const DASHBOARD_PORT = 3000;
 const PROJECT_DIR = '/work/project';
@@ -22,10 +55,6 @@ interface DashboardEvent {
   type: string;
   taskId?: string;
   epicId?: string;
-}
-
-function parseJson<T>(text: string): T {
-  return JSON.parse(text);
 }
 
 class DashboardClient {
@@ -63,9 +92,11 @@ class DashboardClient {
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await this.raw(method, path, body);
     if (!response.ok) {
-      throw new Error(`${method} ${path} -> ${response.status}: ${await response.text()}`);
+      const failure = await response.text();
+      throw new Error(`${method} ${path} -> ${response.status}: ${failure}`);
     }
-    return parseJson<T>(await response.text());
+    const payload = await response.text();
+    return DashboardContractFixture.parseJson<T>(payload);
   }
 }
 
@@ -79,8 +110,8 @@ class EventStream {
   ) {}
 
   async waitFor(predicate: (event: DashboardEvent) => boolean): Promise<DashboardEvent> {
-    const deadline = Date.now() + SSE_TIMEOUT_MS;
-    while (Date.now() < deadline) {
+    const deadline = dayjs().valueOf() + SSE_TIMEOUT_MS;
+    while (dayjs().valueOf() < deadline) {
       for (const event of this.drainEvents()) {
         if (predicate(event)) {
           return event;
@@ -88,7 +119,9 @@ class EventStream {
       }
       const chunk = await Promise.race([
         this.reader.read(),
-        Bun.sleep(deadline - Date.now()).then(() => null),
+        Bun.sleep(deadline - dayjs().valueOf()).then(() => {
+          return null;
+        }),
       ]);
       if (!chunk || chunk.done) {
         break;
@@ -105,12 +138,16 @@ class EventStream {
   private drainEvents(): DashboardEvent[] {
     const frames = this.buffer.split('\n\n');
     this.buffer = frames.pop() ?? '';
-    return frames.flatMap((frame) =>
-      frame
+    return frames.flatMap((frame) => {
+      return frame
         .split('\n')
-        .filter((line) => line.startsWith('data:'))
-        .map((line) => parseJson<DashboardEvent>(line.slice('data:'.length)))
-    );
+        .filter((line) => {
+          return line.startsWith('data:') && line.slice('data:'.length).trim() !== '';
+        })
+        .map((line) => {
+          return DashboardContractFixture.parseJson<DashboardEvent>(line.slice('data:'.length));
+        });
+    });
   }
 }
 
@@ -129,7 +166,7 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
       .withExposedPorts(DASHBOARD_PORT)
       .withWaitStrategy(Wait.forHttp('/api/project', DASHBOARD_PORT))
       .start();
-    ctx = createTestContext(new ContainerWorkspace(container.getId(), PROJECT_DIR));
+    ctx = TestContexts.createTestContext(new ContainerWorkspace(container.getId(), PROJECT_DIR));
     api = new DashboardClient(
       `http://${container.getHost()}:${container.getMappedPort(DASHBOARD_PORT)}`
     );
@@ -140,24 +177,38 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
   });
 
   it('serves entities written by the CLI', async () => {
-    const epic = ctx.runToon<{ id: string }>('epic create -t "CLI epic"').id;
-    const task = ctx.runToon<{ id: string }>(`task create -t "CLI task" -e ${epic}`).id;
-    const blocker = ctx.runToon<{ id: string }>('task create -t "CLI blocker"').id;
+    const epic = ctx.runToon<Identified>('epic create -t "CLI epic"').id;
+    const task = ctx.runToon<Identified>(`task create -t "CLI task" -e ${epic}`).id;
+    const blocker = ctx.runToon<Identified>('task create -t "CLI blocker"').id;
     ctx.run(`subtask create ${task} -t "CLI subtask"`);
     ctx.run(`comment add ${task} -a cli -c "CLI comment"`);
     ctx.run(`dep add ${task} ${blocker}`);
 
     const tasks = await api.get<ApiTask[]>('/api/tasks');
-    const apiTask = tasks.find((candidate) => candidate.id === task);
+    const apiTask = tasks.find((candidate) => {
+      return candidate.id === task;
+    });
     expect(apiTask).toMatchObject({ title: 'CLI task', epicId: epic });
     expect(apiTask?.dependsOn).toEqual([blocker]);
-    expect(tasks.filter((candidate) => candidate.parentTaskId === task)).toHaveLength(1);
+    expect(
+      tasks.filter((candidate) => {
+        return candidate.parentTaskId === task;
+      })
+    ).toHaveLength(1);
 
-    const comments = await api.get<{ content: string }[]>(`/api/tasks/${task}/comments`);
-    expect(comments.map((comment) => comment.content)).toEqual(['CLI comment']);
+    const comments = await api.get<ContentItem[]>(`/api/tasks/${task}/comments`);
+    expect(
+      comments.map((comment) => {
+        return comment.content;
+      })
+    ).toEqual(['CLI comment']);
 
-    const epics = await api.get<{ id: string }[]>('/api/epics');
-    expect(epics.map((candidate) => candidate.id)).toContain(epic);
+    const epics = await api.get<Identified[]>('/api/epics');
+    expect(
+      epics.map((candidate) => {
+        return candidate.id;
+      })
+    ).toContain(epic);
   });
 
   it('exposes entities written by the dashboard to the CLI', async () => {
@@ -171,11 +222,16 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
       content: 'Dashboard comment',
     });
 
+    expect(ctx.runToon<StatusPriority>(`task show ${created.id}`)).toMatchObject({
+      status: 'in_progress',
+      priority: 1,
+    });
+    const comments = ctx.runToon<CommentPage>(`comment list ${created.id}`);
     expect(
-      ctx.runToon<{ status: string; priority: number }>(`task show ${created.id}`)
-    ).toMatchObject({ status: 'in_progress', priority: 1 });
-    const comments = ctx.runToon<{ items: { content: string }[] }>(`comment list ${created.id}`);
-    expect(comments.items.map((comment) => comment.content)).toEqual(['Dashboard comment']);
+      comments.items.map((comment) => {
+        return comment.content;
+      })
+    ).toEqual(['Dashboard comment']);
   });
 
   it('records dashboard writes in CLI history and search', async () => {
@@ -184,19 +240,32 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
     });
     await api.send('PUT', `/api/tasks/${created.id}`, { status: 'completed' });
 
-    const history = ctx.runToon<{ events: { action: string }[] }>(`history --entity ${created.id}`);
-    expect(history.events.map((event) => event.action).sort()).toEqual(['create', 'update']);
+    const history = ctx.runToon<EventPage>(`history --entity ${created.id}`);
+    expect(
+      history.events
+        .map((event) => {
+          return event.action;
+        })
+        .sort()
+    ).toEqual(['create', 'update']);
 
-    const search = ctx.runToon<{ results: { id: string }[] }>('search zeppelin');
-    expect(search.results.map((result) => result.id)).toEqual([created.id]);
+    const search = ctx.runToon<SearchResults>('search zeppelin');
+    expect(
+      search.results.map((result) => {
+        return result.id;
+      })
+    ).toEqual([created.id]);
   });
 
   it('shares ID counters between CLI and dashboard', async () => {
-    const fromCli = ctx.runToon<{ id: string }>('task create -t "Counter CLI"').id;
-    const fromApi = (await api.send<ApiTask>('POST', '/api/tasks', { title: 'Counter API' })).id;
-    const next = ctx.runToon<{ id: string }>('task create -t "Counter CLI 2"').id;
+    const fromCli = ctx.runToon<Identified>('task create -t "Counter CLI"').id;
+    const apiTask = await api.send<ApiTask>('POST', '/api/tasks', { title: 'Counter API' });
+    const fromApi = apiTask.id;
+    const next = ctx.runToon<Identified>('task create -t "Counter CLI 2"').id;
 
-    const number = (id: string) => Number(id.split('-')[1]);
+    const number = (id: string) => {
+      return Number(id.split('-')[1]);
+    };
     expect(number(fromApi)).toBe(number(fromCli) + 1);
     expect(number(next)).toBe(number(fromApi) + 1);
   });
@@ -204,8 +273,8 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
   it('applies prefix changes made in the dashboard to CLI-created IDs', async () => {
     await api.send('PATCH', '/api/project/config', { issuePrefix: 'DASH' });
     try {
-      expect(ctx.runToon<{ id: string }>('task create -t "Prefixed"').id).toStartWith('DASH-');
-      expect(ctx.runToon<{ issue_prefix: string }>('config list').issue_prefix).toBe('DASH');
+      expect(ctx.runToon<Identified>('task create -t "Prefixed"').id).toStartWith('DASH-');
+      expect(ctx.runToon<PrefixConfig>('config list').issue_prefix).toBe('DASH');
     } finally {
       ctx.run('config unset issue_prefix');
     }
@@ -214,8 +283,8 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
   });
 
   it('cascades dashboard deletes without orphans visible to the CLI', async () => {
-    const parent = ctx.runToon<{ id: string }>('task create -t "Delete via API"').id;
-    const dependent = ctx.runToon<{ id: string }>('task create -t "Dependent"').id;
+    const parent = ctx.runToon<Identified>('task create -t "Delete via API"').id;
+    const dependent = ctx.runToon<Identified>('task create -t "Dependent"').id;
     ctx.run(`subtask create ${parent} -t "Child"`);
     ctx.run(`comment add ${parent} -a cli -c "Gone"`);
     ctx.run(`dep add ${dependent} ${parent}`);
@@ -223,7 +292,7 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
     await api.send('DELETE', `/api/tasks/${parent}`);
 
     expect(ctx.runExpectError(`task show ${parent}`)).toContain('not found');
-    expect(ctx.runToon<{ dependsOn: unknown[] }>(`dep list ${dependent}`).dependsOn).toEqual([]);
+    expect(ctx.runToon<DependsOnList>(`dep list ${dependent}`).dependsOn).toEqual([]);
     expect(ctx.query('PRAGMA foreign_key_check')).toEqual([]);
     expect(
       ctx.query(
@@ -233,8 +302,8 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
   });
 
   it('dashboard rejects dependencies the CLI would reject', async () => {
-    const first = ctx.runToon<{ id: string }>('task create -t "Cycle A"').id;
-    const second = ctx.runToon<{ id: string }>('task create -t "Cycle B"').id;
+    const first = ctx.runToon<Identified>('task create -t "Cycle A"').id;
+    const second = ctx.runToon<Identified>('task create -t "Cycle B"').id;
     ctx.run(`dep add ${second} ${first}`);
 
     const cycle = await api.raw('POST', '/api/dependencies', {
@@ -248,45 +317,73 @@ describe.skipIf(!TestTarget.isContainer)('CLI and dashboard on a shared database
   it('streams CLI changes to dashboard SSE subscribers', async () => {
     const events = await api.openEvents();
     try {
-      await events.waitFor((event) => event.type === 'connected');
-      const created = ctx.runToon<{ id: string }>('task create -t "Live task"').id;
-      await events.waitFor((event) => event.type === 'task_created' && event.taskId === created);
+      await events.waitFor((event) => {
+        return event.type === 'connected';
+      });
+      const created = ctx.runToon<Identified>('task create -t "Live task"').id;
+      await events.waitFor((event) => {
+        return event.type === 'task_created' && event.taskId === created;
+      });
 
       ctx.run(`task update ${created} -s completed`);
-      await events.waitFor((event) => event.type === 'task_updated' && event.taskId === created);
+      await events.waitFor((event) => {
+        return event.type === 'task_updated' && event.taskId === created;
+      });
 
       ctx.run(`task delete ${created}`);
-      await events.waitFor((event) => event.type === 'task_deleted' && event.taskId === created);
+      await events.waitFor((event) => {
+        return event.type === 'task_deleted' && event.taskId === created;
+      });
     } finally {
       events.close();
     }
   });
 
   it('handles concurrent CLI and dashboard writers without lock errors or ID collisions', async () => {
-    const cliWrites = Array.from({ length: CONCURRENT_WRITERS }, (_, index) =>
-      ctx.workspace.trekkerAsync(['--toon', 'task', 'create', '-t', `Concurrent CLI ${index}`])
-    );
-    const apiWrites = Array.from({ length: CONCURRENT_WRITERS }, (_, index) =>
-      api.raw('POST', '/api/tasks', { title: `Concurrent API ${index}` })
-    );
+    const cliWrites = Array.from({ length: CONCURRENT_WRITERS }, (_, index) => {
+      return ctx.workspace.trekkerAsync([
+        '--toon',
+        'task',
+        'create',
+        '-t',
+        `Concurrent CLI ${index}`,
+      ]);
+    });
+    const apiWrites = Array.from({ length: CONCURRENT_WRITERS }, (_, index) => {
+      return api.raw('POST', '/api/tasks', { title: `Concurrent API ${index}` });
+    });
 
     const cliResults = await Promise.all(cliWrites);
     const apiResults = await Promise.all(apiWrites);
 
     const cliFailures = cliResults
-      .filter((result) => result.status !== 0)
-      .map((result) => result.stderr);
+      .filter((result) => {
+        return result.status !== 0;
+      })
+      .map((result) => {
+        return result.stderr;
+      });
     const apiFailures = await Promise.all(
-      apiResults.filter((response) => !response.ok).map((response) => response.text())
+      apiResults
+        .filter((response) => {
+          return !response.ok;
+        })
+        .map((response) => {
+          return response.text();
+        })
     );
     expect(cliFailures).toEqual([]);
     expect(apiFailures).toEqual([]);
 
-    const cliIds = cliResults.map(
-      (result) => parseJson<{ id: string }>(JSON.stringify(decode(result.stdout))).id
-    );
+    const cliIds = cliResults.map((result) => {
+      return DashboardContractFixture.parseJson<Identified>(JSON.stringify(decode(result.stdout)))
+        .id;
+    });
     const apiIds = await Promise.all(
-      apiResults.map(async (response) => parseJson<{ id: string }>(await response.text()).id)
+      apiResults.map(async (response) => {
+        const body = await response.text();
+        return DashboardContractFixture.parseJson<Identified>(body).id;
+      })
     );
     const ids = [...cliIds, ...apiIds];
     expect(new Set(ids).size).toBe(CONCURRENT_WRITERS * 2);

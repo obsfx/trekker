@@ -19,7 +19,7 @@ trekker search "<keywords>"
 - Before creating tasks (check for duplicates/related work)
 - Before starting work (find past decisions and solutions)
 - Before investigating issues (find previous investigations)
-- When context is unclear (STOP → SEARCH → RESUME)
+- When context is unclear (STOP, then SEARCH, then RESUME)
 
 ## When to Use
 

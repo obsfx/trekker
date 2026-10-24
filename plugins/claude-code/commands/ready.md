@@ -53,7 +53,7 @@ The `ready` command returns tasks that:
 - Are top-level tasks (not subtasks)
 - Have no incomplete dependencies blocking them
 
-For each ready task, it also shows **downstream dependents** — tasks that are waiting on it to be completed.
+For each ready task, it also shows **downstream dependents**, the tasks that are waiting on it to be completed.
 
 ### Step 4: Get Full Context Before Recommending
 

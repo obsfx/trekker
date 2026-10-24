@@ -25,7 +25,7 @@ echo ""
 echo "**State**: $IN_PROG in-progress | $TODO todo | $EPIC_COUNT epics"
 echo ""
 
-# Rules (compact — details in CLAUDE.md and skills)
+# Rules (compact, details in CLAUDE.md and skills)
 echo "CRITICAL: Track work with the \`trekker\` CLI through Bash (NOT TaskCreate/TaskUpdate/TodoWrite). Add \`--toon\` for structured output. MANDATORY: Search (\`trekker search \"<keyword>\"\`) before any action."
 echo ""
 

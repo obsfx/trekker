@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'bun:test';
-import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 describe('wipe command', () => {
   let ctx: TestContext;
@@ -9,8 +9,8 @@ describe('wipe command', () => {
   });
 
   it('should delete .trekker directory with -y flag', () => {
-    ctx = createTestContext();
-    initTrekker(ctx);
+    ctx = TestContexts.createTestContext();
+    TestContexts.initTrekker(ctx);
 
     expect(ctx.exists('.trekker')).toBe(true);
 
@@ -20,7 +20,7 @@ describe('wipe command', () => {
   });
 
   it('should fail if not initialized', () => {
-    ctx = createTestContext();
+    ctx = TestContexts.createTestContext();
 
     const error = ctx.runExpectError('wipe -y');
     expect(error).toContain('not initialized');
@@ -29,8 +29,8 @@ describe('wipe command', () => {
   describe('interactive confirmation', () => {
     for (const answer of ['y', 'Y', 'yes', 'YES']) {
       it(`deletes data when confirmed with "${answer}"`, () => {
-        ctx = createTestContext();
-        initTrekker(ctx);
+        ctx = TestContexts.createTestContext();
+        TestContexts.initTrekker(ctx);
 
         const result = ctx.runRaw('wipe', { input: `${answer}\n` });
 
@@ -42,8 +42,8 @@ describe('wipe command', () => {
 
     for (const answer of ['n', 'no', '', 'maybe']) {
       it(`aborts when answered with "${answer}"`, () => {
-        ctx = createTestContext();
-        initTrekker(ctx);
+        ctx = TestContexts.createTestContext();
+        TestContexts.initTrekker(ctx);
 
         const result = ctx.runRaw('wipe', { input: `${answer}\n` });
 

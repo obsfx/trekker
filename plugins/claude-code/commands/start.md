@@ -57,7 +57,7 @@ trekker dep list <task-id>
 - Understand previous work on this task
 - See if it was started/stopped before
 - Recall decisions and blockers from past sessions
-- **If context is unclear: STOP → SEARCH MORE → RESUME**
+- **If context is unclear: STOP, then SEARCH MORE, then RESUME**
 
 ### Step 3: Start the Task
 

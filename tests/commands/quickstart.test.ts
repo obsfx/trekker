@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestContext, type TestContext } from '../helpers/test-context';
+import { type TestContext, TestContexts } from '@/tests/helpers/test-context';
 
 describe('quickstart command', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    ctx = createTestContext();
+    ctx = TestContexts.createTestContext();
   });
 
   afterEach(() => {

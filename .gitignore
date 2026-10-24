@@ -36,4 +36,7 @@ npm-debug.log*
 *.tmp
 *.temp
 .cache/
-docs/
+docs/storybook-static/
+*storybook.log
+test-results/
+playwright-report/

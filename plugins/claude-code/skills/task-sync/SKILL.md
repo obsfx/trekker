@@ -80,10 +80,10 @@ TodoWrite = Session Mirror (conversation-scoped only)
 Before ANY task operation, think:
 
 ```
-1. Is this in Trekker? → trekker task show <id>
+1. Is this in Trekker? Run trekker task show <id>
 2. Make change in Trekker FIRST
 3. Mirror to TodoWrite AFTER
-4. If conflict → Trekker wins
+4. If they conflict, Trekker wins
 ```
 
 ## Anti-Patterns (DO NOT DO)

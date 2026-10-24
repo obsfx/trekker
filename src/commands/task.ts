@@ -1,20 +1,9 @@
 import { Command } from 'commander';
-import { createTask, getTask, listTasks, updateTask, deleteTask } from '../services/task';
-import {
-  parseStatus,
-  parsePriority,
-  validateRequired,
-  parsePaginationOptions,
-} from '../utils/validator';
-import {
-  success,
-  formatTask,
-  formatPaginatedTaskList,
-  handleCommandError,
-  handleNotFound,
-  outputResult,
-} from '../utils/output';
-import type { TaskCreateOptions, TaskListOptions, TaskUpdateOptions } from '../types/options';
+import { TaskService } from '@/src/services/task';
+import { Validator } from '@/src/utils/validator';
+import { Output } from '@/src/utils/output';
+import { TaskInputs } from '@/src/commands/task-inputs';
+import type { TaskCreateOptions, TaskListOptions, TaskUpdateOptions } from '@/src/types/options';
 
 export const taskCommand = new Command('task').description('Manage tasks');
 
@@ -29,20 +18,20 @@ taskCommand
   .option('-e, --epic <epic-id>', 'Epic ID to assign task to')
   .action((options: TaskCreateOptions) => {
     try {
-      validateRequired(options.title, 'Title');
+      Validator.validateRequired(options.title, 'Title');
 
-      const task = createTask({
+      const task = TaskService.createTask({
         title: options.title,
         description: options.description,
-        priority: parsePriority(options.priority),
-        status: parseStatus(options.status, 'task'),
+        priority: Validator.parsePriority(options.priority),
+        status: Validator.parseTaskStatus(options.status),
         tags: options.tags,
         epicId: options.epic,
       });
 
-      outputResult(task, formatTask, `Task created: ${task.id}`);
+      Output.outputResult(task, Output.formatTask, `Task created: ${task.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -55,10 +44,10 @@ taskCommand
   .option('--page <n>', 'Page number (default: 1)', '1')
   .action((options: TaskListOptions) => {
     try {
-      const status = parseStatus(options.status, 'task');
-      const { limit, page } = parsePaginationOptions(options);
+      const status = Validator.parseTaskStatus(options.status);
+      const { limit, page } = Validator.parsePaginationOptions(options);
 
-      const result = listTasks({
+      const result = TaskService.listTasks({
         status,
         epicId: options.epic,
         parentTaskId: null,
@@ -66,9 +55,9 @@ taskCommand
         page,
       });
 
-      outputResult(result, formatPaginatedTaskList);
+      Output.outputResult(result, Output.formatPaginatedTaskList);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -77,14 +66,14 @@ taskCommand
   .description('Show task details')
   .action((taskId: string) => {
     try {
-      const task = getTask(taskId);
+      const task = TaskService.getTask(taskId);
       if (!task) {
-        return handleNotFound('Task', taskId);
+        return Output.handleNotFound('Task', taskId);
       }
 
-      outputResult(task, formatTask);
+      Output.outputResult(task, Output.formatTask);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -100,20 +89,7 @@ taskCommand
   .option('--no-epic', 'Remove from epic')
   .action((taskId: string, options: TaskUpdateOptions) => {
     try {
-      const updateInput: Record<string, unknown> = {};
-
-      if (options.title !== undefined) {
-        updateInput.title = options.title;
-      }
-      if (options.description !== undefined) {
-        updateInput.description = options.description;
-      }
-      if (options.priority !== undefined) {
-        updateInput.priority = parsePriority(options.priority);
-      }
-      if (options.status !== undefined) {
-        updateInput.status = parseStatus(options.status, 'task');
-      }
+      const updateInput = TaskInputs.update(options);
       if (options.tags !== undefined) {
         updateInput.tags = options.tags;
       }
@@ -123,10 +99,10 @@ taskCommand
         updateInput.epicId = options.epic;
       }
 
-      const task = updateTask(taskId, updateInput);
-      outputResult(task, formatTask, `Task updated: ${task.id}`);
+      const task = TaskService.updateTask(taskId, updateInput);
+      Output.outputResult(task, Output.formatTask, `Task updated: ${task.id}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });
 
@@ -135,9 +111,9 @@ taskCommand
   .description('Delete a task')
   .action((taskId: string) => {
     try {
-      deleteTask(taskId);
-      success(`Task deleted: ${taskId}`);
+      TaskService.deleteTask(taskId);
+      Output.success(`Task deleted: ${taskId}`);
     } catch (err) {
-      handleCommandError(err);
+      Output.handleCommandError(err);
     }
   });

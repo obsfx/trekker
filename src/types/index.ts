@@ -8,7 +8,9 @@ export const EPIC_STATUSES = ['todo', 'in_progress', 'completed', 'archived'] as
 export type EpicStatus = (typeof EPIC_STATUSES)[number];
 
 // Priority type (0-5, where 0 is highest priority)
-export type Priority = 0 | 1 | 2 | 3 | 4 | 5;
+export const PRIORITIES = [0, 1, 2, 3, 4, 5] as const;
+
+export type Priority = (typeof PRIORITIES)[number];
 
 // Default values
 export const DEFAULT_PRIORITY: Priority = 2;
@@ -93,9 +95,10 @@ export interface CreateEpicInput {
 
 export interface UpdateEpicInput {
   title?: string;
-  description?: string;
+  description?: string | null;
   status?: EpicStatus;
   priority?: Priority;
+  rank?: string;
 }
 
 export interface CreateTaskInput {
@@ -110,11 +113,12 @@ export interface CreateTaskInput {
 
 export interface UpdateTaskInput {
   title?: string;
-  description?: string;
+  description?: string | null;
   priority?: Priority;
   status?: TaskStatus;
-  tags?: string;
+  tags?: string | null;
   epicId?: string | null;
+  rank?: string;
 }
 
 export interface CreateCommentInput {
@@ -152,3 +156,39 @@ export const ENTITY_CONFIG_KEY_MAP: Record<EntityType, ProjectConfigKey> = {
   epic: 'epic_prefix',
   comment: 'comment_prefix',
 };
+
+export interface FieldChange {
+  from: unknown;
+  to: unknown;
+}
+
+export interface DependencyLink {
+  taskId: string;
+  dependsOnId: string;
+}
+
+export interface PageQuery {
+  limit?: number;
+  page?: number;
+}
+
+export interface EntityCounts {
+  epics: number;
+  tasks: number;
+  subtasks: number;
+}
+
+export interface ArchivedCounts {
+  tasks: number;
+  subtasks: number;
+}
+
+export interface SortClause {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface ErrorBody {
+  code: string;
+  message: string;
+}

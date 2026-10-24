@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-import type { EpicStatus, Priority, TaskStatus } from '../types';
+import type { EpicStatus, Priority, TaskStatus } from '@/src/types';
 
 // Project table
 export const projects = sqliteTable('projects', {
@@ -23,6 +23,7 @@ export const epics = sqliteTable('epics', {
   description: text('description'),
   status: text('status').notNull().default('todo').$type<EpicStatus>(),
   priority: integer('priority').notNull().default(2).$type<Priority>(),
+  rank: text('rank'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
@@ -38,6 +39,7 @@ export const tasks = sqliteTable('tasks', {
   priority: integer('priority').notNull().default(2).$type<Priority>(),
   status: text('status').notNull().default('todo').$type<TaskStatus>(),
   tags: text('tags'),
+  rank: text('rank'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
@@ -78,55 +80,65 @@ export const events = sqliteTable('events', {
 });
 
 // Relations
-export const projectsRelations = relations(projects, ({ many }) => ({
-  epics: many(epics),
-  tasks: many(tasks),
-}));
+export const projectsRelations = relations(projects, ({ many }) => {
+  return {
+    epics: many(epics),
+    tasks: many(tasks),
+  };
+});
 
-export const epicsRelations = relations(epics, ({ one, many }) => ({
-  project: one(projects, {
-    fields: [epics.projectId],
-    references: [projects.id],
-  }),
-  tasks: many(tasks),
-}));
+export const epicsRelations = relations(epics, ({ one, many }) => {
+  return {
+    project: one(projects, {
+      fields: [epics.projectId],
+      references: [projects.id],
+    }),
+    tasks: many(tasks),
+  };
+});
 
-export const tasksRelations = relations(tasks, ({ one, many }) => ({
-  project: one(projects, {
-    fields: [tasks.projectId],
-    references: [projects.id],
-  }),
-  epic: one(epics, {
-    fields: [tasks.epicId],
-    references: [epics.id],
-  }),
-  parentTask: one(tasks, {
-    fields: [tasks.parentTaskId],
-    references: [tasks.id],
-    relationName: 'subtasks',
-  }),
-  subtasks: many(tasks, { relationName: 'subtasks' }),
-  comments: many(comments),
-  dependsOn: many(dependencies, { relationName: 'dependsOn' }),
-  blockedBy: many(dependencies, { relationName: 'blockedBy' }),
-}));
+export const tasksRelations = relations(tasks, ({ one, many }) => {
+  return {
+    project: one(projects, {
+      fields: [tasks.projectId],
+      references: [projects.id],
+    }),
+    epic: one(epics, {
+      fields: [tasks.epicId],
+      references: [epics.id],
+    }),
+    parentTask: one(tasks, {
+      fields: [tasks.parentTaskId],
+      references: [tasks.id],
+      relationName: 'subtasks',
+    }),
+    subtasks: many(tasks, { relationName: 'subtasks' }),
+    comments: many(comments),
+    dependsOn: many(dependencies, { relationName: 'dependsOn' }),
+    blockedBy: many(dependencies, { relationName: 'blockedBy' }),
+  };
+});
 
-export const commentsRelations = relations(comments, ({ one }) => ({
-  task: one(tasks, {
-    fields: [comments.taskId],
-    references: [tasks.id],
-  }),
-}));
+export const commentsRelations = relations(comments, ({ one }) => {
+  return {
+    task: one(tasks, {
+      fields: [comments.taskId],
+      references: [tasks.id],
+    }),
+  };
+});
 
-export const dependenciesRelations = relations(dependencies, ({ one }) => ({
-  task: one(tasks, {
-    fields: [dependencies.taskId],
-    references: [tasks.id],
-    relationName: 'dependsOn',
-  }),
-  dependsOn: one(tasks, {
-    fields: [dependencies.dependsOnId],
-    references: [tasks.id],
-    relationName: 'blockedBy',
-  }),
-}));
+export const dependenciesRelations = relations(dependencies, ({ one }) => {
+  return {
+    task: one(tasks, {
+      fields: [dependencies.taskId],
+      references: [tasks.id],
+      relationName: 'dependsOn',
+    }),
+    dependsOn: one(tasks, {
+      fields: [dependencies.dependsOnId],
+      references: [tasks.id],
+      relationName: 'blockedBy',
+    }),
+  };
+});

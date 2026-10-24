@@ -6,8 +6,8 @@ description: Query tasks using natural language questions.
 ## Critical Rule: Bidirectional Sync
 
 **Trekker and Claude's TodoWrite MUST stay in sync:**
-- Trekker change → Update TodoWrite
-- TodoWrite change → Update Trekker
+- Trekker change: update TodoWrite
+- TodoWrite change: update Trekker
 - NEVER let them get out of sync
 
 ## When to Use
