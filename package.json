@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "trekker": "./bin/trekker.js"
+    "trekker": "bin/trekker.js"
   },
   "files": [
     "dist",
@@ -17,17 +17,16 @@
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:container": "bun tests/container/run.ts",
-    "test:release": "bun run check && bun test && bun run test:container",
+    "test:release": "bun run check && bun run typecheck && bun test && bun run test:container",
     "lint": "eslint . --cache",
     "lint:fix": "eslint . --fix --cache",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.ts\"",
+    "typecheck": "tsc --noEmit && tsc -p tests --noEmit && tsc -p scripts --noEmit",
     "check": "bun run lint && bun run format:check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "release:patch": "bun run test:release && npm version patch && npm run build && npm publish --access public",
-    "release:minor": "bun run test:release && npm version minor && npm run build && npm publish --access public",
-    "release:major": "bun run test:release && npm version major && npm run build && npm publish --access public"
+    "release": "bun scripts/release.ts"
   },
   "keywords": [
     "cli",
@@ -46,7 +45,7 @@
   "homepage": "https://github.com/obsfx/trekker",
   "repository": {
     "type": "git",
-    "url": "https://github.com/obsfx/trekker.git"
+    "url": "git+https://github.com/obsfx/trekker.git"
   },
   "bugs": {
     "url": "https://github.com/obsfx/trekker/issues"
@@ -62,7 +61,6 @@
     "drizzle-orm": "0.38.4"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "1.32.1",
     "@types/bun": "1.2.2",
     "drizzle-kit": "0.30.4",
     "eslint": "10.0.2",

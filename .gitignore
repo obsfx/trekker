@@ -30,7 +30,7 @@ Thumbs.db
 npm-debug.log*
 
 # Test coverage
-coverage/
+/coverage/
 
 # Temporary files
 *.tmp

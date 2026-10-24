@@ -5,7 +5,6 @@ import { CONTAINER_IMAGE, PREVIOUS_TREKKER_VERSIONS } from './release-matrix';
 
 const REPO_ROOT = join(import.meta.dir, '../..');
 const DASHBOARD_PACKAGE = '@obsfx/trekker-dashboard';
-const MCP_PACKAGE = '@obsfx/trekker-mcp';
 const CONTAINER_TEST_TIMEOUT_MS = '60000';
 
 function resolvePublishedVersion(packageName: string): string {
@@ -16,7 +15,7 @@ function resolvePublishedVersion(packageName: string): string {
   return result.stdout.trim();
 }
 
-function buildImage(dashboardVersion: string, mcpVersion: string): void {
+function buildImage(dashboardVersion: string): void {
   const result = spawnSync(
     'docker',
     [
@@ -29,8 +28,6 @@ function buildImage(dashboardVersion: string, mcpVersion: string): void {
       `PREVIOUS_TREKKER_VERSIONS=${PREVIOUS_TREKKER_VERSIONS.join(' ')}`,
       '--build-arg',
       `DASHBOARD_VERSION=${dashboardVersion}`,
-      '--build-arg',
-      `MCP_VERSION=${mcpVersion}`,
       '.',
     ],
     { cwd: REPO_ROOT, stdio: 'inherit' }
@@ -43,9 +40,7 @@ function buildImage(dashboardVersion: string, mcpVersion: string): void {
 const dashboardVersion =
   process.env.TREKKER_DASHBOARD_VERSION ?? resolvePublishedVersion(DASHBOARD_PACKAGE);
 
-const mcpVersion = process.env.TREKKER_MCP_VERSION ?? resolvePublishedVersion(MCP_PACKAGE);
-
-buildImage(dashboardVersion, mcpVersion);
+buildImage(dashboardVersion);
 
 const container = await new GenericContainer(CONTAINER_IMAGE).start();
 
@@ -63,7 +58,6 @@ try {
         TREKKER_CONTAINER_ID: container.getId(),
         TREKKER_IMAGE: CONTAINER_IMAGE,
         TREKKER_DASHBOARD_VERSION: dashboardVersion,
-        TREKKER_MCP_VERSION: mcpVersion,
       },
     }
   );

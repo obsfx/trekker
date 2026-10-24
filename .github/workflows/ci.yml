@@ -25,8 +25,7 @@ jobs:
           bun-version: ${{ env.BUN_VERSION }}
       - run: bun install --frozen-lockfile
       - run: bun run check
-      - run: bunx tsc --noEmit
-      - run: bunx tsc -p tests --noEmit
+      - run: bun run typecheck
 
   test:
     name: Integration tests (local)

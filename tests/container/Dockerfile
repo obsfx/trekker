@@ -28,8 +28,7 @@ RUN for version in $PREVIOUS_TREKKER_VERSIONS; do \
   done
 
 ARG DASHBOARD_VERSION
-ARG MCP_VERSION
-RUN npm install -g "@obsfx/trekker-dashboard@$DASHBOARD_VERSION" "@obsfx/trekker-mcp@$MCP_VERSION"
+RUN npm install -g "@obsfx/trekker-dashboard@$DASHBOARD_VERSION"
 
 COPY --from=pack /out/trekker.tgz /opt/packages/trekker.tgz
 RUN npm install -g /opt/packages/trekker.tgz
