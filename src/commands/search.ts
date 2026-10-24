@@ -75,7 +75,9 @@ function formatSearchResults(result: SearchResponse): string {
     if (r.title) {
       lines.push(`  Title: ${r.title}`);
     }
-    lines.push(`  ${r.snippet}`);
+    if (r.snippet) {
+      lines.push(`  ${r.snippet}`);
+    }
     lines.push('');
   }
 

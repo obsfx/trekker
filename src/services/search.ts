@@ -13,7 +13,7 @@ export interface SearchResult {
   type: SearchEntityType;
   id: string;
   title: string | null;
-  snippet: string;
+  snippet: string | null;
   score: number;
   status: string | null;
   parentId: string | null;
@@ -35,7 +35,7 @@ interface SearchRow {
   entity_id: string;
   entity_type: SearchEntityType;
   title: string | null;
-  snippet: string;
+  snippet: string | null;
   score: number;
   status: string | null;
   parent_id: string | null;
@@ -77,7 +77,7 @@ export function search(query: string, options?: SearchOptions): SearchResponse {
       entity_id,
       entity_type,
       title,
-      snippet(search_index, 3, '**', '**', '...', 32) as snippet,
+      NULLIF(snippet(search_index, 3, '**', '**', '...', 32), '') as snippet,
       bm25(search_index) as score,
       status,
       parent_id

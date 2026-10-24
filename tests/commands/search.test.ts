@@ -15,7 +15,7 @@ interface SearchResult {
   id: string;
   type: 'epic' | 'task' | 'subtask' | 'comment';
   title?: string;
-  snippet: string;
+  snippet: string | null;
   status?: string;
   parentId?: string;
 }
@@ -85,6 +85,35 @@ describe('search command', () => {
       const result = ctx.runToon<SearchResponse>('search nonexistentxyz123');
       expect(result.total).toBe(0);
       expect(result.results).toHaveLength(0);
+    });
+  });
+
+  describe('snippet', () => {
+    beforeEach(() => {
+      const task = ctx.runToon<Task>('task create -t "Parent task"');
+      ctx.run(`subtask create ${task.id} -t "Clamp range input"`);
+      ctx.run('task create -t "Empty range description" --description=');
+      ctx.run('task create -t "Described task" -d "Values outside the range are rejected"');
+    });
+
+    it('should return null snippet for title-only matches', () => {
+      const result = ctx.runToon<SearchResponse>('search range');
+      const byTitle = new Map(result.results.map((r) => [r.title, r.snippet]));
+
+      expect(byTitle.get('Clamp range input')).toBeNull();
+      expect(byTitle.get('Empty range description')).toBeNull();
+      expect(byTitle.get('Described task')).toBe('Values outside the **range** are rejected');
+    });
+
+    it('should not print a snippet line for title-only matches', () => {
+      const lines = ctx.run('search range').split('\n');
+
+      expect(lines).not.toContain('  null');
+      expect(lines.filter((line) => line.length > 0 && line.trim() === '')).toHaveLength(0);
+      expect(lines[lines.indexOf('  Title: Clamp range input') + 1]).toBe('');
+      expect(lines[lines.indexOf('  Title: Described task') + 1]).toBe(
+        '  Values outside the **range** are rejected'
+      );
     });
   });
 
