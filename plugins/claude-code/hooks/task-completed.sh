@@ -1,60 +1,37 @@
 #!/bin/bash
-# Stop/SubagentStop hook: Sync task completion to Trekker
-# Fires when Claude (main agent or subagent) finishes its work.
-# Best-effort: silently exits if trekker is not initialized or no match found.
+# TaskCompleted hook: keep a Claude task open while the Trekker task it names is still in progress.
+# Exit code 2 blocks the completion and sends stderr back to Claude.
 
 set -euo pipefail
 
-# Check if trekker is initialized
-if [ ! -d ".trekker" ]; then
+MAX_REFERENCED_IDS=5
+
+if [ ! -d ".trekker" ] || ! command -v trekker &>/dev/null || ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-# Check if jq is available
-if ! command -v jq &>/dev/null; then
-  exit 0
-fi
-
-# Read input from stdin
 input=$(cat)
+text=$(echo "$input" | jq -r '[.task_subject // "", .task_description // ""] | join(" ")')
 
-# Extract task subject
-task_subject=$(echo "$input" | jq -r '.task_subject // empty')
+ids=$(echo "$text" | grep -oE '[A-Z][A-Z0-9]*-[0-9]+' | awk '!seen[$0]++' | head -"$MAX_REFERENCED_IDS" || true)
 
-if [ -z "$task_subject" ]; then
-  exit 0
-fi
-
-# Extract distinctive keywords (skip stop words and common verbs)
-# FTS5 is not semantic - use single keywords for best recall
-keywords=$(echo "$task_subject" | tr '[:upper:]' '[:lower:]' | \
-  sed 's/[^a-z0-9 ]//g' | \
-  tr ' ' '\n' | \
-  grep -vE '^(the|a|an|is|are|was|were|be|been|have|has|had|do|does|did|will|would|could|should|may|might|can|for|and|nor|but|or|yet|so|at|by|in|of|on|to|up|with|from|into|that|this|it|its|fix|add|update|implement|create|remove|delete|make|set|get|new|all|not|no|run|use|check|test|write|read|build)$' | \
-  head -3)
-
-if [ -z "$keywords" ]; then
-  exit 0
-fi
-
-# Search trekker for matching in-progress tasks using single keywords
-for keyword in $keywords; do
-  # Skip very short keywords
-  [ ${#keyword} -lt 3 ] && continue
-
-  results=$(trekker --toon search "$keyword" --type task --status in_progress --limit 1 2>/dev/null || true)
-  task_id=$(echo "$results" | sed -n 's/^  task,\([^,]*\),.*/\1/p' | head -1 || true)
-
-  if [ -n "$task_id" ]; then
-    trekker comment add "$task_id" -a "claude" -c "Auto-synced: completed via Stop hook. Claude task: $task_subject" 2>/dev/null || true
-    trekker task update "$task_id" -s completed 2>/dev/null || true
-    echo "Trekker sync: marked $task_id as completed"
-    echo ""
-    echo "## Next Ready Tasks"
-    echo ""
-    trekker --toon ready --limit 5 2>/dev/null || echo "No ready tasks found."
-    exit 0
+pending=()
+for id in $ids; do
+  status=$(trekker --toon task show "$id" 2>/dev/null | sed -n 's/^status: //p' || true)
+  if [ "$status" = "in_progress" ]; then
+    pending+=("$id")
   fi
 done
 
-exit 0
+if [ ${#pending[@]} -eq 0 ]; then
+  exit 0
+fi
+
+{
+  echo "Trekker ${pending[*]} still in progress. Close it in Trekker before completing this task:"
+  for id in "${pending[@]}"; do
+    echo "  trekker comment add $id -a \"claude\" -c \"Summary: <what changed, files, follow-ups>\""
+    echo "  trekker task update $id -s completed"
+  done
+} >&2
+exit 2

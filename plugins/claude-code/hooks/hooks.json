@@ -22,21 +22,8 @@
         ]
       }
     ],
-    "Stop": [
+    "TaskCompleted": [
       {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/task-completed.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",

@@ -85,7 +85,7 @@ Versions before 2.0 bundled an MCP server with `trekker_*` tools. The plugin no 
 |-------|----------|
 | `SessionStart` | Reports a missing `trekker` CLI, then shows in-progress tasks with their latest comments and dependencies, or the ready queue when nothing is in progress, plus recent activity |
 | `PreCompact` | Prints the same state before compaction so in-progress work and checkpoints survive it |
-| `Stop`, `SubagentStop` | Best effort: when the hook input names a finished task (`task_subject`), finds the matching in-progress Trekker task, comments, completes it, and shows what is ready next. Needs `jq` |
+| `TaskCompleted` | When Claude marks one of its own tasks done and that task names a Trekker ID (`TREK-12: fix login`) that is still in progress, the hook blocks the completion and tells Claude to leave a summary comment and complete the Trekker task first. It never changes Trekker itself and ignores tasks that name no ID. Needs `jq` |
 
 All hooks exit quietly in projects without a `.trekker` directory.
 
@@ -127,4 +127,4 @@ The plugin version follows the CLI version: `bun run release` bumps `plugin.json
 
 - **Trekker commands fail.** Run `command -v trekker` and `bun --version` in the shell Claude uses, then check the failing command's flags with `trekker <command> --help`.
 - **No session context appears.** Make sure the project has a `.trekker` directory (`trekker init`).
-- **The Stop hook never completes tasks.** It needs `jq` on PATH and a task subject in the hook input; otherwise it does nothing.
+- **The TaskCompleted hook never blocks.** It needs `jq` on PATH, and it only acts when the Claude task's subject or description contains a Trekker ID whose task is in progress.
