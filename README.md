@@ -1,11 +1,11 @@
 # Trekker Claude Code Plugin
 
-A Claude Code plugin for [trekker](https://github.com/obsfx/trekker), the AI-optimized issue tracker. Provides MCP tools, slash commands, agents, and skills for seamless task management in Claude Code.
+A Claude Code plugin for [trekker](https://github.com/obsfx/trekker), the AI-optimized issue tracker. Provides slash commands, an agent, skills, and hooks that teach Claude to drive the `trekker` CLI directly for seamless task management in Claude Code.
 
 ## Prerequisites
 
-- [trekker](https://github.com/obsfx/trekker) CLI installed globally
-- Node.js 18+
+- [trekker](https://github.com/obsfx/trekker) CLI installed globally (`trekker --version` should work)
+- [Bun](https://bun.sh), the runtime trekker uses
 - Claude Code CLI
 
 ## Installation
@@ -35,7 +35,7 @@ Or in Claude Code interactive mode:
 /plugin install trekker
 ```
 
-The MCP server is bundled with the plugin and auto-configured.
+There is nothing else to configure: the plugin calls the `trekker` CLI on your PATH.
 
 #### Option B: Manual Installation
 
@@ -56,38 +56,16 @@ trekker init
 
 ## Features
 
-### MCP Tools (26 tools)
+### CLI-First
 
-The MCP server exposes trekker functionality as tools:
+The plugin has no MCP server. Skills, commands, the agent, and hooks all run the `trekker` CLI through Bash, so the commands Claude runs are the same ones you would type, and every CLI feature is available the day it ships.
 
-| Category | Tool | Description |
-|----------|------|-------------|
-| Task | `trekker_task_create` | Create a new task |
-| Task | `trekker_task_list` | List tasks with filters and pagination |
-| Task | `trekker_task_show` | Show task details |
-| Task | `trekker_task_update` | Update task fields |
-| Task | `trekker_task_delete` | Delete a task |
-| Task | `trekker_task_ready` | Show unblocked tasks ready to work on |
-| Epic | `trekker_epic_create` | Create an epic |
-| Epic | `trekker_epic_list` | List epics with pagination |
-| Epic | `trekker_epic_show` | Show epic details |
-| Epic | `trekker_epic_update` | Update an epic |
-| Epic | `trekker_epic_delete` | Delete an epic |
-| Subtask | `trekker_subtask_create` | Create a subtask |
-| Subtask | `trekker_subtask_list` | List subtasks with pagination |
-| Subtask | `trekker_subtask_update` | Update a subtask |
-| Subtask | `trekker_subtask_delete` | Delete a subtask |
-| Comment | `trekker_comment_add` | Add a comment |
-| Comment | `trekker_comment_list` | List comments with pagination |
-| Comment | `trekker_comment_update` | Update a comment |
-| Comment | `trekker_comment_delete` | Delete a comment |
-| Dependency | `trekker_dep_add` | Add a dependency |
-| Dependency | `trekker_dep_remove` | Remove a dependency |
-| Dependency | `trekker_dep_list` | List dependencies |
-| Search | `trekker_search` | FTS5 full-text search |
-| System | `trekker_init` | Initialize trekker |
-| System | `trekker_quickstart` | Get workflow guide |
-| System | `trekker_wipe` | Wipe database |
+- `trekker --toon <command>` returns compact structured output for the agent
+- `trekker quickstart` and `trekker <command> --help` are the reference the skills point to
+
+#### Upgrading from 1.x
+
+Version 2.0.0 removed the bundled MCP server and its `trekker_*` tools. After updating, you can delete any `mcp__plugin_trekker_trekker__*` entries from your Claude Code permission allowlists. To skip permission prompts for the CLI instead, allow `Bash(trekker:*)`.
 
 ### Slash Commands (13 commands)
 
@@ -137,6 +115,7 @@ Invoke with `/trekker:task-agent` to let Claude work through tasks autonomously.
 The plugin includes hooks for context management and workflow automation:
 
 **SessionStart** - When Claude Code starts:
+- Reports when the `trekker` CLI is missing from PATH
 - Shows in-progress tasks with recent comments (resume context)
 - If no work in progress, shows ready tasks
 - Provides workflow reminder
@@ -195,16 +174,10 @@ trekker comment add TREK-1 -a "claude" -c "Checkpoint: done X. Next: Y. Files: a
 ```
 trekker-claude-code/
 ├── .claude-plugin/
-│   ├── plugin.json           # Plugin metadata and MCP server config
+│   ├── plugin.json           # Plugin metadata
 │   └── marketplace.json      # Marketplace distribution config
-├── mcp-server/
-│   ├── src/
-│   │   ├── index.ts          # MCP server entry
-│   │   ├── cli-runner.ts     # CLI execution utility
-│   │   ├── types.ts          # TypeScript types
-│   │   └── tools/            # MCP tool definitions (26 tools)
-│   ├── package.json
-│   └── tsconfig.json
+├── .githooks/
+│   └── post-commit           # Bumps the plugin version on every commit
 ├── commands/                 # Slash command definitions (13 commands)
 ├── agents/
 │   └── task-agent.md         # Autonomous task completion agent
@@ -216,30 +189,27 @@ trekker-claude-code/
 │   ├── search/               # Search-first workflow
 │   ├── find-duplicates/      # Duplicate detection
 │   └── smart-query/          # Intelligent querying
-├── hooks/
-│   ├── hooks.json            # Hook configuration
-│   ├── session-start.sh      # SessionStart hook
-│   ├── pre-compact.sh        # PreCompact hook
-│   ├── task-completed.sh     # Stop/SubagentStop hook
-└── docs/
-    ├── state-management.md   # SQLite persistence and conflict handling
-    └── plans/                # Design documents
+└── hooks/
+    ├── hooks.json            # Hook configuration
+    ├── lib/utils.sh          # Shared hook helpers
+    ├── session-start.sh      # SessionStart hook
+    ├── pre-compact.sh        # PreCompact hook
+    └── task-completed.sh     # Stop/SubagentStop hook
 ```
 
 ## Development
 
+There is no build step. Skills, commands, and hooks are plain Markdown and shell.
+
 ```bash
-# Clone the repository
 git clone https://github.com/obsfx/trekker-claude-code.git
 cd trekker-claude-code
 
-# Build MCP server
-cd mcp-server
-pnpm install
-pnpm build
+# Enable the version-bump hook so Claude Code picks up each change
+git config core.hooksPath .githooks
 
-# Watch mode for development
-pnpm dev
+# Load the working copy in Claude Code
+claude --plugin-dir .
 ```
 
 ## Troubleshooting
@@ -249,11 +219,11 @@ pnpm dev
 1. Verify trekker CLI is installed: `trekker --version`
 2. Check plugin is in correct location: `ls ~/.claude/plugins/trekker`
 
-### MCP tools not available
+### Trekker commands fail
 
-1. Verify plugin is installed: `ls ~/.claude/plugins/trekker`
-2. Check MCP server exists: `ls ~/.claude/plugins/trekker/mcp-server/dist/index.js`
-3. Restart Claude Code after installation
+1. Confirm the CLI resolves in the same shell Claude uses: `command -v trekker`
+2. Confirm Bun is installed: `bun --version`
+3. Check the flags for the failing command: `trekker <command> --help`
 
 ### Hooks not running
 

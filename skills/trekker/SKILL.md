@@ -13,6 +13,15 @@ Trekker provides persistent task memory across sessions. Unlike TodoWrite which 
 
 **Run `trekker quickstart` for the complete command reference and workflow guide.**
 
+## How to Call Trekker
+
+Trekker is a CLI. Run every operation as a `trekker` command through the Bash tool. This plugin ships no MCP tools.
+
+- Add `--toon` before the subcommand for compact, structured output: `trekker --toon task show TREK-1`
+- Check flags with `trekker <command> --help` instead of guessing them
+- Quote titles, descriptions, and comments: `trekker comment add TREK-1 -a "claude" -c "Summary: ..."`
+- If `trekker` is not on PATH, ask the user to install it: `npm install -g @obsfx/trekker` (requires Bun)
+
 ---
 
 ## CRITICAL: Trekker Over TodoWrite
@@ -52,7 +61,7 @@ trekker search "password"
 trekker search "deployment" --type task
 
 # Filter by status
-trekker search "memory" --status todo,in_progress
+trekker search "memory" --status todo
 ```
 
 **Why search is mandatory:**
@@ -96,7 +105,7 @@ trekker search "memory" --status todo,in_progress
 | WRONG | RIGHT |
 |-------|-------|
 | `trekker start` | `trekker task update <id> -s in_progress` |
-| `trekker blocked` | `trekker task update <id> -s blocked` |
+| `trekker blocked` | `trekker comment add <id> -a "claude" -c "Blocked: <reason>"` |
 | `trekker done` | `trekker task update <id> -s completed` |
 
 **Never mix them:** `/trekker:start` is a skill workflow, `trekker` is the CLI binary.

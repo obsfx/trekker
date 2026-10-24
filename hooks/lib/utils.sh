@@ -1,6 +1,13 @@
 #!/bin/bash
 # Shared utilities for trekker hooks
 
+exit_unless_trekker_cli() {
+    if ! command -v trekker >/dev/null 2>&1; then
+        echo "Trekker: CLI not found. Install it with \`npm install -g @obsfx/trekker\` to enable Trekker workflows."
+        exit 0
+    fi
+}
+
 # Extract count from toon format (paginated: "total: N" on first line)
 get_toon_count() {
     grep -m1 '^total:' | sed 's/^total:[[:space:]]*//'

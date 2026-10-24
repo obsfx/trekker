@@ -1,7 +1,7 @@
 {
   "name": "trekker",
-  "description": "AI-optimized issue tracker for coding workflows. Search-first workflow with persistent task memory across sessions.",
-  "version": "1.10.3",
+  "description": "AI-optimized issue tracker for coding workflows. Search-first workflow with persistent task memory across sessions, driven through the trekker CLI.",
+  "version": "2.0.1",
   "author": {
     "name": "Omercan Balandi",
     "url": "https://github.com/obsfx"
@@ -15,14 +15,7 @@
     "ai-workflow",
     "agent-memory",
     "search-first",
-    "context-recovery"
-  ],
-  "mcpServers": {
-    "trekker": {
-      "command": "node",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcp-server/dist/index.js"
-      ]
-    }
-  }
+    "context-recovery",
+    "cli"
+  ]
 }

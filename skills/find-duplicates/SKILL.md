@@ -1,5 +1,7 @@
+---
 name: find-duplicates
 description: MANDATORY before creating any task. Use search to detect duplicates and prevent redundant work.
+---
 
 ## CRITICAL: Search Before Creating ANY Task
 
@@ -33,7 +35,7 @@ trekker search "login"
 trekker search "timeout" --type task
 
 # Search by status
-trekker search "performance" --status todo,in_progress
+trekker search "performance" --status todo
 ```
 
 ## MANDATORY Workflow

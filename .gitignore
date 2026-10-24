@@ -3,7 +3,5 @@ node_modules/
 .DS_Store
 .trekker/
 
-# mcp-server/dist/ is tracked - required for plugin installation
-
 docs/
 .idea/

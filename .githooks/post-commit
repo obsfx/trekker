@@ -9,40 +9,23 @@ export TREKKER_POST_COMMIT=1
 
 ROOT="$(git rev-parse --show-toplevel)"
 
-# 1. Build MCP server
-echo "post-commit: building mcp-server..."
-cd "$ROOT/mcp-server"
-pnpm build 2>/dev/null
-
-if [ ! -f "dist/index.js" ]; then
-  echo "post-commit: build failed — dist/index.js not found" >&2
-  exit 0
-fi
-
-# 2. Bump patch version and sync across all version files
+# 1. Bump patch version in plugin.json and sync it to marketplace.json
 cd "$ROOT"
 node -e "
 const fs = require('fs');
-const path = require('path');
 
 const files = {
-  pkg: 'mcp-server/package.json',
   plugin: '.claude-plugin/plugin.json',
   marketplace: '.claude-plugin/marketplace.json',
 };
 
-// Read and bump patch version from package.json
-const pkg = JSON.parse(fs.readFileSync(files.pkg, 'utf8'));
-const parts = pkg.version.split('.');
+// Read and bump patch version from plugin.json
+const plugin = JSON.parse(fs.readFileSync(files.plugin, 'utf8'));
+const parts = plugin.version.split('.');
 parts[2] = String(Number(parts[2]) + 1);
 const newVersion = parts.join('.');
 
-// Update package.json
-pkg.version = newVersion;
-fs.writeFileSync(files.pkg, JSON.stringify(pkg, null, 2) + '\n');
-
 // Update plugin.json
-const plugin = JSON.parse(fs.readFileSync(files.plugin, 'utf8'));
 plugin.version = newVersion;
 fs.writeFileSync(files.plugin, JSON.stringify(plugin, null, 2) + '\n');
 
@@ -56,15 +39,13 @@ fs.writeFileSync(files.marketplace, JSON.stringify(market, null, 2) + '\n');
 console.log('post-commit: bumped version to ' + newVersion);
 "
 
-# 3. Stage updated files and amend the commit
-git add mcp-server/dist/index.js \
-       mcp-server/package.json \
-       .claude-plugin/plugin.json \
+# 2. Stage updated files and amend the commit
+git add .claude-plugin/plugin.json \
        .claude-plugin/marketplace.json
 
 if ! git diff --cached --quiet; then
   git commit --amend --no-edit --no-verify
-  echo "post-commit: amended commit with build and version bump"
+  echo "post-commit: amended commit with version bump"
 else
   echo "post-commit: no changes to amend"
 fi

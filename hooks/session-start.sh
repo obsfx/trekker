@@ -4,6 +4,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/utils.sh"
 
+exit_unless_trekker_cli
+
 if [ ! -d ".trekker" ]; then
     echo "Trekker: not initialized. Run \`trekker init\`."
     exit 0
@@ -24,7 +26,7 @@ echo "**State**: $IN_PROG in-progress | $TODO todo | $EPIC_COUNT epics"
 echo ""
 
 # Rules (compact — details in CLAUDE.md and skills)
-echo "CRITICAL: Use Trekker MCP tools (NOT TaskCreate/TaskUpdate/TodoWrite). MANDATORY: Search (\`trekker search \"<keyword>\"\`) before any action."
+echo "CRITICAL: Track work with the \`trekker\` CLI through Bash (NOT TaskCreate/TaskUpdate/TodoWrite). Add \`--toon\` for structured output. MANDATORY: Search (\`trekker search \"<keyword>\"\`) before any action."
 echo ""
 
 # In-progress work with context

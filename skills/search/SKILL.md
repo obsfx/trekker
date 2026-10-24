@@ -1,5 +1,7 @@
+---
 name: search
 description: PRIMARY tool for gathering context. Search tasks before any action.
+---
 
 ## CRITICAL: Use This First
 
@@ -50,7 +52,7 @@ trekker search "password"
 trekker search "deployment" --type task
 
 # Filter by status
-trekker search "memory" --status todo,in_progress
+trekker search "memory" --status todo
 
 # Rebuild index if needed
 trekker search "caching" --rebuild-index

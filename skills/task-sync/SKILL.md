@@ -21,7 +21,7 @@ TodoWrite = Session Mirror (conversation-scoped only)
 
 ### When Starting a Session
 
-1. Read Trekker state first: `trekker --toon task list --status todo,in_progress`
+1. Read Trekker state first: `trekker --toon list --type task --status todo,in_progress`
 2. Populate TodoWrite from Trekker tasks
 3. Never trust TodoWrite from previous sessions - always refresh from Trekker
 

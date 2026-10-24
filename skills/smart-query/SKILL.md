@@ -1,5 +1,7 @@
+---
 name: smart-query
 description: Query tasks using natural language questions.
+---
 
 ## Critical Rule: Bidirectional Sync
 
@@ -41,7 +43,7 @@ trekker task list --status in_progress
 trekker task list --status completed
 
 # Priority queries
-trekker task list --priority 0,1 --status todo
+trekker list --type task --priority 0,1 --status todo
 
 # Search queries - use single keywords (FTS5, not semantic)
 trekker search "performance"
