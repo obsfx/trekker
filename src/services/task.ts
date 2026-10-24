@@ -206,6 +206,8 @@ export function deleteTask(id: string): void {
     throw new Error(`Task not found: ${id}`);
   }
 
-  // Note: Subtasks and comments will be cascade deleted by SQLite
-  db.delete(tasks).where(eq(tasks.id, id)).run();
+  db.transaction((tx) => {
+    tx.delete(tasks).where(eq(tasks.parentTaskId, id)).run();
+    tx.delete(tasks).where(eq(tasks.id, id)).run();
+  });
 }

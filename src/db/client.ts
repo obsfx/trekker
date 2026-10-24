@@ -30,6 +30,15 @@ function ensureTrekkerDir(cwd: string = process.cwd()): void {
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 let sqliteInstance: Database | null = null;
 
+const BUSY_TIMEOUT_MS = 5000;
+
+function openSqlite(dbPath: string): Database {
+  const sqlite = new Database(dbPath);
+  sqlite.run('PRAGMA foreign_keys = ON');
+  sqlite.run(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
+  return sqlite;
+}
+
 export function getDb(cwd: string = process.cwd()) {
   if (dbInstance) {
     return dbInstance;
@@ -40,7 +49,7 @@ export function getDb(cwd: string = process.cwd()) {
     throw new Error("Trekker not initialized. Run 'trekker init' first.");
   }
 
-  sqliteInstance = new Database(dbPath);
+  sqliteInstance = openSqlite(dbPath);
   dbInstance = drizzle(sqliteInstance, { schema });
 
   // Migrate existing databases to add search index if missing
@@ -59,7 +68,7 @@ export function createDb(cwd: string = process.cwd()) {
   ensureTrekkerDir(cwd);
   const dbPath = getDbPath(cwd);
 
-  sqliteInstance = new Database(dbPath);
+  sqliteInstance = openSqlite(dbPath);
   dbInstance = drizzle(sqliteInstance, { schema });
 
   // Create tables

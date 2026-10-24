@@ -50,6 +50,7 @@ export default tseslint.config(
       ],
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      '@typescript-eslint/no-extraneous-class': ['error', { allowStaticOnly: true }],
       '@typescript-eslint/prefer-readonly': 'error',
       '@typescript-eslint/method-signature-style': ['error', 'property'],
       '@typescript-eslint/no-unused-vars': [

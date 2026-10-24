@@ -1,121 +1,115 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { decode } from '@toon-format/toon';
+import {
+  TestTarget,
+  type CommandOptions,
+  type CommandResult,
+  type SqlRow,
+  type Workspace,
+} from './workspace';
 
 export interface TestContext {
   cwd: string;
+  workspace: Workspace;
   run: (args: string) => string;
   runToon: <T = unknown>(args: string) => T;
   runExpectError: (args: string) => string;
+  runRaw: (args: string, options?: CommandOptions) => CommandResult;
+  exists: (relativePath: string) => boolean;
+  query: (sql: string) => SqlRow[];
   cleanup: () => void;
 }
-
-const CLI_PATH = join(import.meta.dir, '../../src/index.ts');
 
 // TOON values are JSON-compatible; round-tripping through JSON keeps the unsafe cast inside test code.
 function typedDecode<T>(input: string): T {
   return JSON.parse(JSON.stringify(decode(input)));
 }
 
-export function createTestContext(): TestContext {
-  const cwd = mkdtempSync(join(tmpdir(), 'trekker-test-'));
+export function parseArgs(args: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuote = false;
+  let quoteChar = '';
 
-  function runCommand(args: string[]): { stdout: string; stderr: string; status: number } {
-    const result = spawnSync('bun', ['run', CLI_PATH, ...args], {
-      cwd,
-      encoding: 'utf-8',
-      env: { ...process.env, NO_COLOR: '1' },
-    });
-
-    return {
-      stdout: result.stdout?.trim() ?? '',
-      stderr: result.stderr?.trim() ?? '',
-      status: result.status ?? 1,
-    };
+  for (const char of args) {
+    if (!inQuote && (char === '"' || char === "'")) {
+      inQuote = true;
+      quoteChar = char;
+    } else if (inQuote && char === quoteChar) {
+      inQuote = false;
+      quoteChar = '';
+    } else if (!inQuote && char === ' ') {
+      if (current) {
+        result.push(current);
+        current = '';
+      }
+    } else {
+      current += char;
+    }
   }
 
-  function parseArgs(args: string): string[] {
-    // Simple argument parser that handles quoted strings
-    const result: string[] = [];
-    let current = '';
-    let inQuote = false;
-    let quoteChar = '';
+  if (current) {
+    result.push(current);
+  }
 
-    for (const char of args) {
-      if (!inQuote && (char === '"' || char === "'")) {
-        inQuote = true;
-        quoteChar = char;
-      } else if (inQuote && char === quoteChar) {
-        inQuote = false;
-        quoteChar = '';
-      } else if (!inQuote && char === ' ') {
-        if (current) {
-          result.push(current);
-          current = '';
-        }
-      } else {
-        current += char;
-      }
+  return result;
+}
+
+export function createTestContext(
+  workspace: Workspace = TestTarget.createWorkspace()
+): TestContext {
+  function runSuccessfully(args: string[]): string {
+    const result = workspace.trekker(args);
+    if (result.status !== 0) {
+      throw new Error(`Command failed: ${result.stderr || result.stdout}`);
     }
-
-    if (current) {
-      result.push(current);
-    }
-
-    return result;
+    return result.stdout;
   }
 
   return {
-    cwd,
+    cwd: workspace.cwd,
+    workspace,
 
     run(args: string): string {
-      const parsedArgs = parseArgs(args);
-      const result = runCommand(parsedArgs);
-
-      if (result.status !== 0) {
-        throw new Error(`Command failed: ${result.stderr || result.stdout}`);
-      }
-
-      return result.stdout;
+      return runSuccessfully(parseArgs(args));
     },
 
     runToon<T = unknown>(args: string): T {
-      const parsedArgs = ['--toon', ...parseArgs(args)];
-      const result = runCommand(parsedArgs);
-
-      if (result.status !== 0) {
-        throw new Error(`Command failed: ${result.stderr || result.stdout}`);
-      }
-
-      // Parse TOON format
-      return typedDecode<T>(result.stdout);
+      return typedDecode<T>(runSuccessfully(['--toon', ...parseArgs(args)]));
     },
 
     runExpectError(args: string): string {
-      const parsedArgs = ['--toon', ...parseArgs(args)];
-      const result = runCommand(parsedArgs);
+      const result = workspace.trekker(['--toon', ...parseArgs(args)]);
 
       if (result.status === 0) {
         throw new Error('Expected command to fail but it succeeded');
       }
 
-      // Try to parse TOON error format, otherwise return raw output
       try {
         const parsed = decode(result.stderr || result.stdout);
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && 'error' in parsed) {
           return String(parsed.error);
         }
       } catch {
-        // Ignore parse errors
+        // Non-TOON output is returned verbatim below.
       }
 
       return result.stderr || result.stdout;
     },
 
+    runRaw(args: string, options?: CommandOptions): CommandResult {
+      return workspace.trekker(parseArgs(args), options);
+    },
+
+    exists(relativePath: string): boolean {
+      return workspace.exists(relativePath);
+    },
+
+    query(sql: string): SqlRow[] {
+      return workspace.query(sql);
+    },
+
     cleanup(): void {
-      rmSync(cwd, { recursive: true, force: true });
+      workspace.dispose();
     },
   };
 }

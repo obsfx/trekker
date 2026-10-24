@@ -8,17 +8,13 @@ export function generateId(entityType: EntityType): string {
   const db = getDb();
   const prefix = getProjectConfigValue(ENTITY_CONFIG_KEY_MAP[entityType]);
 
-  // Atomically increment the counter and return the new value
-  db.update(idCounters)
+  const result = db
+    .update(idCounters)
     .set({ counter: sql`${idCounters.counter} + 1` })
     .where(eq(idCounters.entityType, entityType))
-    .run();
-
-  const result = db
-    .select({ counter: idCounters.counter })
-    .from(idCounters)
-    .where(eq(idCounters.entityType, entityType))
-    .get();
+    .returning({ counter: idCounters.counter })
+    .all()
+    .at(0);
 
   if (!result) {
     throw new Error(`Counter not found for entity type: ${entityType}`);
