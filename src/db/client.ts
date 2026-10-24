@@ -61,6 +61,8 @@ export function getDb(cwd: string = process.cwd()) {
   // Migrate existing databases to add project config if missing
   migrateProjectConfigTable(sqliteInstance);
 
+  createDependencyIndexes(sqliteInstance);
+
   return dbInstance;
 }
 
@@ -136,6 +138,8 @@ export function createDb(cwd: string = process.cwd()) {
       created_at INTEGER NOT NULL
     )
   `);
+
+  createDependencyIndexes(sqliteInstance);
 
   sqliteInstance.run(`
     CREATE TABLE IF NOT EXISTS id_counters (
@@ -480,9 +484,26 @@ function migrateHistoryTable(sqlite: Database): void {
   }
 }
 
+function createDependencyIndexes(sqlite: Database): void {
+  sqlite.run('CREATE INDEX IF NOT EXISTS idx_dependencies_task ON dependencies(task_id)');
+  sqlite.run(
+    'CREATE INDEX IF NOT EXISTS idx_dependencies_depends_on ON dependencies(depends_on_id)'
+  );
+}
+
 function seedProjectConfig(sqlite: Database): void {
+  const existingKeys = new Set(
+    sqlite
+      .query<{ key: string }, []>('SELECT key FROM project_config')
+      .all()
+      .map((row) => row.key)
+  );
   for (const [key, value] of Object.entries(PROJECT_CONFIG_DEFAULTS)) {
-    sqlite.query('INSERT OR IGNORE INTO project_config (key, value) VALUES (?, ?)').run(key, value);
+    if (!existingKeys.has(key)) {
+      sqlite
+        .query('INSERT OR IGNORE INTO project_config (key, value) VALUES (?, ?)')
+        .run(key, value);
+    }
   }
 }
 
