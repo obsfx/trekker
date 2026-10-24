@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$PLUGIN_ROOT/scripts/session-start.sh\"",
+            "statusMessage": "Loading Trekker context",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
