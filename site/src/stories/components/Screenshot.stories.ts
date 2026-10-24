@@ -5,6 +5,6 @@ export default {
   component: Screenshot,
 };
 
-export const Kanban = { args: { view: "kanban", alt: "Trekker dashboard kanban board" } };
+export const Board = { args: { view: "board", alt: "Trekker web UI board" } };
 
 export const Comments = { args: { view: "comments", alt: "Task comments left by agents" } };

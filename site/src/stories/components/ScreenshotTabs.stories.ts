@@ -5,4 +5,4 @@ export default {
   component: ScreenshotTabs,
 };
 
-export const Dashboard = { args: { id: "dashboard" } };
+export const WebUi = { args: { id: "web-ui" } };

@@ -8,7 +8,7 @@ interface Props {
 
 const { id, sizes } = Astro.props;
 const views = [
-  { view: "kanban", label: "Kanban", alt: "Trekker dashboard kanban board with epics and tasks grouped by status" },
+  { view: "board", label: "Board", alt: "Trekker web UI board with epics and tasks grouped by status" },
   { view: "task", label: "Task", alt: "Task detail with status, priority, dependencies and subtasks" },
   { view: "comments", label: "Comments", alt: "Task comments left by agents between sessions" },
   { view: "epic", label: "Epic", alt: "Epic detail with its task checklist" },
@@ -17,7 +17,7 @@ const views = [
 ---
 
 <div class="screenshot-tabs" data-screenshot-tabs>
-  <div class="screenshot-tabs__list" role="tablist" aria-label="Dashboard views">
+  <div class="screenshot-tabs__list" role="tablist" aria-label="Web UI views">
     {
       views.map((item, index) => {
         return (

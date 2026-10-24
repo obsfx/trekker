@@ -17,14 +17,14 @@ import WaveCanvas from "@/src/components/WaveCanvas.astro";
       <h1 class="home__intro">Persistent task memory for AI coding agents.</h1>
       <InstallCommand command="bun install -g @obsfx/trekker" />
       <p>
-        Trekker is a command-line issue tracker that keeps epics, tasks, dependencies and comments in a SQLite database inside your project. No server, no account, no sync service, just a <code>.trekker</code> folder next to your code.
+        Trekker is a command-line issue tracker that keeps epics, tasks, dependencies and comments in a SQLite database inside your project. No account, no hosted server, no sync service, just a <code>.trekker</code> folder next to your code.
       </p>
       <p>
-        Plugins for <ExternalLink href="https://github.com/obsfx/trekker/tree/main/plugins/claude-code" wave={0}>Claude Code</ExternalLink> and <ExternalLink href="https://github.com/obsfx/trekker/tree/main/plugins/codex" wave={1}>Codex</ExternalLink> teach your agent a search-first workflow and have it run the CLI directly, with no MCP server in between. A <ExternalLink href="https://github.com/obsfx/trekker-dashboard" wave={2}>dashboard</ExternalLink> shows the board while it works.
+        Plugins for <ExternalLink href="https://github.com/obsfx/trekker/tree/main/plugins/claude-code" wave={0}>Claude Code</ExternalLink> and <ExternalLink href="https://github.com/obsfx/trekker/tree/main/plugins/codex" wave={1}>Codex</ExternalLink> teach your agent a search-first workflow and have it run the CLI directly, with no MCP server in between. <code>trekker serve</code> opens a <ExternalLink href="https://github.com/obsfx/trekker#web-ui" wave={2}>web UI</ExternalLink> that shows the board while it works.
       </p>
     </div>
     <div class="home__screens">
-      <ScreenshotTabs id="dashboard" sizes="(min-width: 64rem) 60rem, 100vw" />
+      <ScreenshotTabs id="web-ui" sizes="(min-width: 64rem) 60rem, 100vw" />
     </div>
     <div class="home__copy">
       <p>Trekker runs on Bun. Run <code>trekker init</code> in a repository. Any agent that can run shell commands learns the rest from <code>trekker quickstart</code>.</p>
@@ -95,6 +95,7 @@ import WaveCanvas from "@/src/components/WaveCanvas.astro";
     color: var(--fg);
     font-family: var(--font-mono);
     font-size: 0.95em;
+    white-space: nowrap;
   }
 
   .home__screens {
