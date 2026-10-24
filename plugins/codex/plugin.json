@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "trekker",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "Codex plugin for Trekker, the AI-optimized issue tracker for persistent task tracking across coding sessions. Drives the trekker CLI directly.",
   "author": {
     "name": "Omercan Balandi",
