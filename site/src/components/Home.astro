@@ -1,0 +1,103 @@
+---
+import Brand from "@/src/components/Brand.astro";
+import ExternalLink from "@/src/components/ExternalLink.astro";
+import InstallCommand from "@/src/components/InstallCommand.astro";
+import ProjectLinks from "@/src/components/ProjectLinks.astro";
+import ScreenshotTabs from "@/src/components/ScreenshotTabs.astro";
+import WaveCanvas from "@/src/components/WaveCanvas.astro";
+---
+
+<div class="home">
+  <div class="home__visual">
+    <WaveCanvas />
+  </div>
+  <main class="home__main">
+    <div class="home__copy">
+      <Brand />
+      <h1 class="home__intro">Task tracking for coding agents.</h1>
+      <InstallCommand command="bun install -g @obsfx/trekker" />
+      <p>
+        Trekker keeps tasks, dependencies and notes in a local SQLite database next to your code, so Claude Code, Codex or any agent can pick up where the last session stopped.
+      </p>
+      <p>
+        It has plugins for <ExternalLink href="https://github.com/obsfx/trekker-claude-code" wave={0}>Claude Code</ExternalLink> and <ExternalLink href="https://github.com/obsfx/trekker-codex" wave={1}>Codex</ExternalLink>, and a <ExternalLink href="https://github.com/obsfx/trekker-dashboard" wave={2}>dashboard</ExternalLink> for watching your agents work.
+      </p>
+    </div>
+    <div class="home__screens">
+      <ScreenshotTabs id="dashboard" sizes="(min-width: 64rem) 60rem, 100vw" />
+    </div>
+    <div class="home__copy">
+      <p>Trekker runs on Bun. Run <code>trekker init</code> in a repository, then point your agent at <code>trekker quickstart</code>.</p>
+      <ProjectLinks />
+    </div>
+  </main>
+</div>
+
+<style>
+  .home {
+    position: relative;
+    overflow: hidden;
+    min-block-size: 100svh;
+    color: var(--fg);
+  }
+
+  .home__visual {
+    position: absolute;
+    inset: 0 0 auto;
+    block-size: clamp(30rem, 78svh, 52rem);
+    pointer-events: none;
+    mask-image: linear-gradient(
+      to bottom,
+      #000 12%,
+      rgb(0 0 0 / 0.7) 34%,
+      rgb(0 0 0 / 0.34) 54%,
+      rgb(0 0 0 / 0.12) 72%,
+      rgb(0 0 0 / 0.03) 88%,
+      transparent
+    );
+  }
+
+  .home__main {
+    position: relative;
+    display: grid;
+    gap: 3.5rem;
+    padding: clamp(15rem, 44svh, 27rem) clamp(1.25rem, 4vw, 3.5rem) 5rem;
+  }
+
+  .home__copy {
+    display: grid;
+    gap: 0.9em;
+    inline-size: 100%;
+    max-inline-size: 31rem;
+    margin-inline: auto;
+    color: var(--fg-muted);
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+
+  .home__copy > :global(.install-command) {
+    justify-self: start;
+    margin-block-end: 0.6em;
+  }
+
+  .home__intro {
+    color: var(--fg);
+    font-size: clamp(1.25rem, 1.05rem + 0.9vw, 1.625rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+
+  .home__copy code {
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+  }
+
+  .home__screens {
+    inline-size: 100%;
+    max-inline-size: 60rem;
+    margin-inline: auto;
+  }
+</style>

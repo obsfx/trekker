@@ -1,10 +1,35 @@
-import { defineConfig } from 'astro/config';
-import react from '@astrojs/react';
-import tailwind from '@astrojs/tailwind';
+// @ts-check
+import { defineConfig, fontProviders } from "astro/config";
 
 export default defineConfig({
-  output: 'static',
-  site: 'https://obsfx.github.io',
-  base: '/trekker',
-  integrations: [react(), tailwind()]
+  site: "https://omercan.io",
+  base: "/trekker",
+  output: "static",
+  fonts: [
+    {
+      provider: fontProviders.google(),
+      name: "Google Sans Flex",
+      cssVariable: "--font-sans",
+      weights: ["300 700"],
+      styles: ["normal"],
+      subsets: ["latin", "latin-ext"],
+      fallbacks: ["system-ui", "sans-serif"],
+      options: {
+        experimental: {
+          variableAxis: {
+            opsz: [["6", "144"]],
+          },
+        },
+      },
+    },
+    {
+      provider: fontProviders.google(),
+      name: "Google Sans Code",
+      cssVariable: "--font-mono",
+      weights: ["400 600"],
+      styles: ["normal"],
+      subsets: ["latin"],
+      fallbacks: ["ui-monospace", "monospace"],
+    },
+  ],
 });

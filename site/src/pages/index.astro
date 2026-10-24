@@ -1,27 +1,11 @@
 ---
-import '../styles/global.css';
-import { Page } from '../components/Page';
+import Home from "@/src/components/Home.astro";
+import BaseLayout from "@/src/layouts/BaseLayout.astro";
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>trekker - Task Tracking for AI Agents</title>
-    <meta name="description" content="A CLI-based task manager that keeps AI coding agents on track. Tasks, epics, and dependencies—all in a local SQLite database." />
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="trekker - Task Tracking for AI Agents" />
-    <meta property="og:description" content="A CLI-based task manager that keeps AI coding agents on track. Tasks, epics, and dependencies—all in a local SQLite database." />
-    <meta property="og:type" content="website" />
-
-    <!-- Preconnect to Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <link rel="icon" type="image/svg+xml" href="/trekker/favicon.svg" />
-  </head>
-  <body>
-    <Page client:load />
-  </body>
-</html>
+<BaseLayout
+  title="Trekker - Task tracking for coding agents"
+  description="A CLI task tracker for coding agents. Tasks, dependencies and notes live in a local SQLite database next to your code."
+>
+  <Home />
+</BaseLayout>

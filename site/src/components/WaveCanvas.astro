@@ -1,0 +1,24 @@
+<wave-canvas aria-hidden="true"></wave-canvas>
+
+<style>
+  wave-canvas {
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  wave-canvas :global(canvas) {
+    position: absolute;
+    inset: 0;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+</style>
+
+<script>
+  import { WaveCanvasElement } from "@/src/lib/waves/wave-canvas-element";
+
+  WaveCanvasElement.register();
+</script>

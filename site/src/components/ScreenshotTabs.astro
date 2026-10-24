@@ -1,0 +1,100 @@
+---
+import Screenshot from "@/src/components/Screenshot.astro";
+
+interface Props {
+  id: string;
+  sizes?: string;
+}
+
+const { id, sizes } = Astro.props;
+const views = [
+  { view: "kanban", label: "Kanban", alt: "Trekker dashboard kanban board with epics and tasks grouped by status" },
+  { view: "task", label: "Task", alt: "Task detail with status, priority, dependencies and subtasks" },
+  { view: "comments", label: "Comments", alt: "Task comments left by agents between sessions" },
+  { view: "epic", label: "Epic", alt: "Epic detail with its task checklist" },
+  { view: "list", label: "List", alt: "Filterable list of every task, subtask and epic" },
+] as const;
+---
+
+<div class="screenshot-tabs" data-screenshot-tabs>
+  <div class="screenshot-tabs__list" role="tablist" aria-label="Dashboard views">
+    {
+      views.map((item, index) => {
+        return (
+          <button
+            type="button"
+            class="screenshot-tabs__tab"
+            role="tab"
+            id={`${id}-tab-${item.view}`}
+            aria-controls={`${id}-panel-${item.view}`}
+            aria-selected={index === 0}
+            tabindex={index === 0 ? 0 : -1}
+          >
+            {item.label}
+          </button>
+        );
+      })
+    }
+  </div>
+  {
+    views.map((item, index) => {
+      return (
+        <div
+          class="screenshot-tabs__panel"
+          role="tabpanel"
+          id={`${id}-panel-${item.view}`}
+          aria-labelledby={`${id}-tab-${item.view}`}
+          hidden={index !== 0}
+        >
+          <Screenshot view={item.view} alt={item.alt} sizes={sizes} eager={index === 0} />
+        </div>
+      );
+    })
+  }
+</div>
+
+<style>
+  .screenshot-tabs {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .screenshot-tabs__list {
+    display: flex;
+    justify-content: safe center;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .screenshot-tabs__tab {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: none;
+    color: var(--fg-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      color 160ms ease-out,
+      border-color 160ms ease-out;
+  }
+
+  .screenshot-tabs__tab:hover {
+    color: var(--fg);
+  }
+
+  .screenshot-tabs__tab[aria-selected="true"] {
+    border-color: var(--line);
+    background: rgb(241 237 249 / 0.06);
+    color: var(--fg);
+  }
+</style>
+
+<script>
+  import { ScreenshotTabs } from "@/src/lib/screenshot-tabs";
+
+  ScreenshotTabs.start();
+</script>

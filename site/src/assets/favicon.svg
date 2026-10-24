@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#sheen)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+  <defs>
+    <linearGradient id="sheen" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a6bff" />
+      <stop offset="0.55" stop-color="#f957b3" />
+      <stop offset="1" stop-color="#ff8a47" />
+    </linearGradient>
+  </defs>
+  <path d="M6 3v12" />
+  <path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+  <path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+  <path d="M15 6a9 9 0 0 0-9 9" />
+  <path d="M18 15v6" />
+  <path d="M21 18h-6" />
+</svg>

@@ -1,0 +1,48 @@
+---
+import { Picture } from "astro:assets";
+
+type View = "kanban" | "task" | "comments" | "epic" | "list";
+
+interface Props {
+  view: View;
+  alt: string;
+  sizes?: string;
+  eager?: boolean;
+}
+
+const { view, alt, sizes = "(min-width: 72rem) 72rem, 100vw", eager = false } = Astro.props;
+const screenshots = import.meta.glob<{ default: ImageMetadata }>("/src/assets/screenshots/*.png", { eager: true });
+const source = screenshots[`/src/assets/screenshots/${view}.png`].default;
+---
+
+<figure class="screenshot">
+  <Picture
+    class="screenshot__image"
+    src={source}
+    alt={alt}
+    widths={[720, 1080, 1440, 2160, 2880]}
+    sizes={sizes}
+    formats={["avif", "webp"]}
+    fallbackFormat="webp"
+    loading={eager ? "eager" : "lazy"}
+    fetchpriority={eager ? "high" : "auto"}
+  />
+</figure>
+
+<style>
+  .screenshot {
+    overflow: hidden;
+    border: 1px solid rgb(241 237 249 / 0.14);
+    border-radius: 14px;
+    background: #141414;
+    box-shadow:
+      0 30px 80px -30px rgb(0 0 0 / 0.8),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
+  }
+
+  .screenshot :global(.screenshot__image) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+  }
+</style>
