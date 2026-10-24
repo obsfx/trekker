@@ -4,11 +4,12 @@ Codex plugin for [Trekker](https://github.com/obsfx/trekker), the AI-oriented is
 
 Repository: [github.com/obsfx/trekker-codex](https://github.com/obsfx/trekker-codex)
 
-This port keeps the Trekker MCP server and the core task-tracking workflow, then adapts the Claude-specific layer into Codex-native pieces:
+The plugin teaches Codex to use Trekker as persistent task memory by running the `trekker` CLI directly:
 
-- 26 bundled Trekker MCP tools
 - 10 Codex skills for search, planning, task flow, and issue tracking
 - 1 `SessionStart` hook for context recovery
+
+There is no MCP server. Every skill runs ordinary `trekker` commands in the shell, so Codex runs the same commands you would type, and new CLI features are usable as soon as you update the CLI.
 
 ## What This Plugin Does
 
@@ -16,7 +17,6 @@ Once installed, Codex can use Trekker as persistent task memory instead of relyi
 
 The plugin provides:
 
-- task, epic, subtask, comment, dependency, search, ready, and system MCP tools
 - search-first workflow skills for starting, finishing, and querying tracked work
 - a session-start hook that surfaces in-progress or ready work when a project already has `.trekker`
 
@@ -26,7 +26,6 @@ This is not a literal one-to-one copy of the Claude Code plugin.
 
 Kept:
 
-- the local Node MCP server
 - Trekker workflow guidance
 - search-first task tracking model
 - session context recovery on startup
@@ -44,8 +43,7 @@ Those parts were replaced with Codex skills and a lighter hook setup that fits C
 
 - [Bun](https://bun.sh) installed
 - `trekker` CLI installed globally
-- Node.js 18 or newer
-- Codex with local plugin support
+- Codex with plugin support
 
 Install Trekker globally with either:
 
@@ -61,88 +59,41 @@ npm install -g @obsfx/trekker
 
 ## Installation
 
-The plugin is designed as a home-local Codex plugin:
-
-- plugin path: `~/plugins/trekker-codex`
-- marketplace file: `~/.agents/plugins/marketplace.json`
-
-This repo also includes a repo-scoped marketplace at `.agents/plugins/marketplace.json` so Codex can discover `trekker-codex` directly when you open this repository. Because the plugin itself lives at the repo root, that marketplace entry points `source.path` at `./`.
-
-No build step or package-manager install step is required for installation. The MCP server runs directly from `mcp-server/src/index.js` and uses only Node.js plus the `trekker` CLI.
+This repository is both the plugin and a Codex marketplace. `.agents/plugins/marketplace.json` defines the `trekker` marketplace with a single plugin, `trekker-codex`, rooted at the repository itself.
 
 ### Option A: Install From GitHub
 
-Clone the published repository into `~/plugins`:
+```bash
+codex plugin marketplace add obsfx/trekker-codex
+codex plugin add trekker-codex@trekker
+```
+
+### Option B: Install From A Local Checkout
 
 ```bash
-mkdir -p ~/plugins
-git clone git@github.com:obsfx/trekker-codex.git ~/plugins/trekker-codex
+git clone git@github.com:obsfx/trekker-codex.git
+codex plugin marketplace add ./trekker-codex
+codex plugin add trekker-codex@trekker
 ```
 
-### Option B: Install From Your Current Local Checkout
-
-If you want to test the plugin before or after publishing, symlink the current checkout:
-
-```bash
-mkdir -p ~/plugins
-ln -sfn /absolute/path/to/trekker-codex ~/plugins/trekker-codex
-```
-
-For this workspace, that path is:
-
-```bash
-ln -sfn /Users/omercanbalandi/workspace/trekker-codex ~/plugins/trekker-codex
-```
-
-### Register The Plugin In Codex
-
-Create `~/.agents/plugins/marketplace.json` if it does not exist yet:
-
-```json
-{
-  "name": "local-plugins",
-  "interface": {
-    "displayName": "Local Plugins"
-  },
-  "plugins": [
-    {
-      "name": "trekker-codex",
-      "source": {
-        "source": "local",
-        "path": "./plugins/trekker-codex"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Coding"
-    }
-  ]
-}
-```
-
-If `~/.agents/plugins/marketplace.json` already exists, append or update this entry inside the `plugins` array:
-
-```json
-{
-  "name": "trekker-codex",
-  "source": {
-    "source": "local",
-    "path": "./plugins/trekker-codex"
-  },
-  "policy": {
-    "installation": "AVAILABLE",
-    "authentication": "ON_INSTALL"
-  },
-  "category": "Coding"
-}
-```
-
-After that:
+After installing:
 
 1. Restart Codex.
-2. Open a project that already uses Trekker, or initialize Trekker in a test project with `trekker init`.
-3. Verify that the `Trekker` plugin appears in Codex.
+2. Review and trust the plugin's `SessionStart` hook with `/hooks`. Codex does not run plugin hooks until you trust them.
+3. Open a project that already uses Trekker, or initialize Trekker in a test project with `trekker init`.
+
+### Upgrading From 1.x
+
+Version 2.0.0 removed the bundled MCP server and moved to the portable plugin layout. The marketplace is now named `trekker` instead of `trekker-codex-local`. Remove the old install and add it again:
+
+```bash
+codex plugin remove trekker-codex@trekker-codex-local
+codex plugin marketplace remove trekker-codex-local
+codex plugin marketplace add obsfx/trekker-codex
+codex plugin add trekker-codex@trekker
+```
+
+If you registered the plugin by hand in `~/.agents/plugins/marketplace.json`, that entry keeps working after you pull the new version.
 
 ## Quick Verification
 
@@ -164,7 +115,7 @@ Use Trekker to search current work, show me ready tasks, and summarize what is i
 Expected behavior:
 
 - the session-start hook shows Trekker context when Codex opens the workspace
-- Codex can use Trekker MCP tools
+- Codex runs `trekker` commands in the shell to read and update tasks
 - Trekker workflow skills are available for search, planning, starting, and completing work
 
 ## Usage Notes
@@ -198,20 +149,14 @@ If the current workspace does not have `.trekker`, ask before running `trekker i
 
 ```text
 trekker-codex/
-├── .codex-plugin/
-│   └── plugin.json
-├── .mcp.json
-├── hooks.json
+├── plugin.json                  # Portable manifest; Codex settings under extensions.com.openai
+├── .agents/
+│   └── plugins/
+│       └── marketplace.json     # Repo marketplace pointing at ./
 ├── assets/
 │   └── trekker.svg
-├── mcp-server/
-│   ├── package.json
-│   ├── src/
-│   │   ├── index.js
-│   │   ├── mcp-server.js
-│   │   └── tools/
-│   └── test/
-│       └── server.test.js
+├── hooks/
+│   └── hooks.json               # SessionStart hook, discovered by default
 ├── scripts/
 │   └── session-start.sh
 └── skills/
@@ -229,8 +174,17 @@ trekker-codex/
 
 ## Updating The Plugin
 
-If you installed through a symlink, pull the latest changes in the repo and restart Codex.
+If you installed from GitHub:
 
-If you installed through a clone in `~/plugins/trekker-codex`, pull there and restart Codex.
+```bash
+codex plugin marketplace upgrade trekker
+```
 
-If MCP tool definitions change in `mcp-server/src`, restart Codex after pulling the update. No rebuild or package-manager install step is required.
+If you installed from a local checkout, pull and reinstall so Codex refreshes its cached copy:
+
+```bash
+git -C trekker-codex pull
+codex plugin add trekker-codex@trekker
+```
+
+Then restart Codex. There is no build step.

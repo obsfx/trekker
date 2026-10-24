@@ -1,0 +1,44 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "trekker-codex",
+  "version": "2.0.0",
+  "description": "Codex plugin for Trekker, the AI-optimized issue tracker for persistent task tracking across coding sessions. Drives the trekker CLI directly.",
+  "author": {
+    "name": "Omercan Balandi",
+    "email": "hello@omercan.io",
+    "url": "https://github.com/obsfx"
+  },
+  "homepage": "https://github.com/obsfx/trekker-codex",
+  "repository": "https://github.com/obsfx/trekker-codex",
+  "license": "MIT",
+  "keywords": [
+    "trekker",
+    "codex",
+    "issue-tracker",
+    "task-management",
+    "ai-agents",
+    "cli"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Trekker",
+        "shortDescription": "Persistent task tracking for AI coding work",
+        "longDescription": "Use Trekker inside Codex for search-first task tracking, context recovery, comments, dependencies, ready-task discovery, and workflow guidance that survives chat resets. Skills run the trekker CLI directly.",
+        "developerName": "Omercan Balandi",
+        "category": "Coding",
+        "capabilities": ["Interactive", "Read", "Write"],
+        "websiteURL": "https://github.com/obsfx/trekker-codex",
+        "defaultPrompt": [
+          "Search Trekker, inspect task context, and help me continue tracked work",
+          "Create or update Trekker tasks, comments, epics, and dependencies for this repo",
+          "Find the next ready Trekker task and help me finish it with a clean summary"
+        ],
+        "brandColor": "#0F766E",
+        "composerIcon": "./assets/trekker.svg",
+        "logo": "./assets/trekker.svg",
+        "screenshots": []
+      }
+    }
+  }
+}

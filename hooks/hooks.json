@@ -6,7 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/session-start.sh"
+            "command": "sh \"$PLUGIN_ROOT/scripts/session-start.sh\"",
+            "statusMessage": "Loading Trekker context",
+            "timeout": 10
           }
         ]
       }

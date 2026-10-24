@@ -10,7 +10,7 @@ Use this skill when the user wants to begin working on a Trekker task.
 ## Required Flow
 
 ```bash
-trekker search "keyword-from-task"
+trekker search "refresh"
 trekker task show TREK-12
 trekker history --entity TREK-12
 trekker comment list TREK-12

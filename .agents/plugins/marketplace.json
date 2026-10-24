@@ -1,7 +1,7 @@
 {
-  "name": "trekker-codex-local",
+  "name": "trekker",
   "interface": {
-    "displayName": "Trekker Codex Local"
+    "displayName": "Trekker"
   },
   "plugins": [
     {

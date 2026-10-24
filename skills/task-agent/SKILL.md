@@ -21,7 +21,7 @@ Use this skill when the user wants Codex to drive tracked work end to end.
 ## Discovery Commands
 
 ```bash
-trekker search "project-area"
+trekker search "auth"
 trekker history --limit 15
 trekker task list --status in_progress
 trekker ready

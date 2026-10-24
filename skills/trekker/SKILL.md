@@ -7,9 +7,16 @@ description: Use Trekker as the persistent source of truth for tracked work in C
 
 ## Overview
 
-Use this skill when work should be tracked across sessions. Prefer the Trekker MCP tools from this plugin for structured reads and writes. If those tools are unavailable, use the `trekker` CLI directly.
+Use this skill when work should be tracked across sessions. Trekker is a CLI: run every read and write as a `trekker` command in the shell. This plugin ships no MCP tools.
 
 Trekker is the durable system of record. `update_plan` is only short-lived session scaffolding.
+
+## Calling the CLI
+
+- Add `--toon` before the subcommand for compact, structured output: `trekker --toon task show TREK-12`
+- Check flags with `trekker <command> --help` or `trekker quickstart` instead of guessing them
+- Quote titles, descriptions, and comments: `trekker comment add TREK-12 -a "codex" -c "Summary: ..."`
+- If `trekker` is not on PATH, ask the user to install it with `npm install -g @obsfx/trekker` (requires Bun)
 
 ## Core Rules
 
