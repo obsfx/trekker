@@ -130,6 +130,11 @@ function writeVersion(snapshot: Map<string, string>, current: string, version: s
   }
 }
 
+function cleanInstall(): void {
+  rmSync(join(ROOT, 'node_modules'), { recursive: true, force: true });
+  run('bun', ['install', '--frozen-lockfile']);
+}
+
 function build(): void {
   rmSync(join(ROOT, 'dist'), { recursive: true, force: true });
   run('bun', ['run', 'build']);
@@ -181,7 +186,7 @@ if (dryRun) {
 }
 console.log(`releasing ${name} ${current} -> ${version}${dryRunSuffix}`);
 
-run('bun', ['install', '--frozen-lockfile']);
+cleanInstall();
 run('bun', ['run', 'test:release']);
 
 writeVersion(snapshot, current, version);

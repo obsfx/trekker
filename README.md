@@ -121,7 +121,7 @@ bun run typecheck
 bun run test:release      # all of the above plus the Docker suite
 ```
 
-To release, run `bun run release <patch|minor|major>` (add `--dry-run` to rehearse), then `git push --atomic origin HEAD vX.Y.Z`. The script runs the full test suite, bumps the CLI and both plugins to the same version, builds, publishes to npm, and tags.
+To release, run `bun run release <patch|minor|major>` (add `--dry-run` to rehearse), then `git push --atomic origin HEAD vX.Y.Z`. The script reinstalls dependencies from the lockfile (like `npm ci`), runs the full test suite, bumps the CLI and both plugins to the same version, builds, publishes to npm, and tags. npm asks you to confirm the publish in the browser if your account uses two-factor auth.
 
 ## License
 
