@@ -88,6 +88,38 @@ describe('search command', () => {
     });
   });
 
+  describe('query syntax', () => {
+    it('should match hyphenated words instead of failing', () => {
+      ctx.run('task create -t "Speed up cold start"');
+
+      const result = ctx.runToon<SearchResponse>('search cold-start');
+      expect(result.total).toBe(1);
+    });
+
+    it('should find a task by its ID', () => {
+      const task = ctx.runToon<Task>('task create -t "Lookup target"');
+      ctx.run('task create -t "Unrelated work"');
+
+      const result = ctx.runToon<SearchResponse>(`search ${task.id}`);
+      expect(result.results[0]?.id).toBe(task.id);
+    });
+
+    it('should treat an unbalanced quote as plain text', () => {
+      ctx.run('task create -t "Quote handling"');
+
+      const result = ctx.runToon<SearchResponse>(`search 'quote"handling'`);
+      expect(result.total).toBe(1);
+    });
+
+    it('should keep FTS5 phrase and column syntax', () => {
+      ctx.run('task create -t "Retry later" -d "rate limiting applies"');
+      ctx.run('task create -t "Limiting rate" -d "unrelated"');
+
+      expect(ctx.runToon<SearchResponse>(`search '"rate limiting"'`).total).toBe(1);
+      expect(ctx.runToon<SearchResponse>('search title:retry').total).toBe(1);
+    });
+  });
+
   describe('snippet', () => {
     beforeEach(() => {
       const task = ctx.runToon<Task>('task create -t "Parent task"');
