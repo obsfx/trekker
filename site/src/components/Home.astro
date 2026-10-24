@@ -60,12 +60,14 @@ import WaveCanvas from "@/src/components/WaveCanvas.astro";
   .home__main {
     position: relative;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 3.5rem;
     padding: clamp(15rem, 44svh, 27rem) clamp(1.25rem, 4vw, 3.5rem) 5rem;
   }
 
   .home__copy {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.9em;
     inline-size: 100%;
     max-inline-size: 31rem;

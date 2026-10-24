@@ -43,6 +43,7 @@ const { command } = Astro.props;
   }
 
   .install-command__text {
+    min-inline-size: 0;
     overflow: hidden;
     font-family: var(--font-mono);
     font-size: 0.8125rem;
@@ -66,6 +67,12 @@ const { command } = Astro.props;
   .install-command[data-copied] .install-command__done {
     display: inline;
     color: var(--fg);
+  }
+
+  @media (max-width: 26rem) {
+    .install-command:not([data-copied]) .install-command__state {
+      display: none;
+    }
   }
 </style>
 
