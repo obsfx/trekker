@@ -1,6 +1,11 @@
 # Trekker
 
-A small CLI issue tracker for AI coding agents. Tasks, epics, dependencies, and comments go into a SQLite file in your project. No server, no account.
+A small CLI issue tracker for AI coding agents. Tasks, epics, dependencies, and comments go into a SQLite file in your project, and `trekker serve` shows them on a local board. No hosted service, no account.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/dark-board.webp">
+  <img alt="Trekker web UI board for a real project, with todo, in progress, completed and won't fix columns" src="assets/screenshots/light-board.webp">
+</picture>
 
 ## Why Trekker
 
@@ -94,11 +99,6 @@ Statuses: `todo`, `in_progress`, `completed`, `wont_fix`, `archived` (epics have
 IDs look like `EPIC-1`, `TREK-1`, and `CMT-1`. You can change the prefixes with `trekker init --issue-prefix FEAT` or `trekker config set issue_prefix FEAT`; existing IDs keep their old prefix.
 
 ## Web UI
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/dark-board.webp">
-  <img alt="Trekker web UI board" src="assets/screenshots/light-board.webp">
-</picture>
 
 `trekker serve` opens a local web UI on the same database, so you can watch agents work and step in:
 
