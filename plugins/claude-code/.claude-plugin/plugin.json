@@ -1,0 +1,21 @@
+{
+  "name": "trekker",
+  "description": "AI-optimized issue tracker for coding workflows. Search-first workflow with persistent task memory across sessions, driven through the trekker CLI.",
+  "version": "2.0.1",
+  "author": {
+    "name": "Omercan Balandi",
+    "url": "https://github.com/obsfx"
+  },
+  "repository": "https://github.com/obsfx/trekker-claude-code",
+  "license": "MIT",
+  "homepage": "https://github.com/obsfx/trekker-claude-code",
+  "keywords": [
+    "issue-tracker",
+    "task-management",
+    "ai-workflow",
+    "agent-memory",
+    "search-first",
+    "context-recovery",
+    "cli"
+  ]
+}

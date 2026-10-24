@@ -1,0 +1,24 @@
+{
+  "name": "trekker-marketplace",
+  "owner": {
+    "name": "Omercan Balandi",
+    "url": "https://github.com/obsfx"
+  },
+  "metadata": {
+    "description": "Trekker issue tracker plugin for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "trekker",
+      "source": {
+        "source": "github",
+        "repo": "obsfx/trekker-claude-code"
+      },
+      "description": "AI-optimized issue tracker for coding workflows. Manage tasks, epics, and dependencies with simple CLI commands.",
+      "version": "2.0.1",
+      "author": {
+        "name": "Omercan Balandi"
+      }
+    }
+  ]
+}
