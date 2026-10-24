@@ -12,9 +12,9 @@ if [ ! -d ".trekker" ]; then
 fi
 
 # Fetch state
-TODO_OUTPUT=$(trekker --toon task list --status todo 2>/dev/null)
-IN_PROG_OUTPUT=$(trekker --toon task list --status in_progress 2>/dev/null)
-EPIC_OUTPUT=$(trekker --toon epic list 2>/dev/null)
+TODO_OUTPUT=$(trekker --toon task list --status todo --limit 1 2>/dev/null)
+IN_PROG_OUTPUT=$(trekker --toon task list --status in_progress --limit "$CONTEXT_TASK_LIMIT" 2>/dev/null)
+EPIC_OUTPUT=$(trekker --toon epic list --limit 1 2>/dev/null)
 
 TODO=$(echo "$TODO_OUTPUT" | get_toon_count); TODO=${TODO:-0}
 IN_PROG=$(echo "$IN_PROG_OUTPUT" | get_toon_count); IN_PROG=${IN_PROG:-0}
@@ -36,11 +36,12 @@ if [ "$IN_PROG" -gt 0 ]; then
     for task_id in $(echo "$IN_PROG_OUTPUT" | get_toon_task_ids); do
         print_task_context "$task_id"
     done
+    print_more_in_progress "$IN_PROG"
     echo ""
 elif [ "$TODO" -gt 0 ]; then
     echo "## Ready Tasks"
     echo ""
-    trekker --toon ready 2>/dev/null || trekker --toon task list --status todo 2>/dev/null | head -8
+    trekker --toon ready --limit "$CONTEXT_TASK_LIMIT" 2>/dev/null || trekker --toon task list --status todo --limit "$CONTEXT_TASK_LIMIT" 2>/dev/null
     echo ""
 else
     echo "No pending tasks. Create: \`trekker task create -t \"title\"\`"

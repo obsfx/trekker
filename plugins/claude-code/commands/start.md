@@ -28,7 +28,7 @@ trekker search "<task title keywords>"
 trekker search "<related concepts>"
 
 # Check completed tasks that might inform this work
-trekker --toon task list --status completed
+trekker search "<keyword>" --status completed --limit 10
 ```
 
 **Why search first:**

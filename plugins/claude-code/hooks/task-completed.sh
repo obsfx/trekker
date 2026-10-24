@@ -42,8 +42,8 @@ for keyword in $keywords; do
   # Skip very short keywords
   [ ${#keyword} -lt 3 ] && continue
 
-  results=$(trekker search "$keyword" --type task --status in_progress 2>/dev/null || true)
-  task_id=$(echo "$results" | grep -oE 'TREK-[0-9]+' | head -1 || true)
+  results=$(trekker --toon search "$keyword" --type task --status in_progress --limit 1 2>/dev/null || true)
+  task_id=$(echo "$results" | sed -n 's/^  task,\([^,]*\),.*/\1/p' | head -1 || true)
 
   if [ -n "$task_id" ]; then
     trekker comment add "$task_id" -a "claude" -c "Auto-synced: completed via Stop hook. Claude task: $task_subject" 2>/dev/null || true
@@ -52,7 +52,7 @@ for keyword in $keywords; do
     echo ""
     echo "## Next Ready Tasks"
     echo ""
-    trekker --toon ready 2>/dev/null || echo "No ready tasks found."
+    trekker --toon ready --limit 5 2>/dev/null || echo "No ready tasks found."
     exit 0
   fi
 done

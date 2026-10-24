@@ -14,6 +14,7 @@ Trekker is the durable system of record. `update_plan` is only short-lived sessi
 ## Calling the CLI
 
 - Add `--toon` before the subcommand for compact, structured output: `trekker --toon task show TREK-12`
+- Lists return 50 items per page. Pass `--limit` (and `--page`) to keep output small: `trekker --toon ready --limit 5`
 - Check flags with `trekker <command> --help` or `trekker quickstart` instead of guessing them
 - Quote titles, descriptions, and comments: `trekker comment add TREK-12 -a "codex" -c "Summary: ..."`
 - If `trekker` is not on PATH, ask the user to install it with `npm install -g @obsfx/trekker` (requires Bun)

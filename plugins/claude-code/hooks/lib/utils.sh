@@ -1,6 +1,8 @@
 #!/bin/bash
 # Shared utilities for trekker hooks
 
+CONTEXT_TASK_LIMIT=5
+
 exit_unless_trekker_cli() {
     if ! command -v trekker >/dev/null 2>&1; then
         echo "Trekker: CLI not found. Install it with \`npm install -g @obsfx/trekker\` to enable Trekker workflows."
@@ -15,7 +17,14 @@ get_toon_count() {
 
 # Extract task IDs from toon paginated output (items section)
 get_toon_task_ids() {
-    grep -oE 'TREK-[0-9]+' | head -50
+    sed -n 's/^  \([A-Za-z][A-Za-z0-9]*-[0-9][0-9]*\),.*/\1/p'
+}
+
+print_more_in_progress() {
+    local total="$1"
+    if [ "$total" -gt "$CONTEXT_TASK_LIMIT" ]; then
+        echo "...and $((total - CONTEXT_TASK_LIMIT)) more in progress: \`trekker task list --status in_progress\`"
+    fi
 }
 
 # Compact task context: id, title, desc, last 3 comment lines, deps

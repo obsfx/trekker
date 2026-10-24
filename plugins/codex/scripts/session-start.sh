@@ -12,12 +12,14 @@ if [ ! -d ".trekker" ]; then
   exit 0
 fi
 
+CONTEXT_TASK_LIMIT=5
+
 toon_total() {
   printf '%s\n' "$1" | sed -n 's/^total:[[:space:]]*//p' | head -n 1
 }
 
-in_progress="$(trekker --toon task list --status in_progress 2>/dev/null || true)"
-ready="$(trekker --toon ready 2>/dev/null || true)"
+in_progress="$(trekker --toon task list --status in_progress --limit "$CONTEXT_TASK_LIMIT" 2>/dev/null || true)"
+ready="$(trekker --toon ready --limit "$CONTEXT_TASK_LIMIT" 2>/dev/null || true)"
 history="$(trekker --toon history --limit 5 2>/dev/null || true)"
 
 printf '# Trekker Session Context\n\n'
@@ -27,6 +29,9 @@ printf '%s\n\n' 'Search first with `trekker search "<keyword>"` before creating 
 if [ "$(toon_total "$in_progress")" != "0" ] && [ -n "$in_progress" ]; then
   printf '## In-Progress Tasks\n\n'
   printf '%s\n\n' "$in_progress"
+  if [ "$(toon_total "$in_progress")" -gt "$CONTEXT_TASK_LIMIT" ]; then
+    printf '%s\n\n' "Showing $CONTEXT_TASK_LIMIT of $(toon_total "$in_progress"). See the rest with \`trekker task list --status in_progress\`."
+  fi
 elif [ "$(toon_total "$ready")" != "0" ] && [ -n "$ready" ]; then
   printf '## Ready Tasks\n\n'
   printf '%s\n\n' "$ready"

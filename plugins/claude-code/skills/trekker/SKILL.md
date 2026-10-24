@@ -18,6 +18,7 @@ Trekker provides persistent task memory across sessions. Unlike TodoWrite which 
 Trekker is a CLI. Run every operation as a `trekker` command through the Bash tool. This plugin ships no MCP tools.
 
 - Add `--toon` before the subcommand for compact, structured output: `trekker --toon task show TREK-1`
+- Lists return 50 items per page. Pass `--limit` (and `--page`) to keep output small: `trekker --toon ready --limit 5`
 - Check flags with `trekker <command> --help` instead of guessing them
 - Quote titles, descriptions, and comments: `trekker comment add TREK-1 -a "claude" -c "Summary: ..."`
 - If `trekker` is not on PATH, ask the user to install it: `npm install -g @obsfx/trekker` (requires Bun)
@@ -195,11 +196,9 @@ trekker comment list <task-id>
 trekker search "authentication"
 trekker search "login"
 
-# Check completed tasks for solutions
-trekker --toon task list --status completed
-
-# Check archived tasks too
-trekker --toon task list --status archived
+# Check completed and archived tasks for solutions
+trekker search "authentication" --status completed --limit 10
+trekker search "authentication" --status archived --limit 10
 ```
 
 **Why search is mandatory:**
