@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'bun:test';
 import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
 
 interface Task {
@@ -167,43 +167,6 @@ describe('search command', () => {
     });
   });
 
-  describe('pagination', () => {
-    beforeEach(() => {
-      for (let i = 1; i <= 25; i++) {
-        ctx.run(`task create -t "Search Test Task ${i}"`);
-      }
-    });
-
-    it('should respect limit parameter', () => {
-      const result = ctx.runToon<SearchResponse>('search test --limit 10');
-      expect(result.results.length).toBeLessThanOrEqual(10);
-      expect(result.limit).toBe(10);
-    });
-
-    it('should respect page parameter', () => {
-      const page1 = ctx.runToon<SearchResponse>('search test --limit 10 --page 1');
-      const page2 = ctx.runToon<SearchResponse>('search test --limit 10 --page 2');
-
-      expect(page1.page).toBe(1);
-      expect(page2.page).toBe(2);
-
-      // Results should be different between pages
-      if (page1.results.length > 0 && page2.results.length > 0) {
-        expect(page1.results[0].id).not.toBe(page2.results[0].id);
-      }
-    });
-
-    it('should fail with invalid limit', () => {
-      const error = ctx.runExpectError('search test --limit 0');
-      expect(error.toLowerCase()).toContain('invalid');
-    });
-
-    it('should fail with invalid page', () => {
-      const error = ctx.runExpectError('search test --page 0');
-      expect(error.toLowerCase()).toContain('invalid');
-    });
-  });
-
   describe('rebuild index', () => {
     it('should rebuild index with --rebuild-index flag', () => {
       ctx.run('task create -t "Indexed task"');
@@ -212,5 +175,50 @@ describe('search command', () => {
       const result = ctx.runToon<SearchResponse>('search indexed --rebuild-index');
       expect(result.total).toBeGreaterThanOrEqual(1);
     });
+  });
+});
+
+describe('search command pagination', () => {
+  let ctx: TestContext;
+
+  beforeAll(() => {
+    ctx = createTestContext();
+    initTrekker(ctx);
+    for (let i = 1; i <= 12; i++) {
+      ctx.run(`task create -t "Search Test Task ${i}"`);
+    }
+  });
+
+  afterAll(() => {
+    ctx.cleanup();
+  });
+
+  it('should respect limit parameter', () => {
+    const result = ctx.runToon<SearchResponse>('search test --limit 10');
+    expect(result.results.length).toBeLessThanOrEqual(10);
+    expect(result.limit).toBe(10);
+  });
+
+  it('should respect page parameter', () => {
+    const page1 = ctx.runToon<SearchResponse>('search test --limit 10 --page 1');
+    const page2 = ctx.runToon<SearchResponse>('search test --limit 10 --page 2');
+
+    expect(page1.page).toBe(1);
+    expect(page2.page).toBe(2);
+
+    // Results should be different between pages
+    if (page1.results.length > 0 && page2.results.length > 0) {
+      expect(page1.results[0].id).not.toBe(page2.results[0].id);
+    }
+  });
+
+  it('should fail with invalid limit', () => {
+    const error = ctx.runExpectError('search test --limit 0');
+    expect(error.toLowerCase()).toContain('invalid');
+  });
+
+  it('should fail with invalid page', () => {
+    const error = ctx.runExpectError('search test --page 0');
+    expect(error.toLowerCase()).toContain('invalid');
   });
 });

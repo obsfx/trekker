@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'bun:test';
 import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
 
 interface Task {
@@ -204,40 +204,48 @@ describe('history command', () => {
       expect(error.toLowerCase()).toContain('invalid');
     });
   });
+});
 
-  describe('pagination', () => {
-    beforeEach(() => {
-      for (let i = 1; i <= 60; i++) {
-        ctx.run(`task create -t "Task ${i}"`);
-      }
-    });
+describe('history command pagination', () => {
+  let ctx: TestContext;
 
-    it('should respect limit parameter', () => {
-      const result = ctx.runToon<HistoryResponse>('history --limit 10');
-      expect(result.events.length).toBeLessThanOrEqual(10);
-      expect(result.limit).toBe(10);
-    });
+  beforeAll(() => {
+    ctx = createTestContext();
+    initTrekker(ctx);
+    for (let i = 1; i <= 12; i++) {
+      ctx.run(`task create -t "Task ${i}"`);
+    }
+  });
 
-    it('should respect page parameter', () => {
-      const page1 = ctx.runToon<HistoryResponse>('history --limit 10 --page 1');
-      const page2 = ctx.runToon<HistoryResponse>('history --limit 10 --page 2');
+  afterAll(() => {
+    ctx.cleanup();
+  });
 
-      expect(page1.page).toBe(1);
-      expect(page2.page).toBe(2);
+  it('should respect limit parameter', () => {
+    const result = ctx.runToon<HistoryResponse>('history --limit 10');
+    expect(result.events.length).toBeLessThanOrEqual(10);
+    expect(result.limit).toBe(10);
+  });
 
-      if (page1.events.length > 0 && page2.events.length > 0) {
-        expect(page1.events[0].id).not.toBe(page2.events[0].id);
-      }
-    });
+  it('should respect page parameter', () => {
+    const page1 = ctx.runToon<HistoryResponse>('history --limit 10 --page 1');
+    const page2 = ctx.runToon<HistoryResponse>('history --limit 10 --page 2');
 
-    it('should fail with invalid limit', () => {
-      const error = ctx.runExpectError('history --limit 0');
-      expect(error.toLowerCase()).toContain('invalid');
-    });
+    expect(page1.page).toBe(1);
+    expect(page2.page).toBe(2);
 
-    it('should fail with invalid page', () => {
-      const error = ctx.runExpectError('history --page 0');
-      expect(error.toLowerCase()).toContain('invalid');
-    });
+    if (page1.events.length > 0 && page2.events.length > 0) {
+      expect(page1.events[0].id).not.toBe(page2.events[0].id);
+    }
+  });
+
+  it('should fail with invalid limit', () => {
+    const error = ctx.runExpectError('history --limit 0');
+    expect(error.toLowerCase()).toContain('invalid');
+  });
+
+  it('should fail with invalid page', () => {
+    const error = ctx.runExpectError('history --page 0');
+    expect(error.toLowerCase()).toContain('invalid');
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'bun:test';
 import { createTestContext, initTrekker, type TestContext } from '../helpers/test-context';
 
 interface Task {
@@ -213,42 +213,6 @@ describe('list command', () => {
     });
   });
 
-  describe('pagination', () => {
-    beforeEach(() => {
-      for (let i = 1; i <= 60; i++) {
-        ctx.run(`task create -t "Task ${i}"`);
-      }
-    });
-
-    it('should respect limit parameter', () => {
-      const result = ctx.runToon<ListResponse>('list --limit 10');
-      expect(result.items.length).toBeLessThanOrEqual(10);
-      expect(result.limit).toBe(10);
-    });
-
-    it('should respect page parameter', () => {
-      const page1 = ctx.runToon<ListResponse>('list --limit 10 --page 1');
-      const page2 = ctx.runToon<ListResponse>('list --limit 10 --page 2');
-
-      expect(page1.page).toBe(1);
-      expect(page2.page).toBe(2);
-
-      if (page1.items.length > 0 && page2.items.length > 0) {
-        expect(page1.items[0].id).not.toBe(page2.items[0].id);
-      }
-    });
-
-    it('should fail with invalid limit', () => {
-      const error = ctx.runExpectError('list --limit 0');
-      expect(error.toLowerCase()).toContain('invalid');
-    });
-
-    it('should fail with invalid page', () => {
-      const error = ctx.runExpectError('list --page 0');
-      expect(error.toLowerCase()).toContain('invalid');
-    });
-  });
-
   describe('combined filters', () => {
     it('should combine type and status filters', () => {
       ctx.run('task create -t "Todo Task" -s todo');
@@ -269,5 +233,49 @@ describe('list command', () => {
       expect(result.total).toBe(1);
       expect(result.items[0].title).toBe('High Todo');
     });
+  });
+});
+
+describe('list command pagination', () => {
+  let ctx: TestContext;
+
+  beforeAll(() => {
+    ctx = createTestContext();
+    initTrekker(ctx);
+    for (let i = 1; i <= 12; i++) {
+      ctx.run(`task create -t "Task ${i}"`);
+    }
+  });
+
+  afterAll(() => {
+    ctx.cleanup();
+  });
+
+  it('should respect limit parameter', () => {
+    const result = ctx.runToon<ListResponse>('list --limit 10');
+    expect(result.items.length).toBeLessThanOrEqual(10);
+    expect(result.limit).toBe(10);
+  });
+
+  it('should respect page parameter', () => {
+    const page1 = ctx.runToon<ListResponse>('list --limit 10 --page 1');
+    const page2 = ctx.runToon<ListResponse>('list --limit 10 --page 2');
+
+    expect(page1.page).toBe(1);
+    expect(page2.page).toBe(2);
+
+    if (page1.items.length > 0 && page2.items.length > 0) {
+      expect(page1.items[0].id).not.toBe(page2.items[0].id);
+    }
+  });
+
+  it('should fail with invalid limit', () => {
+    const error = ctx.runExpectError('list --limit 0');
+    expect(error.toLowerCase()).toContain('invalid');
+  });
+
+  it('should fail with invalid page', () => {
+    const error = ctx.runExpectError('list --page 0');
+    expect(error.toLowerCase()).toContain('invalid');
   });
 });
