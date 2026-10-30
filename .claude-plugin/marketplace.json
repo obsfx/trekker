@@ -12,7 +12,7 @@
       "name": "trekker",
       "source": "./plugins/claude-code",
       "description": "AI-optimized issue tracker for coding workflows. Drives the trekker CLI for search-first, persistent task tracking.",
-      "version": "1.12.0",
+      "version": "1.12.1",
       "author": {
         "name": "Omercan Balandi"
       }

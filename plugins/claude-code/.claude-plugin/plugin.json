@@ -1,7 +1,7 @@
 {
   "name": "trekker",
   "description": "AI-optimized issue tracker for coding workflows. Search-first workflow with persistent task memory across sessions, driven through the trekker CLI.",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "author": {
     "name": "Omercan Balandi",
     "url": "https://github.com/obsfx"
