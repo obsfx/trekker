@@ -1,6 +1,8 @@
 import { Dialog } from '@base-ui/react/dialog';
+import { clsx } from 'clsx';
 import { TbBolt, TbChevronDown, TbTag, TbX } from 'react-icons/tb';
 
+import { CreateKindMenu } from '@/ui/components/create/create-kind-menu.tsx';
 import { ParentTaskField } from '@/ui/components/create/parent-task-field.tsx';
 import { PriorityMenu } from '@/ui/components/editing/priority-menu.tsx';
 import { StatusMenu } from '@/ui/components/editing/status-menu.tsx';
@@ -13,8 +15,6 @@ import { CheckField } from '@/ui/primitives/check-field.tsx';
 import { IconButton } from '@/ui/primitives/icon-button.tsx';
 import { InlineError } from '@/ui/primitives/inline-error.tsx';
 import { InputFrame } from '@/ui/primitives/input-frame.tsx';
-import { SegmentedControl } from '@/ui/primitives/segmented-control.tsx';
-import { SegmentedOption } from '@/ui/primitives/segmented-option.tsx';
 import { SubmitHint } from '@/ui/primitives/submit-hint.tsx';
 import { TextAreaField } from '@/ui/primitives/text-area-field.tsx';
 
@@ -30,7 +30,6 @@ export function CreateForm({ defaults, onDone }: CreateFormProps) {
     titleRef,
     titleInvalid,
     parentInvalid,
-    kinds,
     statuses,
     submitLabel,
     submitModifier,
@@ -57,21 +56,7 @@ export function CreateForm({ defaults, onDone }: CreateFormProps) {
     >
       <header className="flex h-9 shrink-0 items-center gap-2 border-b border-line-muted px-3">
         <Dialog.Title className="sr-only">Create</Dialog.Title>
-        <SegmentedControl label="Type">
-          {kinds.map((kind) => {
-            return (
-              <SegmentedOption
-                key={kind.value}
-                active={form.kind === kind.value}
-                onClick={() => {
-                  setKind(kind.value);
-                }}
-              >
-                {kind.label}
-              </SegmentedOption>
-            );
-          })}
-        </SegmentedControl>
+        <CreateKindMenu value={form.kind} onChange={setKind} />
         <Dialog.Close render={<IconButton aria-label="Close" className="ml-auto" />}>
           <TbX className="size-3.5" />
         </Dialog.Close>
@@ -121,20 +106,18 @@ export function CreateForm({ defaults, onDone }: CreateFormProps) {
           {form.kind === 'subtask' && (
             <ParentTaskField parent={form.parent} invalid={parentInvalid} onPick={setParent} />
           )}
-          {form.kind !== 'epic' && (
-            <InputFrame className="w-56">
-              <TbTag className="size-3.5 shrink-0" />
-              <BareInput
-                aria-label="Tags"
-                placeholder="tags, comma separated"
-                value={form.tags}
-                onChange={(event) => {
-                  setTags(event.target.value);
-                }}
-              />
-            </InputFrame>
-          )}
         </div>
+        <InputFrame className={clsx('w-full', { invisible: form.kind === 'epic' })}>
+          <TbTag className="size-3.5 shrink-0" />
+          <BareInput
+            aria-label="Tags"
+            placeholder="tags, comma separated"
+            value={form.tags}
+            onChange={(event) => {
+              setTags(event.target.value);
+            }}
+          />
+        </InputFrame>
         {parentInvalid ? <InlineError>Choose the parent task for this subtask.</InlineError> : null}
       </div>
       <footer className="flex shrink-0 items-center gap-2 border-t border-line-muted px-3 py-2">

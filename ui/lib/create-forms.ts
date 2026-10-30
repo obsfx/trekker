@@ -101,11 +101,15 @@ export abstract class CreateForms {
     return { ...form, title: '', description: '', tags: '', submitted: false };
   }
 
-  static submitLabel(kind: CreateKind) {
+  static kindLabel(kind: CreateKind) {
     const label = CreateForms.kinds.find((entry) => {
       return entry.value === kind;
     })?.label;
-    return `Create ${(label ?? 'task').toLowerCase()}`;
+    return label ?? 'Task';
+  }
+
+  static submitLabel(kind: CreateKind) {
+    return `Create ${CreateForms.kindLabel(kind).toLowerCase()}`;
   }
 
   private static description(form: CreateFormState) {

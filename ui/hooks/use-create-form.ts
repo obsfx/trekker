@@ -64,7 +64,6 @@ export const useCreateForm = (defaults: CreateDefaults, onDone: () => void) => {
     titleRef,
     titleInvalid: problems.includes('title'),
     parentInvalid: problems.includes('parent'),
-    kinds: CreateForms.kinds,
     statuses: KindStatuses.of(form.kind),
     submitLabel: CreateForms.submitLabel(form.kind),
     submitModifier: KeyChords.submitModifier(),
