@@ -4,7 +4,6 @@ import { TbHistory, TbLayoutKanban, TbList, TbMoon, TbPlus, TbSettings } from 'r
 import { BrandMark } from '@/ui/primitives/brand-mark.tsx';
 import { Button } from '@/ui/primitives/button.tsx';
 import { IconButton } from '@/ui/primitives/icon-button.tsx';
-import { LiveIndicator } from '@/ui/primitives/live-indicator.tsx';
 import { NavTab } from '@/ui/primitives/nav-tab.tsx';
 import { NavTabs } from '@/ui/primitives/nav-tabs.tsx';
 import { SearchField } from '@/ui/primitives/search-field.tsx';
@@ -42,7 +41,6 @@ const meta = {
           <TbPlus className="size-3.5" />
           New
         </Button>
-        <LiveIndicator state="live" />
         <IconButton aria-label="Theme">
           <TbMoon className="size-3.5" />
         </IconButton>

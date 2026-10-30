@@ -8,7 +8,6 @@ import { AppRoutes } from '@/ui/lib/app-routes.ts';
 import { BrandMark } from '@/ui/primitives/brand-mark.tsx';
 import { Button } from '@/ui/primitives/button.tsx';
 import { IconLink } from '@/ui/primitives/icon-link.tsx';
-import { LiveIndicator } from '@/ui/primitives/live-indicator.tsx';
 import { NavTab } from '@/ui/primitives/nav-tab.tsx';
 import { NavTabs } from '@/ui/primitives/nav-tabs.tsx';
 import { TopBar } from '@/ui/primitives/top-bar.tsx';
@@ -35,7 +34,6 @@ export function AppTopBar() {
         <TbPlus className="size-3.5" />
         <span className="max-sm:sr-only">New</span>
       </Button>
-      <LiveIndicator state={bar.live} />
       <ThemeToggle />
       <IconLink to={AppRoutes.settings} aria-label="Settings" title="Settings">
         <TbSettings className="size-3.5" />

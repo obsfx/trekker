@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import { createStore } from 'zustand/vanilla';
 
 import type { EpicDetail, RankedRef, TaskComment, TaskDetail } from '@/ui/lib/detail-shapes.ts';
 import type {
@@ -31,7 +30,7 @@ import { type ItemStatus, ItemStatuses } from '@/ui/lib/item-statuses.ts';
 import type { Priority } from '@/ui/lib/priorities.ts';
 import type { ProjectInfo } from '@/ui/lib/project-shapes.ts';
 import type { SearchQuery } from '@/ui/lib/search-queries.ts';
-import type { EventStream, LiveStatus, StreamListener } from '@/ui/lib/server-events.ts';
+import type { EventStream, StreamListener } from '@/ui/lib/server-events.ts';
 import { TextQueries } from '@/ui/lib/text-queries.ts';
 
 interface StoredItem extends ItemSummary {
@@ -120,10 +119,6 @@ const HOUR_MS = 3_600_000;
 const BASE_TIME = dayjs('2026-10-24T12:00:00Z').valueOf();
 
 export class InMemoryEventStream implements EventStream {
-  readonly status = createStore<LiveStatus>()(() => {
-    return { state: 'live' };
-  });
-
   private readonly listeners = new Set<StreamListener>();
 
   subscribe(listener: StreamListener) {

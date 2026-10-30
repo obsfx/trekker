@@ -1,14 +1,7 @@
 import * as v from 'valibot';
-import { createStore } from 'zustand/vanilla';
 
 import { HistoryShapes } from '@/ui/lib/history-shapes.ts';
-import type {
-  EventStream,
-  LiveState,
-  LiveStatus,
-  StreamListener,
-  StreamSignal,
-} from '@/ui/lib/server-events.ts';
+import type { EventStream, StreamListener, StreamSignal } from '@/ui/lib/server-events.ts';
 import { ValueSchemas } from '@/ui/lib/value-schemas.ts';
 
 export class SseEventStream implements EventStream {
@@ -16,10 +9,6 @@ export class SseEventStream implements EventStream {
   private static readonly maxRetryMs = 15_000;
   private static readonly readyTimeoutMs = 1500;
   private static readonly readyMessage = v.object({ lastEventId: ValueSchemas.count });
-
-  readonly status = createStore<LiveStatus>()(() => {
-    return { state: 'connecting' };
-  });
 
   private readonly url: string;
   private readonly listeners = new Set<StreamListener>();
@@ -75,11 +64,9 @@ export class SseEventStream implements EventStream {
     if (this.lastEventId !== null) {
       url.searchParams.set('after', String(this.lastEventId));
     }
-    this.setState('connecting');
     const source = new EventSource(url);
     source.addEventListener('open', () => {
       this.retryDelay = SseEventStream.initialRetryMs;
-      this.setState('live');
     });
     source.addEventListener('ready', (message) => {
       this.receiveReady(message.data);
@@ -93,9 +80,7 @@ export class SseEventStream implements EventStream {
     source.addEventListener('error', () => {
       if (source.readyState === EventSource.CLOSED) {
         this.handleClosed(source);
-        return;
       }
-      this.setState('connecting');
     });
     this.source = source;
   }
@@ -137,7 +122,6 @@ export class SseEventStream implements EventStream {
       return;
     }
     this.source = null;
-    this.setState('offline');
     if (this.listeners.size === 0) {
       return;
     }
@@ -151,12 +135,6 @@ export class SseEventStream implements EventStream {
   private emit(signal: StreamSignal) {
     for (const listener of this.listeners) {
       listener(signal);
-    }
-  }
-
-  private setState(state: LiveState) {
-    if (this.status.getState().state !== state) {
-      this.status.setState({ state });
     }
   }
 

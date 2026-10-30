@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { E2eProject } from '@/tests/e2e/support/e2e-project';
+import { LivePage } from '@/tests/e2e/support/live-page';
 
 abstract class BoardE2eFixture {
   static readonly column = (page: Page, status: string) => {
@@ -16,12 +17,10 @@ test.describe('board', () => {
       BoardE2eFixture.column(page, 'in_progress').getByText('Dashboard rewrite')
     ).toBeVisible();
     await expect(BoardE2eFixture.column(page, 'completed').getByText('Already done')).toBeVisible();
-    await expect(page.getByRole('status').getByText('Live')).toBeVisible();
   });
 
   test('shows a task created by the CLI without a reload', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('status').getByText('Live')).toBeVisible();
+    await LivePage.open(page, '/');
     E2eProject.trekker(['task', 'create', '-t', 'Created by an agent']);
     await expect(
       BoardE2eFixture.column(page, 'todo').getByText('Created by an agent')

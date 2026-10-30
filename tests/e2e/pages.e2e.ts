@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { E2eProject } from '@/tests/e2e/support/e2e-project';
+import { LivePage } from '@/tests/e2e/support/live-page';
 
 test.describe('list and history', () => {
   test('lists items and opens one', async ({ page }) => {
@@ -11,8 +12,7 @@ test.describe('list and history', () => {
   });
 
   test('shows CLI changes in the history feed live', async ({ page }) => {
-    await page.goto('/history');
-    await expect(page.getByRole('status').getByText('Live')).toBeVisible();
+    await LivePage.open(page, '/history');
     E2eProject.trekker(['task', 'update', 'TREK-3', '-s', 'wont_fix']);
     await expect(page.getByText("Won't fix").first()).toBeVisible();
   });
