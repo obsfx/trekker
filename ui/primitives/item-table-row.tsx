@@ -7,7 +7,7 @@ import { ActivityCounts } from '@/ui/primitives/activity-counts.tsx';
 import { ITEM_TABLE_COLUMNS } from '@/ui/primitives/item-table-columns.ts';
 import { PriorityIcon } from '@/ui/primitives/priority-icon.tsx';
 import { StatusIcon } from '@/ui/primitives/status-icon.tsx';
-import { TagChip } from '@/ui/primitives/tag-chip.tsx';
+import { TagSummary } from '@/ui/primitives/tag-summary.tsx';
 
 interface ItemTableRowProps extends LinkProps {
   item: ItemSummary;
@@ -49,11 +49,7 @@ export function ItemTableRow({
         )}
         <span className="truncate">{item.title}</span>
       </span>
-      <span className={clsx('flex gap-1 overflow-hidden', ITEM_TABLE_COLUMNS.tags)}>
-        {item.tags.map((tag) => {
-          return <TagChip key={tag}>{tag}</TagChip>;
-        })}
-      </span>
+      <TagSummary tags={item.tags} className={ITEM_TABLE_COLUMNS.tags} />
       {showEpic && (
         <span className={clsx('truncate text-fg-3', ITEM_TABLE_COLUMNS.epic)}>
           {item.epic?.title ?? ''}
