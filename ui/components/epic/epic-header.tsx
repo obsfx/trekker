@@ -106,6 +106,7 @@ export function EpicHeader({
           <InlineDescription
             value={epic.description}
             placeholder="Add a description"
+            contentClassName="scrollbar-visible max-h-[30vh] overflow-y-auto pr-3"
             onSave={(description) => {
               onUpdate({ description });
             }}

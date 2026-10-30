@@ -149,6 +149,22 @@ body {
   outline-offset: var(--bs-focus-ring-offset);
 }
 
+@utility scrollbar-visible {
+  &::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    border-radius: 0.25rem;
+    background: var(--color-canvas-2);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 0.25rem;
+    background: var(--color-fg-4);
+  }
+}
+
 .markdown-prose {
   font-size: 0.75rem;
   line-height: 1.6;

@@ -10,10 +10,16 @@ import { TextAreaField } from '@/ui/primitives/text-area-field.tsx';
 interface InlineDescriptionProps {
   value: string | null;
   placeholder: string;
+  contentClassName?: string;
   onSave: (description: string | null) => void;
 }
 
-export function InlineDescription({ value, placeholder, onSave }: InlineDescriptionProps) {
+export function InlineDescription({
+  value,
+  placeholder,
+  contentClassName,
+  onSave,
+}: InlineDescriptionProps) {
   const text = useInlineDescription(value, onSave);
   if (text.editing) {
     return (
@@ -58,11 +64,13 @@ export function InlineDescription({ value, placeholder, onSave }: InlineDescript
       <IconButton
         aria-label="Edit description"
         onClick={text.start}
-        className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+        className="absolute top-0 right-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
       >
         <TbPencil className="size-3.5" />
       </IconButton>
-      <MarkdownView source={value} />
+      <div className={contentClassName}>
+        <MarkdownView source={value} />
+      </div>
     </div>
   );
 }
